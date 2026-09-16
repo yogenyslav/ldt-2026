@@ -21,3 +21,13 @@ run-orthanc:
 stop-orthanc:
 	@echo "stopping dicom server with s3 storage"
 	@docker compose -f docker/orthanc-compose.yaml --env-file .env down
+
+.PHONY: run-storage
+run-storage:
+	@echo "setting up s3 storage for reports"
+	@docker compose -f docker/storage-compose.yaml --env-file .env up -d
+
+.PHONY: stop-storage
+stop-storage:
+	@echo "stopping s3 storage for reports"
+	@docker compose -f docker/storage-compose.yaml --env-file .env down
