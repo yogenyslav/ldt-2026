@@ -6,5 +6,10 @@
     "AccessKey": "${S3_USER}",
     "SecretKey": "${S3_PASSWORD}",
     "VirtualAddressing" : false
+  },
+  "RemoteAccessAllowed": true,
+  "AuthenticationEnabled": true,
+  "RegisteredUsers": {
+    "dicom-orthanc": "${ORTHANC_PASSWORD}"
   }
 }
