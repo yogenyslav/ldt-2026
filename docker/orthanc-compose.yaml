@@ -2,7 +2,7 @@ name: orthanc-server
 
 services:
   orthanc:
-    image: jodogne/orthanc-plugins:1.13.0
+    image: orthancteam/orthanc:26.9.0
     command: /run/secrets/orthanc.json
     container_name: orthanc
     restart: unless-stopped
