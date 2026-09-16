@@ -13,8 +13,6 @@ services:
       - orthanc.json
     env_file:
       - ../.env
-    environment:
-      - ORTHANC_NAME=ServerDICOM
 
   raw-dicom:
     container_name: raw-dicom
