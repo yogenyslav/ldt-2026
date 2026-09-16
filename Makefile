@@ -1,5 +1,5 @@
 .PHONY: run-all
-run-all: run-nats run-orthanc
+run-all: run-nats run-orthanc run-storage
 	@echo "starting all services"
 
 .PHONY: run-nats
