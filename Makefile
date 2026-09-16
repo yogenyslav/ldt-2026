@@ -2,6 +2,10 @@
 run-all: run-nats run-orthanc run-storage
 	@echo "starting all services"
 
+.PHONY: run-all
+run-all: run-nats run-orthanc
+	@echo "starting all services"
+
 .PHONY: run-nats
 run-nats:
 	@echo "running nats server"
