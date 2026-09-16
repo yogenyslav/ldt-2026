@@ -1,0 +1,38 @@
+name: orthanc-server
+
+services:
+  orthanc:
+    image: jodogne/orthanc-plugins:1.13.0
+    command: /run/secrets/orthanc.json
+    container_name: orthanc
+    restart: unless-stopped
+    ports:
+      - 4242:4242
+      - 8042:8042
+    secrets:
+      - orthanc.json
+    env_file:
+      - ../.env
+    environment:
+      - ORTHANC_NAME=ServerDICOM
+
+  raw-dicom:
+    container_name: raw-dicom
+    image: quay.io/minio/minio:latest
+    environment:
+      - MINIO_ROOT_USER=${S3_USER:-minio}
+      - MINIO_ROOT_PASSWORD=${S3_PASSWORD:-minio123}
+    restart: unless-stopped
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    command: server /data --console-address ":9001"
+    volumes:
+      - raw_dicom_data:/data
+
+secrets:
+  orthanc.json:
+    file: orthanc.json
+
+volumes:
+  raw_dicom_data:
