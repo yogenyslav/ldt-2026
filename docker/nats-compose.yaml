@@ -5,11 +5,8 @@ services:
     image: docker.io/nats:2.12
     container_name: nats-1
     restart: unless-stopped
-    environment:
-      NATS_ROUTE_PASSWORD: ${NATS_ROUTE_PASSWORD}
-      NATS_SYS_PASSWORD: ${NATS_SYS_PASSWORD}
-      DICOM_WORKER_PASSWORD: ${DICOM_WORKER_PASSWORD}
-      DICOM_ANALYZER_PASSWORD: ${DICOM_ANALYZER_PASSWORD}
+    env_file:
+      - ../.env
     ports:
       - "4222:4222"
       - "8222:8222"
@@ -28,11 +25,8 @@ services:
     image: docker.io/nats:2.12
     container_name: nats-2
     restart: unless-stopped
-    environment:
-      NATS_ROUTE_PASSWORD: ${NATS_ROUTE_PASSWORD}
-      NATS_SYS_PASSWORD: ${NATS_SYS_PASSWORD}
-      DICOM_WORKER_PASSWORD: ${DICOM_WORKER_PASSWORD}
-      DICOM_ANALYZER_PASSWORD: ${DICOM_ANALYZER_PASSWORD}
+    env_file:
+      - ../.env
     ports:
       - "4223:4222"
       - "8223:8222"
@@ -51,11 +45,8 @@ services:
     image: docker.io/nats:2.12
     container_name: nats-3
     restart: unless-stopped
-    environment:
-      NATS_ROUTE_PASSWORD: ${NATS_ROUTE_PASSWORD}
-      NATS_SYS_PASSWORD: ${NATS_SYS_PASSWORD}
-      DICOM_WORKER_PASSWORD: ${DICOM_WORKER_PASSWORD}
-      DICOM_ANALYZER_PASSWORD: ${DICOM_ANALYZER_PASSWORD}
+    env_file:
+      - ../.env
     ports:
       - "4224:4222"
       - "8224:8222"
