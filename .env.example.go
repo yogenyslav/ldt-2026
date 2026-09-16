@@ -1,4 +1,9 @@
+# NATS cluster configuration
 NATS_ROUTE_PASSWORD=pass
 NATS_SYS_PASSWORD=pass
 DICOM_WORKER_PASSWORD=pass
 DICOM_ANALYZER_PASSWORD=pass
+
+# S3 configuration
+S3_USER=minio
+S3_PASSWORD=minio123
