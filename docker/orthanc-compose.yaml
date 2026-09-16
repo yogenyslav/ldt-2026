@@ -3,16 +3,21 @@ name: orthanc-server
 services:
   orthanc:
     image: orthancteam/orthanc:26.9.0
-    command: /run/secrets/orthanc.json
     container_name: orthanc
     restart: unless-stopped
+    depends_on:
+      - raw-dicom
     ports:
       - 4242:4242
       - 8042:8042
     secrets:
       - orthanc.json
-    env_file:
-      - ../.env
+    environment:
+      - AWS_S3_STORAGE_PLUGIN_ENABLED="true"
+      - ORTHANC_NAME=${ORTHANC_NAME}
+      - ORTHANC_PASSWORD=${ORTHANC_PASSWORD}
+      - S3_USER=${S3_USER}
+      - S3_PASSWORD=${S3_PASSWORD}
 
   raw-dicom:
     container_name: raw-dicom
