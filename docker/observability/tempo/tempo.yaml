@@ -26,9 +26,9 @@ distributor:
     otlp:
       protocols:
         http:
-          endpoint: "0.0.0.0:4318"  # Listen to OTLP HTTP on port 4318, on all interfaces.
+          endpoint: "0.0.0.0:4418"  # Listen to OTLP HTTP on port 4318, on all interfaces.
         grpc:
-          endpoint: "0.0.0.0:4317"  # This example repository only utilises the OTLP gRPC receiver on port 4317, on all interfaces.
+          endpoint: "0.0.0.0:4417"  # This example repository only utilises the OTLP gRPC receiver on port 4317, on all interfaces.
     zipkin:                         # Receive trace data in any supported Zipkin format.
 
 # Tempo 3.0 removed the legacy `ingester` block. In monolithic mode, the live-store holds recent
@@ -99,7 +99,7 @@ metrics_generator:
     # Configure extra labels to be added to metrics.
     external_labels:
       source: tempo                         # Add a `{source="tempo"}` label.
-      group: 'mythical'                     # Add a `{group="mythical"}` label.
+      group: 'dicom'                     # Add a `{group="dicom"}` label.
   # Configures where the store for metrics is located.
   storage:
     # WAL for metrics generation.
