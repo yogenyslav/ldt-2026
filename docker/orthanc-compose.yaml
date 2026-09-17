@@ -1,4 +1,4 @@
-name: orthanc-server
+name: dicom-orthanc-server
 
 services:
   orthanc:
