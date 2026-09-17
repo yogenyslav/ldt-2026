@@ -1,4 +1,4 @@
-name: nats_cluster
+name: dicom-nats-cluster
 
 services:
   nats-1:
