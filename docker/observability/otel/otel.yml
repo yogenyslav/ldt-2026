@@ -8,6 +8,9 @@ receivers:
         endpoint: 0.0.0.0:4317
       http:
         endpoint: 0.0.0.0:4318
+        cors:
+          allowed_origins:
+            - http://*
 
   # Defines a Prometheus configuration set.
   prometheus:
@@ -138,7 +141,7 @@ exporters:
   # Exporter for sending trace data to Tempo.
   otlp/grafana:
     # Send to the locally running Tempo service.
-    endpoint: tempo:4317
+    endpoint: tempo:4417
     # TLS is not enabled for the instance.
     tls:
       insecure: true
