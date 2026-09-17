@@ -1,0 +1,84 @@
+name: dicom-observability
+
+volumes:
+  grafana:
+
+services:
+  opentelemetry-collector:
+    image: otel/opentelemetry-collector-contrib:0.154.0
+    container_name: otlp-collector
+    restart: unless-stopped
+    depends_on:
+      - tempo
+      - loki
+      - mimir
+      - pyroscope
+    ports:
+      - "12347:12345"
+      - "12348:12348"
+      - "6832:6832"
+      - "55679:55679"
+      - "4317:4317"
+      - "4318:4318"
+      - "16686:16686"
+    volumes:
+      - ./observability/otel/otel.yml:/etc/otel-collector-config.yml
+    command: [ "--config=/etc/otel-collector-config.yml" ]
+
+  grafana:
+    image: grafana/grafana:13.0.2
+    restart: unless-stopped
+    container_name: grafana
+    volumes:
+      - "./observability/grafana/definitions:/var/lib/grafana/dashboards"
+      - "./observability/grafana/provisioning:/etc/grafana/provisioning"
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_FEATURE_TOGGLES_ENABLE=flameGraph traceqlSearch correlations traceQLStreaming metricsSummary traceqlEditor traceToMetrics traceToProfiles datatrails
+      - GF_INSTALL_PLUGINS=grafana-lokiexplore-app,grafana-exploretraces-app,grafana-pyroscope-app
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_USER}
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD}
+
+  tempo:
+    image: grafana/tempo:3.0.2
+    restart: unless-stopped
+    container_name: tempo
+    ports:
+      - "3200:3200"
+      - "55680:55680"
+      - "55681:55681"
+      - "14250:14250"
+      - "4417:4417"
+      - "4418:4418"
+    command: [ "-target=all", "-config.file=/etc/tempo.yaml" ]
+    volumes:
+      - "./observability/tempo/tempo.yaml:/etc/tempo.yaml"
+
+  loki:
+    image: grafana/loki:3.7.2
+    restart: unless-stopped
+    container_name: loki
+    command: ["--pattern-ingester.enabled=true", "-config.file=/etc/loki/loki.yaml"]
+    ports:
+      - "3100:3100"
+    volumes:
+      - "./observability/loki/loki.yaml:/etc/loki/loki.yaml"
+
+  mimir:
+    image: grafana/mimir:3.1.0
+    restart: unless-stopped
+    container_name: mimir
+    command: ["-target=all", "-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
+    ports:
+      - "9009:9009"
+    volumes:
+      - "./observability/mimir/mimir.yaml:/etc/mimir.yaml"
+
+  pyroscope:
+    image: grafana/pyroscope:2.1.0
+    restart: unless-stopped
+    container_name: pyroscope
+    ports:
+      - "4040:4040"
+    command: ["server"]
