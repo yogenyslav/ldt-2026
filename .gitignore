@@ -35,3 +35,8 @@ go.work.sum
 data/
 .mypy_cache/
 venv/
+__pycache__/
+
+# Локальные данные (снимки, разметка, выгрузки) — в репозиторий не попадают
+dataset/
+services/region_classifier/annotations/
