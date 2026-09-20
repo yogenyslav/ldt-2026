@@ -32,3 +32,20 @@ go.work.sum
 .vscode/
 
 .DS_Store
+
+# python
+__pycache__/
+*.py[cod]
+*.egg-info/
+build/
+dist/
+.venv/
+venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.ipynb_checkpoints/
+
+# Local
+context/
+data/
