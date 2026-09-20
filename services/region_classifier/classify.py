@@ -75,6 +75,21 @@ PEAK_PROMINENCE = 0.05
 PEAK_MIN_DISTANCE = 6
 SPINE_PEAK_THRESHOLD = 6  # >= этого числа пиков -> похоже на позвоночник
 
+# Насколько быстро уверенность растёт с удалением n_peaks от границы принятия
+# решения (SPINE_PEAK_THRESHOLD - 0.5). Подобрано так, чтобы на границе
+# (margin=0) уверенность была ~0.5 (максимальная неопределённость), а при
+# отступе на 3+ пика уже выходила на плато около 0.95-0.99.
+CONFIDENCE_MARGIN_SCALE = 0.09
+CONFIDENCE_FLOOR = 0.5
+CONFIDENCE_CEIL = 0.99
+
+# Та же идея, что и для region_confidence: side_score -1..1 (0 — граница
+# принятия решения "левее/правее центра"), чем дальше от 0, тем увереннее.
+# Подобрано так, чтобы почти нулевой score (снимок примерно по центру,
+# сторону не разобрать даже глазом) давал floor-уверенность, а типичный
+# уверенный случай (|score| ~ 0.4-0.6) выходил в верхнюю часть шкалы.
+SIDE_CONFIDENCE_SCALE = 0.7
+
 
 @dataclasses.dataclass
 class RegionResult:
@@ -84,6 +99,7 @@ class RegionResult:
     width_hint: Optional[str]  # что подсказывает ширина снимка, если подсказывает
     side: Optional[str] = None  # для hip: "image_left" | "image_right"
     side_score: Optional[float] = None  # -1..1, чем дальше от 0 тем увереннее
+    side_confidence: Optional[float] = None  # 0.5..0.99, непрерывная уверенность в стороне
 
 
 def load_pixel_array(dicom_path: str) -> np.ndarray:
@@ -123,9 +139,22 @@ def count_vertical_peaks(mask: np.ndarray) -> int:
     return len(peaks)
 
 
+def peak_margin_confidence(n_peaks: int) -> float:
+    """Непрерывная уверенность на основе отступа n_peaks от границы решения.
+
+    На самой границе (n_peaks вплотную к порогу) уверенность минимальна —
+    там сегментация могла на 1 пик ошибиться в любую сторону. Чем дальше
+    n_peaks от порога в любую сторону, тем увереннее решение.
+    """
+    margin = abs(n_peaks - (SPINE_PEAK_THRESHOLD - 0.5))
+    confidence = CONFIDENCE_FLOOR + CONFIDENCE_MARGIN_SCALE * margin
+    return float(min(CONFIDENCE_CEIL, confidence))
+
+
 def classify_region(mask: np.ndarray, image_width: int) -> tuple[str, float, int, Optional[str]]:
     n_peaks = count_vertical_peaks(mask)
     peak_vote = "spine" if n_peaks >= SPINE_PEAK_THRESHOLD else "hip"
+    peak_confidence = peak_margin_confidence(n_peaks)
 
     width_hint = None
     if image_width in SPINE_WIDTH_HINTS:
@@ -136,20 +165,18 @@ def classify_region(mask: np.ndarray, image_width: int) -> tuple[str, float, int
     # После подбора параметров (CLAHE + порог по 6 пикам) признак периодичности
     # сам по себе точнее (99.6% на обучающей выборке), чем ширина снимка —
     # поэтому при разногласии доверяем peak_vote, а не наоборот, как в первой
-    # версии. Ширина остаётся вторичным подтверждением уверенности.
+    # версии. Ширина остаётся вторичным сигналом, модулирующим уверенность.
+    region = peak_vote
     if width_hint is not None and width_hint == peak_vote:
-        region = peak_vote
-        confidence = 0.98
+        confidence = min(CONFIDENCE_CEIL, peak_confidence + 0.05)
     elif width_hint is not None and width_hint != peak_vote:
         # сигналы разошлись — это редкий случай (в обучающей выборке 2/497),
         # обычно связанный с сильно текстурированной (низкоплотной) костью.
-        # Доверяем более точному признаку (периодичность), но со сниженной
-        # уверенностью, чтобы такие случаи было легко выловить и проверить руками
-        region = peak_vote
-        confidence = 0.6
+        # Доверяем более точному признаку (периодичность), но заметно снижаем
+        # уверенность, чтобы такие случаи было легко выловить и проверить руками
+        confidence = max(CONFIDENCE_FLOOR, peak_confidence - 0.25)
     else:
-        region = peak_vote
-        confidence = 0.9
+        confidence = peak_confidence
 
     return region, confidence, n_peaks, width_hint
 
@@ -167,14 +194,29 @@ def classify_hip_side(mask: np.ndarray, top_fraction: float = 0.35) -> tuple[Opt
     return side, float(score)
 
 
+def side_margin_confidence(side_score: Optional[float]) -> Optional[float]:
+    """Непрерывная уверенность в стороне по тому же принципу, что и для
+    region_confidence: чем ближе side_score к 0 (граница решения), тем
+    менее надёжен вывод. Проверено на реальной ошибке разметки — снимок
+    с side_score=-0.029 (граница) действительно оказался перепутан
+    лево/право, а снимок с side_score=-0.578 (уверенно) — верным, несмотря
+    на визуально обманчивую (обрезанную/замаскированную) картинку.
+    """
+    if side_score is None:
+        return None
+    confidence = CONFIDENCE_FLOOR + SIDE_CONFIDENCE_SCALE * abs(side_score)
+    return float(min(CONFIDENCE_CEIL, confidence))
+
+
 def classify_file(dicom_path: str) -> RegionResult:
     image_u8 = load_pixel_array(dicom_path)
     mask = segment_bone(image_u8)
     region, confidence, n_peaks, width_hint = classify_region(mask, image_u8.shape[1])
 
-    side, side_score = (None, None)
+    side, side_score, side_confidence = (None, None, None)
     if region == "hip":
         side, side_score = classify_hip_side(mask)
+        side_confidence = side_margin_confidence(side_score)
 
     return RegionResult(
         region=region,
@@ -183,6 +225,7 @@ def classify_file(dicom_path: str) -> RegionResult:
         width_hint=width_hint,
         side=side,
         side_score=side_score,
+        side_confidence=side_confidence,
     )
 
 
@@ -206,7 +249,11 @@ def main() -> None:
         except Exception as exc:  # noqa: BLE001 — CLI-диагностика, не продовый код
             print(f"{fp}\tERROR\t{exc}")
             continue
-        side_str = f"\tside={result.side}({result.side_score:+.2f})" if result.side else ""
+        side_str = (
+            f"\tside={result.side}(score={result.side_score:+.2f}, conf={result.side_confidence:.2f})"
+            if result.side
+            else ""
+        )
         print(
             f"{fp}\tregion={result.region}\tconf={result.region_confidence:.2f}"
             f"\tn_peaks={result.n_peaks}\twidth_hint={result.width_hint}{side_str}"
