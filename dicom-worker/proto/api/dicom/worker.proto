@@ -5,10 +5,12 @@ option go_package = "internal/generated/dicom-worker;dicom_worker";
 
 service DicomWorkerService {
   rpc ProcessDicom (ProcessDicomIn) returns (ProcessDicomOut) {}
+  rpc BatchProcessDicom (stream ProcessDicomIn) returns (stream ProcessDicomOut) {}
   rpc GetJobStatus (GetJobStatusIn) returns (GetJobStatusOut) {}
   rpc GetJobInfo (GetJobInfoIn) returns (GetJobInfoOut) {}
   rpc GetJobInfoByIDs (GetJobInfoByIDsIn) returns (GetJobInfoByIDsOut) {}
   rpc GetJobsByCreator (GetJobsByCreatorIn) returns (GetJobsByCreatorOut) {}
+  rpc GetJobsByOrganisation (GetJobsByOrganisationIn) returns (GetJobsByOrganisationOut) {}
 }
 
 enum JobStatus {
@@ -22,6 +24,8 @@ enum JobStatus {
 message ProcessDicomIn {
   string dicom_uid      = 1;
   string dicom_study_id = 2;
+  int64 creator_id = 3;
+  int64 organisation_id = 4;
 }
 
 message ProcessDicomOut {

@@ -15,7 +15,7 @@ http:
       description: If present, retrieve the attachments list and their numerical ids
       disabled: true
     - name: id
-      value: ""
+      value: 08a01ace-56807640-0aa0f8b2-ce6858dd-24ffa23b
       type: path
       description: Orthanc identifier of the instance of interest
   auth: inherit

@@ -81,4 +81,9 @@ stop-observability:
 .PHONY: run-worker
 run-worker:
 	@echo "running dicom worker"
-	@docker compose -f dicom-worker/compose.yaml --env-file .env up
+	@docker compose -f dicom-worker/compose.yaml --env-file .env up -d
+
+.PHONY: stop-worker
+stop-worker:
+	@echo "stopping dicom worker"
+	@docker compose -f dicom-worker/compose.yaml --env-file .env down
