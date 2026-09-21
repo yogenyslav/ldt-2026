@@ -7,6 +7,7 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+
     ports:
       - "4222:4222"
       - "8222:8222"
@@ -21,12 +22,16 @@ services:
       - "--name"
       - "nats-1"
 
+    networks:
+      - dicom-network
+
   nats-2:
     image: docker.io/nats:2.12
     container_name: nats-2
     restart: unless-stopped
     env_file:
       - ../.env
+
     ports:
       - "4223:4222"
       - "8223:8222"
@@ -41,12 +46,16 @@ services:
       - "--name"
       - "nats-2"
 
+    networks:
+      - dicom-network
+
   nats-3:
     image: docker.io/nats:2.12
     container_name: nats-3
     restart: unless-stopped
     env_file:
       - ../.env
+
     ports:
       - "4224:4222"
       - "8224:8222"
@@ -61,7 +70,14 @@ services:
       - "--name"
       - "nats-3"
 
+    networks:
+      - dicom-network
+
 volumes:
   nats_1_data:
   nats_2_data:
   nats_3_data:
+
+networks:
+  dicom-network:
+    external: true

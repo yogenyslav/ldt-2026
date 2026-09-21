@@ -32,7 +32,7 @@ generate-orthanc:
 	@oapi-codegen -config dicom-worker/orthanc-generator.yaml api/orthanc/orthanc.yaml
 
 .PHONY: run-all
-run-all: run-nats run-orthanc run-storage run-observability
+run-all: run-nats run-orthanc run-storage run-observability run-worker
 	@echo "starting all services"
 
 .PHONY: run-nats
@@ -74,3 +74,8 @@ run-observability:
 stop-observability:
 	@echo "stopping observability stack"
 	@docker compose -f docker/observability-compose.yaml --env-file .env down
+
+.PHONY: run-worker
+run-worker:
+	@echo "running dicom worker"
+	@docker compose -f dicom-worker/compose.yaml --env-file .env up

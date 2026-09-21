@@ -12,8 +12,14 @@ services:
       - "9010:9000"
       - "9011:9001"
     command: server /data --console-address ":9001"
+    networks:
+      - dicom-network
     volumes:
       - reports_data:/data
 
 volumes:
   reports_data:
+
+networks:
+  dicom-network:
+    external: true
