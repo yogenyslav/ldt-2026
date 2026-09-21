@@ -21,6 +21,8 @@ services:
       - "4317:4317"
       - "4318:4318"
       - "16686:16686"
+    networks:
+      - dicom-network
     volumes:
       - ./observability/otel/otel.yml:/etc/otel-collector-config.yml
     command: [ "--config=/etc/otel-collector-config.yml" ]
@@ -34,6 +36,8 @@ services:
       - "./observability/grafana/provisioning:/etc/grafana/provisioning"
     ports:
       - "3000:3000"
+    networks:
+      - dicom-network
     environment:
       - GF_FEATURE_TOGGLES_ENABLE=flameGraph traceqlSearch correlations traceQLStreaming metricsSummary traceqlEditor traceToMetrics traceToProfiles datatrails
       - GF_INSTALL_PLUGINS=grafana-lokiexplore-app,grafana-exploretraces-app,grafana-pyroscope-app
@@ -52,6 +56,8 @@ services:
       - "4417:4417"
       - "4418:4418"
     command: [ "-target=all", "-config.file=/etc/tempo.yaml" ]
+    networks:
+      - dicom-network
     volumes:
       - "./observability/tempo/tempo.yaml:/etc/tempo.yaml"
 
@@ -62,6 +68,8 @@ services:
     command: ["--pattern-ingester.enabled=true", "-config.file=/etc/loki/loki.yaml"]
     ports:
       - "3100:3100"
+    networks:
+      - dicom-network
     volumes:
       - "./observability/loki/loki.yaml:/etc/loki/loki.yaml"
 
@@ -72,6 +80,8 @@ services:
     command: ["-target=all", "-ingester.native-histograms-ingestion-enabled=true", "-config.file=/etc/mimir.yaml"]
     ports:
       - "9009:9009"
+    networks:
+      - dicom-network
     volumes:
       - "./observability/mimir/mimir.yaml:/etc/mimir.yaml"
 
@@ -82,3 +92,9 @@ services:
     ports:
       - "4040:4040"
     command: ["server"]
+    networks:
+      - dicom-network
+
+networks:
+  dicom-network:
+    external: true
