@@ -1,0 +1,34 @@
+info:
+  name: Get metadata (GET)
+  type: http
+  seq: 31
+  tags:
+    - Patients
+
+http:
+  method: GET
+  url: "{{baseUrl}}/patients/:id/metadata/:name"
+  headers:
+    - name: If-None-Match
+      value: ""
+      description: Optional revision of the metadata, to check if its content has changed
+      disabled: true
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+    - name: name
+      value: ""
+      type: path
+      description: The name of the metadata, or its index (cf. `UserMetadata` configuration option)
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get the value of a metadata that is associated with the given patient

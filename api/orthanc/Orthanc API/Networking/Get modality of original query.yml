@@ -1,0 +1,25 @@
+info:
+  name: Get modality of original query
+  type: http
+  seq: 38
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/queries/:id/modality"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the query of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get the identifier of the DICOM modality that was targeted by the query/retrieve operation whose identifier is provided in the URL

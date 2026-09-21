@@ -1,0 +1,39 @@
+info:
+  name: Modify instance
+  type: http
+  seq: 46
+  tags:
+    - Instances
+
+http:
+  method: POST
+  url: "{{baseUrl}}/instances/:id/modify"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the instance of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Force": false,
+        "Keep": [],
+        "KeepSource": false,
+        "LossyQuality": 0,
+        "PrivateCreator": "",
+        "Remove": [],
+        "RemovePrivateTags": false,
+        "Replace": {},
+        "Transcode": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Download a modified version of the DICOM instance whose Orthanc identifier is provided in the URL: https://orthanc.uclouvain.be/book/users/anonymization.html#modification-of-a-single-instance"

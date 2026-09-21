@@ -1,0 +1,107 @@
+info:
+  name: Get instance module
+  type: http
+  seq: 47
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/module"
+  params:
+    - name: ignore-length
+      value: "[]"
+      type: query
+      description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: simplify
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/instances/:id/module"
+      method: GET
+      params:
+        - name: ignore-length
+          value: "[]"
+          type: query
+          description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+          disabled: true
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: simplify
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the instance of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "0008,0005": {
+              "Name": "SpecificCharacterSet",
+              "Type": "String",
+              "Value": "ISO_IR 100"
+            },
+            "0008,0012": {
+              "Name": "InstanceCreationDate",
+              "Type": "String",
+              "Value": "20050927"
+            },
+            "0008,0013": {
+              "Name": "InstanceCreationTime",
+              "Type": "String",
+              "Value": "155030.000000"
+            },
+            "0008,0016": {
+              "Name": "SOPClassUID",
+              "Type": "String",
+              "Value": "1.2.840.10008.5.1.4.1.1.2"
+            },
+            "0008,0018": {
+              "Name": "SOPInstanceUID",
+              "Type": "String",
+              "Value": "1.2.840.113704.7.1.1.6632.1127829031.2"
+            },
+            "0020,0013": {
+              "Name": "InstanceNumber",
+              "Type": "String",
+              "Value": "1"
+            }
+          }
+
+docs: Get the instance module of the DICOM instance whose Orthanc identifier is provided in the URL

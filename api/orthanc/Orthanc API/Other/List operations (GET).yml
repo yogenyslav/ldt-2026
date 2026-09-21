@@ -1,0 +1,73 @@
+info:
+  name: List operations (GET)
+  type: http
+  seq: 6
+  tags:
+    - Other
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          [
+            "accepted-sop-classes",
+            "accepted-transfer-syntaxes",
+            "bulk-anonymize",
+            "bulk-content",
+            "bulk-delete",
+            "bulk-modify",
+            "count-resources",
+            "create-archive",
+            "create-dicom",
+            "create-media",
+            "create-media-extended",
+            "default-encoding",
+            "dicom-conformance",
+            "dicom-echo",
+            "execute-script",
+            "find",
+            "generate-uid",
+            "invalidate-tags",
+            "labels",
+            "log-level",
+            "log-level-dicom",
+            "log-level-generic",
+            "log-level-http",
+            "log-level-jobs",
+            "log-level-lua",
+            "log-level-plugins",
+            "log-level-sqlite",
+            "lookup",
+            "metrics",
+            "metrics-prometheus",
+            "now",
+            "now-local",
+            "reconstruct",
+            "reset",
+            "shutdown",
+            "unknown-sop-class-accepted"
+          ]
+
+docs: List the available operations under URI `/tools/`

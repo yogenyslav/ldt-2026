@@ -1,0 +1,82 @@
+info:
+  name: Update DICOM modality
+  type: http
+  seq: 4
+  tags:
+    - Networking
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/modalities/:id"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the new/updated DICOM modality
+  body:
+    type: json
+    data: |-
+      {
+        "AET": "",
+        "AllowEcho": false,
+        "AllowFind": false,
+        "AllowFindWorklist": false,
+        "AllowGet": false,
+        "AllowMove": false,
+        "AllowStorageCommitment": false,
+        "AllowStore": false,
+        "AllowTranscoding": false,
+        "Host": "",
+        "LocalAet": "",
+        "Manufacturer": "",
+        "Port": 0,
+        "Timeout": 0,
+        "UseDicomTls": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/modalities/:id"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Identifier of the new/updated DICOM modality
+      body:
+        type: json
+        data: |-
+          {
+            "AET": "",
+            "AllowEcho": false,
+            "AllowFind": false,
+            "AllowFindWorklist": false,
+            "AllowGet": false,
+            "AllowMove": false,
+            "AllowStorageCommitment": false,
+            "AllowStore": false,
+            "AllowTranscoding": false,
+            "Host": "",
+            "LocalAet": "",
+            "Manufacturer": "",
+            "Port": 0,
+            "Timeout": 0,
+            "UseDicomTls": false
+          }
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Define a new DICOM modality, or update an existing one. This change is permanent iff. `DicomModalitiesInDatabase` is `true`, otherwise it is lost at the next restart of Orthanc.

@@ -1,0 +1,39 @@
+info:
+  name: Get one answer
+  type: http
+  seq: 32
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/queries/:id/answers/:index/content"
+  params:
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: simplify
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the query of interest
+    - name: index
+      value: ""
+      type: path
+      description: Index of the answer
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get the content (DICOM tags) of one answer associated with the query/retrieve operation whose identifier is provided in the URL

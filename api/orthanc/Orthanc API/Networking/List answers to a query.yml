@@ -1,0 +1,40 @@
+info:
+  name: List answers to a query
+  type: http
+  seq: 30
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/queries/:id/answers"
+  params:
+    - name: expand
+      value: ""
+      type: query
+      description: If present, retrieve detailed information about the individual answers
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: simplify
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the query of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: List the indices of all the available answers resulting from a query/retrieve operation on some DICOM modality, whose identifier is provided in the URL

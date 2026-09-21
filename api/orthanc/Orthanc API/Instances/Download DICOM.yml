@@ -1,0 +1,45 @@
+info:
+  name: Download DICOM
+  type: http
+  seq: 22
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/file"
+  headers:
+    - name: Accept
+      value: ""
+      description: This HTTP header can be set to retrieve the DICOM instance in DICOMweb format
+      disabled: true
+  params:
+    - name: filename
+      value: ""
+      type: query
+      description: Filename to set in the "Content-Disposition" HTTP header (including file extension)
+      disabled: true
+    - name: lossy-quality
+      value: ""
+      type: query
+      description: If transcoding to a lossy transfer syntax, this entry defines the quality as an integer between 1 and 100.  If not provided, the value is defined by the "DicomLossyTranscodingQuality" configuration. (new in v1.12.7)
+      disabled: true
+    - name: transcode
+      value: ""
+      type: query
+      description: "If present, the DICOM file will be transcoded to the provided transfer syntax: https://orthanc.uclouvain.be/book/faq/transcoding.html"
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the DICOM instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Download one DICOM instance

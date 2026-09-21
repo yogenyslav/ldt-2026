@@ -1,0 +1,37 @@
+info:
+  name: Set attachment (PUT)
+  type: http
+  seq: 9
+  tags:
+    - Patients
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/patients/:id/attachments/:name"
+  headers:
+    - name: If-Match
+      value: ""
+      description: Revision of the attachment, if this is not the first time this attachment is set.
+      disabled: true
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+    - name: name
+      value: ""
+      type: path
+      description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+  body:
+    type: text
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Attach a file to the given DICOM patient. This call will fail if trying to modify a system attachment (i.e. whose index is < 1024).

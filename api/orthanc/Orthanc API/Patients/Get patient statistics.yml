@@ -1,0 +1,58 @@
+info:
+  name: Get patient statistics
+  type: http
+  seq: 40
+  tags:
+    - Patients
+
+http:
+  method: GET
+  url: "{{baseUrl}}/patients/:id/statistics"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/patients/:id/statistics"
+      method: GET
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the patient of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "CountInstances": 166,
+            "CountSeries": 1,
+            "CountStudies": 1,
+            "DicomDiskSize": "87460012",
+            "DicomDiskSizeMB": 83,
+            "DicomUncompressedSize": "87460012",
+            "DicomUncompressedSizeMB": 83,
+            "DiskSize": "87460012",
+            "DiskSizeMB": 83,
+            "UncompressedSize": "87460012",
+            "UncompressedSizeMB": 83
+          }
+
+docs: Get statistics about the given patient

@@ -1,0 +1,25 @@
+info:
+  name: Get storage commitment report
+  type: http
+  seq: 41
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/storage-commitment/:id"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the storage commitment report
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Get the storage commitment report whose identifier is provided in the URL: https://orthanc.uclouvain.be/book/users/storage-commitment.html#storage-commitment-scu"

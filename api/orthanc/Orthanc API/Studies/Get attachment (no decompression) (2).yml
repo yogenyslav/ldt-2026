@@ -1,0 +1,43 @@
+info:
+  name: Get attachment (no decompression) (2)
+  type: http
+  seq: 11
+  tags:
+    - Studies
+
+http:
+  method: GET
+  url: "{{baseUrl}}/studies/:id/attachments/:name/compressed-data"
+  headers:
+    - name: If-None-Match
+      value: ""
+      description: Optional revision of the attachment, to check if its content has changed
+      disabled: true
+    - name: Range
+      value: ""
+      description: Optional content range to access part of the attachment (new in Orthanc 1.12.5)
+      disabled: true
+  params:
+    - name: filename
+      value: ""
+      type: query
+      description: Filename to set in the "Content-Disposition" HTTP header (including file extension)
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+    - name: name
+      value: ""
+      type: path
+      description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get the (binary) content of one attachment associated with the given study. The attachment will not be decompressed if `StorageCompression` is `true`.

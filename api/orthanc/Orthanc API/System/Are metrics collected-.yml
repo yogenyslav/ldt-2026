@@ -1,0 +1,20 @@
+info:
+  name: Are metrics collected?
+  type: http
+  seq: 31
+  tags:
+    - System
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools/metrics"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Returns a Boolean specifying whether Prometheus metrics are collected and exposed at `/tools/metrics-prometheus`

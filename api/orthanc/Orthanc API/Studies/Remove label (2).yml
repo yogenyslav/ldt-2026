@@ -1,0 +1,50 @@
+info:
+  name: Remove label (2)
+  type: http
+  seq: 24
+  tags:
+    - Studies
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/studies/:id/labels/:label"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+    - name: label
+      value: ""
+      type: path
+      description: The label to be removed
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/studies/:id/labels/:label"
+      method: DELETE
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the study of interest
+        - name: label
+          value: ""
+          type: path
+          description: The label to be removed
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Remove a label associated with a study

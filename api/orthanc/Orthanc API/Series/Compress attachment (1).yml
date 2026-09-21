@@ -1,0 +1,50 @@
+info:
+  name: Compress attachment (1)
+  type: http
+  seq: 10
+  tags:
+    - Series
+
+http:
+  method: POST
+  url: "{{baseUrl}}/series/:id/attachments/:name/compress"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+    - name: name
+      value: ""
+      type: path
+      description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series/:id/attachments/:name/compress"
+      method: POST
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the series of interest
+        - name: name
+          value: ""
+          type: path
+          description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Change the compression scheme that is used to store an attachment.

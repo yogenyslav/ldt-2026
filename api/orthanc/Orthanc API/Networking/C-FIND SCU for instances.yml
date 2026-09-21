@@ -1,0 +1,28 @@
+info:
+  name: C-FIND SCU for instances
+  type: http
+  seq: 8
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modalities/:id/find-instance"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the modality of interest
+  body:
+    type: json
+    data: "{}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Trigger C-FIND SCU command against the DICOM modality whose identifier is provided in URL, in order to find an instance. Deprecated in favor of `/modalities/{id}/query`.

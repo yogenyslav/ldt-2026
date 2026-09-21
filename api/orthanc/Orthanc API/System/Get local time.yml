@@ -1,0 +1,35 @@
+info:
+  name: Get local time
+  type: http
+  seq: 35
+  tags:
+    - System
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools/now-local"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools/now-local"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: text/plain
+      body:
+        type: text
+        data: 20260815T220308
+
+docs: Get local time
