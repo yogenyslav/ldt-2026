@@ -1,0 +1,62 @@
+name: dicom-worker
+
+services:
+    dicom-worker:
+        build:
+          context: .
+          dockerfile: Dockerfile
+          target: prod
+        container_name: dicom-worker
+        restart: unless-stopped
+        command: ["./service"]
+        depends_on:
+          - postgres
+        env_file:
+          - ../.env
+        environment:
+          - APP_NAME="dicom-worker"
+          - DB_USER="${DICOM_WORKER_DB_USER}"
+          - DB_PASSWORD="${DICOM_WORKER_DB_PASSWORD}"
+          - DB_NAME="${DICOM_WORKER_DB_NAME}"
+          - DB_HOST="${DICOM_WORKER_DB_HOST}"
+          - DB_PORT="${DICOM_WORKER_DB_PORT}"
+        ports:
+          - "11000"
+
+    dicom-worker-poller:
+        build:
+          context: .
+          dockerfile: Dockerfile
+          target: prod
+        container_name: dicom-worker-poller
+        restart: unless-stopped
+        command: ["./poller"]
+        depends_on:
+          - postgres
+        env_file:
+          - ../.env
+        environment:
+          - APP_NAME="dicom-worker-poller"
+          - DB_USER="${DICOM_WORKER_DB_USER}"
+          - DB_PASSWORD="${DICOM_WORKER_DB_PASSWORD}"
+          - DB_NAME="${DICOM_WORKER_DB_NAME}"
+          - DB_HOST="${DICOM_WORKER_DB_HOST}"
+          - DB_PORT="${DICOM_WORKER_DB_PORT}"
+
+    postgres:
+        image: postgres:17-alpine
+        container_name: dicom-worker-postgres
+        restart: unless-stopped
+        healthcheck:
+          test: ["CMD-SHELL", "pg_isready -U ${DICOM_WORKER_DB_USER} -d ${DICOM_WORKER_DB_NAME}"]
+          interval: 10s
+          timeout: 5s
+          retries: 5
+        env_file:
+          - ../.env
+        environment:
+          - POSTGRES_USER="${DICOM_WORKER_DB_USER}"
+          - POSTGRES_PASSWORD="${DICOM_WORKER_DB_PASSWORD}"
+          - POSTGRES_DB="${DICOM_WORKER_DB_NAME}"
+        ports:
+          - "5432"

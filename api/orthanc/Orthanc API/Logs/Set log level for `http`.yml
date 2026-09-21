@@ -1,0 +1,38 @@
+info:
+  name: Set log level for `http`
+  type: http
+  seq: 8
+  tags:
+    - Logs
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/tools/log-level-http"
+  body:
+    type: text
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools/log-level-http"
+      method: PUT
+      body:
+        type: text
+        data: ""
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Set the log level of the log category `http`

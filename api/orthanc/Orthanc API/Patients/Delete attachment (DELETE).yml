@@ -1,0 +1,60 @@
+info:
+  name: Delete attachment (DELETE)
+  type: http
+  seq: 8
+  tags:
+    - Patients
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/patients/:id/attachments/:name"
+  headers:
+    - name: If-Match
+      value: ""
+      description: Revision of the attachment, to check if its content has not changed and can be deleted. This header is mandatory if `CheckRevisions` option is `true`.
+      disabled: true
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+    - name: name
+      value: ""
+      type: path
+      description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/patients/:id/attachments/:name"
+      method: DELETE
+      headers:
+        - name: If-Match
+          value: ""
+          description: Revision of the attachment, to check if its content has not changed and can be deleted. This header is mandatory if `CheckRevisions` option is `true`.
+          disabled: true
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the patient of interest
+        - name: name
+          value: ""
+          type: path
+          description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Delete an attachment associated with the given DICOM patient. This call will fail if trying to delete a system attachment (i.e. whose index is < 1024).

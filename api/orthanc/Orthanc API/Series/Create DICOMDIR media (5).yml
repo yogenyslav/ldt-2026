@@ -1,0 +1,39 @@
+info:
+  name: Create DICOMDIR media (5)
+  type: http
+  seq: 28
+  tags:
+    - Series
+
+http:
+  method: POST
+  url: "{{baseUrl}}/series/:id/media"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Extended": false,
+        "Filename": "",
+        "LossyQuality": 0,
+        "Priority": 0,
+        "Synchronous": false,
+        "Transcode": "",
+        "UserData": {},
+        "Utf8": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Create a DICOMDIR media containing the DICOM series whose Orthanc identifier is provided in the URL

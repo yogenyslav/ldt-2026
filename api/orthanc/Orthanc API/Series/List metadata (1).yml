@@ -1,0 +1,70 @@
+info:
+  name: List metadata (1)
+  type: http
+  seq: 29
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/metadata"
+  params:
+    - name: expand
+      value: ""
+      type: query
+      description: If present, also retrieve the value of the individual metadata
+      disabled: true
+    - name: numeric
+      value: ""
+      type: query
+      description: If present, use the numeric identifier of the metadata instead of its symbolic name
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series/:id/metadata"
+      method: GET
+      params:
+        - name: expand
+          value: ""
+          type: query
+          description: If present, also retrieve the value of the individual metadata
+          disabled: true
+        - name: numeric
+          value: ""
+          type: query
+          description: If present, use the numeric identifier of the metadata instead of its symbolic name
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the series of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          [
+            "RemoteAET",
+            "LastUpdate",
+            "MainDicomTagsSignature"
+          ]
+
+docs: Get the list of metadata that are associated with the given series

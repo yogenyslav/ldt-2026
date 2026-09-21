@@ -1,0 +1,25 @@
+info:
+  name: Generate an identifier
+  type: http
+  seq: 27
+  tags:
+    - System
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools/generate-uid"
+  params:
+    - name: level
+      value: ""
+      type: query
+      description: "Type of DICOM resource among: `patient`, `study`, `series` or `instance`"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Generate a random DICOM identifier

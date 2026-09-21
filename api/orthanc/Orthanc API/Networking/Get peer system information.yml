@@ -1,0 +1,25 @@
+info:
+  name: Get peer system information
+  type: http
+  seq: 26
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/peers/:id/system"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the peer of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get system information about some Orthanc peer. This corresponds to doing a `GET` request against the `/system` URI of the remote peer. This route can be used to test connectivity.

@@ -1,0 +1,42 @@
+info:
+  name: Delete some instance
+  type: http
+  seq: 3
+  tags:
+    - Instances
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/instances/:id"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/instances/:id"
+      method: DELETE
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the instance of interest
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Delete the DICOM instance whose Orthanc identifier is provided in the URL

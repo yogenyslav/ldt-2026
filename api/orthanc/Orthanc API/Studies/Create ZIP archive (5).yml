@@ -1,0 +1,38 @@
+info:
+  name: Create ZIP archive (5)
+  type: http
+  seq: 6
+  tags:
+    - Studies
+
+http:
+  method: POST
+  url: "{{baseUrl}}/studies/:id/archive"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Filename": "",
+        "LossyQuality": 0,
+        "Priority": 0,
+        "Synchronous": false,
+        "Transcode": "",
+        "UserData": {},
+        "Utf8": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Create a ZIP archive containing the DICOM study whose Orthanc identifier is provided in the URL

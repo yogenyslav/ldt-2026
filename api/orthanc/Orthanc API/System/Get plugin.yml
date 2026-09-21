@@ -1,0 +1,52 @@
+info:
+  name: Get plugin
+  type: http
+  seq: 3
+  tags:
+    - System
+
+http:
+  method: GET
+  url: "{{baseUrl}}/plugins/:id"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the job of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/plugins/:id"
+      method: GET
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Identifier of the job of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "Description": "Implementation of DICOMweb (QIDO-RS, STOW-RS and WADO-RS) and WADO-URI.",
+            "ExtendsOrthancExplorer": true,
+            "ID": "dicom-web",
+            "RootUri": "../dicom-web/app/client/index.html",
+            "Version": "1.23"
+          }
+
+docs: Get system information about the plugin whose identifier is provided in the URL

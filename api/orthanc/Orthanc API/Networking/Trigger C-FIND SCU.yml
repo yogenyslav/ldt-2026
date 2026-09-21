@@ -1,0 +1,35 @@
+info:
+  name: Trigger C-FIND SCU
+  type: http
+  seq: 15
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modalities/:id/query"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the modality of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Level": "",
+        "LocalAet": "",
+        "Normalize": false,
+        "Query": {},
+        "Timeout": 0
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Trigger C-FIND SCU command against the DICOM modality whose identifier is provided in URL: https://orthanc.uclouvain.be/book/users/rest.html#performing-query-retrieve-c-find-and-find-with-rest"

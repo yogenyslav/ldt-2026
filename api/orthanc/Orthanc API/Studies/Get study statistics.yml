@@ -1,0 +1,57 @@
+info:
+  name: Get study statistics
+  type: http
+  seq: 42
+  tags:
+    - Studies
+
+http:
+  method: GET
+  url: "{{baseUrl}}/studies/:id/statistics"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/studies/:id/statistics"
+      method: GET
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the study of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "CountInstances": 232,
+            "CountSeries": 7,
+            "DicomDiskSize": "68153234",
+            "DicomDiskSizeMB": 64,
+            "DicomUncompressedSize": "68153234",
+            "DicomUncompressedSizeMB": 64,
+            "DiskSize": "68153234",
+            "DiskSizeMB": 64,
+            "UncompressedSize": "68153234",
+            "UncompressedSizeMB": 64
+          }
+
+docs: Get statistics about the given study

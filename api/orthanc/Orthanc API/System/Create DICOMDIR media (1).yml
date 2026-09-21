@@ -1,0 +1,35 @@
+info:
+  name: Create DICOMDIR media (1)
+  type: http
+  seq: 18
+  tags:
+    - System
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tools/create-media"
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Extended": false,
+        "Filename": "",
+        "LossyQuality": 0,
+        "Priority": 0,
+        "Resources": [],
+        "Synchronous": false,
+        "Transcode": "",
+        "UserData": {},
+        "Utf8": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Create a DICOMDIR media containing the DICOM resources (patients, studies, series, or instances) whose Orthanc identifiers are provided in the body

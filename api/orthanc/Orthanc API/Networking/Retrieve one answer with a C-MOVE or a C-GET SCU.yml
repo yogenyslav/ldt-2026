@@ -1,0 +1,44 @@
+info:
+  name: Retrieve one answer with a C-MOVE or a C-GET SCU
+  type: http
+  seq: 36
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/queries/:id/answers/:index/retrieve"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the query of interest
+    - name: index
+      value: ""
+      type: path
+      description: Index of the answer
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Full": false,
+        "Permissive": false,
+        "Priority": 0,
+        "RetrieveMethod": "",
+        "Simplify": false,
+        "Synchronous": false,
+        "TargetAet": "",
+        "Timeout": 0,
+        "UserData": {}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Start a C-MOVE or a C-GET SCU command as a job, in order to retrieve one answer associated with the query/retrieve operation whose identifiers are provided in the URL: https://orthanc.uclouvain.be/book/users/rest.html#performing-retrieve-c-move"

@@ -1,0 +1,32 @@
+info:
+  name: Restart Orthanc
+  type: http
+  seq: 37
+  tags:
+    - System
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tools/reset"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools/reset"
+      method: POST
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Restart Orthanc

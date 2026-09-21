@@ -1,0 +1,25 @@
+info:
+  name: Is the patient protected against recycling?
+  type: http
+  seq: 35
+  tags:
+    - Patients
+
+http:
+  method: GET
+  url: "{{baseUrl}}/patients/:id/protected"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Is the patient protected against recycling?

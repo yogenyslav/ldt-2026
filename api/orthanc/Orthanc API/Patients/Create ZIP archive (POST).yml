@@ -1,0 +1,38 @@
+info:
+  name: Create ZIP archive (POST)
+  type: http
+  seq: 6
+  tags:
+    - Patients
+
+http:
+  method: POST
+  url: "{{baseUrl}}/patients/:id/archive"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Filename": "",
+        "LossyQuality": 0,
+        "Priority": 0,
+        "Synchronous": false,
+        "Transcode": "",
+        "UserData": {},
+        "Utf8": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Create a ZIP archive containing the DICOM patient whose Orthanc identifier is provided in the URL

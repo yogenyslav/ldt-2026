@@ -1,0 +1,41 @@
+info:
+  name: Split study
+  type: http
+  seq: 41
+  tags:
+    - Studies
+
+http:
+  method: POST
+  url: "{{baseUrl}}/studies/:id/split"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Instances": [],
+        "KeepLabels": false,
+        "KeepSource": false,
+        "Permissive": false,
+        "Priority": 0,
+        "Remove": [],
+        "Replace": {},
+        "Series": [],
+        "Synchronous": false,
+        "UserData": {}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Start a new job so as to split the DICOM study whose Orthanc identifier is provided in the URL, by taking some of its children series or instances out of it and putting them into a brand new study (this new study is created by setting the `StudyInstanceUID` tag to a random identifier): https://orthanc.uclouvain.be/book/users/anonymization.html#splitting"

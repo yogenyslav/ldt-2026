@@ -1,0 +1,20 @@
+info:
+  name: List query/retrieve operations
+  type: http
+  seq: 27
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/queries"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: List the identifiers of all the query/retrieve operations on DICOM modalities, as initiated by calls to `/modalities/{id}/query`. The length of this list is bounded by the `QueryRetrieveSize` configuration option of Orthanc. https://orthanc.uclouvain.be/book/users/rest.html#performing-query-retrieve-c-find-and-find-with-rest

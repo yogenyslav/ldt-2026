@@ -1,0 +1,35 @@
+info:
+  name: Decode instance for numpy
+  type: http
+  seq: 48
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/numpy"
+  params:
+    - name: compress
+      value: ""
+      type: query
+      description: Compress the file as `.npz`
+      disabled: true
+    - name: rescale
+      value: ""
+      type: query
+      description: On grayscale images, apply the rescaling and return floating-point values
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the DICOM resource of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Decode the given DICOM instance, for use with numpy in Python. The numpy array has 4 dimensions: (frame, height, width, color channel)."

@@ -1,0 +1,29 @@
+info:
+  name: Access raw frame (compressed)
+  type: http
+  seq: 31
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/frames/:frame/raw.gz"
+  params:
+    - name: frame
+      value: ""
+      type: path
+      description: Index of the frame (starts at `0`)
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Access the raw content of one individual frame of the DICOM instance of interest, bypassing image decoding. This is notably useful to access the source files in compressed transfer syntaxes. The image is compressed using gzip

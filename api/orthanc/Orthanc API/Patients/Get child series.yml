@@ -1,0 +1,102 @@
+info:
+  name: Get child series
+  type: http
+  seq: 38
+  tags:
+    - Patients
+
+http:
+  method: GET
+  url: "{{baseUrl}}/patients/:id/series"
+  params:
+    - name: expand
+      value: ""
+      type: query
+      description: If false or missing, only retrieve the list of child series
+      disabled: true
+    - name: full
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in full format (tags indexed by their hexadecimal format, associated with their symbolic name and their value)
+      disabled: true
+    - name: requested-tags
+      value: ""
+      type: query
+      description: "If present, list the DICOM Tags you want to list in the response.  This argument is a semi-column separated list of DICOM Tags identifiers; e.g: 'requested-tags=0010,0010;PatientBirthDate'.  The tags requested tags are returned in the 'RequestedTags' field in the response.  Note that, if you are requesting tags that are not listed in the Main Dicom Tags stored in DB, building the response might be slow since Orthanc will need to access the DICOM files.  If not specified, Orthanc will return all Main Dicom Tags to keep backward compatibility with Orthanc prior to 1.11.0."
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/patients/:id/series"
+      method: GET
+      params:
+        - name: expand
+          value: ""
+          type: query
+          description: If false or missing, only retrieve the list of child series
+          disabled: true
+        - name: full
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in full format (tags indexed by their hexadecimal format, associated with their symbolic name and their value)
+          disabled: true
+        - name: requested-tags
+          value: ""
+          type: query
+          description: "If present, list the DICOM Tags you want to list in the response.  This argument is a semi-column separated list of DICOM Tags identifiers; e.g: 'requested-tags=0010,0010;PatientBirthDate'.  The tags requested tags are returned in the 'RequestedTags' field in the response.  Note that, if you are requesting tags that are not listed in the Main Dicom Tags stored in DB, building the response might be slow since Orthanc will need to access the DICOM files.  If not specified, Orthanc will return all Main Dicom Tags to keep backward compatibility with Orthanc prior to 1.11.0."
+          disabled: true
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the patient of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          [
+            {
+              "ExpectedNumberOfInstances": null,
+              "ID": "52cc572c-3ee31930-c4b6d5e7-16c786dc-97bc209b",
+              "Instances": [
+                "011ead8d-f2508edd-da315604-80b002df-e678b796",
+                "01252811-30d1c47b-a8c03da5-73177742-48495192",
+                "04a30982-835a4b0a-3082b997-060f01f5-071a0f8d",
+                "04efd8b9-2ae1f3db-deb0f226-e3267002-6cd8fa3c",
+                "0df992f4-0a841d5c-aeb8cdda-9c1a0573-dbd49c3f",
+                "..."
+              ],
+              "IsStable": true,
+              "Labels": [],
+              "{...}": "..."
+            }
+          ]
+
+docs: Get detailed information about the child series of the DICOM patient whose Orthanc identifier is provided in the URL

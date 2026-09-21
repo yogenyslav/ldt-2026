@@ -1,0 +1,138 @@
+info:
+  name: Get DICOM tags
+  type: http
+  seq: 58
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/tags"
+  params:
+    - name: ignore-length
+      value: "[]"
+      type: query
+      description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: simplify
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+      disabled: true
+    - name: whole
+      value: ""
+      type: query
+      description: Whether to read the whole DICOM file from the storage area (new in Orthanc 1.12.4). If set to "false" (default value), the DICOM file is read until the pixel data tag (7fe0,0010) to optimize access to storage. Setting the option to "true" provides access to the DICOM tags stored after the pixel data tag.
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the DICOM instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/instances/:id/tags"
+      method: GET
+      params:
+        - name: ignore-length
+          value: "[]"
+          type: query
+          description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+          disabled: true
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: simplify
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+          disabled: true
+        - name: whole
+          value: ""
+          type: query
+          description: Whether to read the whole DICOM file from the storage area (new in Orthanc 1.12.4). If set to "false" (default value), the DICOM file is read until the pixel data tag (7fe0,0010) to optimize access to storage. Setting the option to "true" provides access to the DICOM tags stored after the pixel data tag.
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the DICOM instance of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "0008,0005": {
+              "Name": "SpecificCharacterSet",
+              "Type": "String",
+              "Value": "ISO_IR 100"
+            },
+            "0008,0008": {
+              "Name": "ImageType",
+              "Type": "String",
+              "Value": "ORIGINAL\\PRIMARY\\AXIAL\\CT_SOM5 SPI"
+            },
+            "0008,0016": {
+              "Name": "SOPClassUID",
+              "Type": "String",
+              "Value": "1.2.840.10008.5.1.4.1.1.2"
+            },
+            "0008,0018": {
+              "Name": "SOPInstanceUID",
+              "Type": "String",
+              "Value": "1.3.12.2.1107.5.1.4.54693.30000006100507010800000005269"
+            },
+            "0008,0020": {
+              "Name": "StudyDate",
+              "Type": "String",
+              "Value": "20061005"
+            },
+            "0008,0021": {
+              "Name": "SeriesDate",
+              "Type": "String",
+              "Value": "20061005"
+            },
+            "0008,0022": {
+              "Name": "AcquisitionDate",
+              "Type": "String",
+              "Value": "20061005"
+            },
+            "0008,0023": {
+              "Name": "ContentDate",
+              "Type": "String",
+              "Value": "20061005"
+            },
+            "0008,0030": {
+              "Name": "StudyTime",
+              "Type": "String",
+              "Value": "101556.921000"
+            },
+            "0008,0031": {
+              "Name": "SeriesTime",
+              "Type": "String",
+              "Value": "102051.046000"
+            },
+            "{...}": "..."
+          }
+
+docs: Get the DICOM tags in the specified format. By default, the `full` format is used, which combines hexadecimal tags with human-readable description.

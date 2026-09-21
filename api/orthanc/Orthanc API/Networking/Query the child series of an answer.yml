@@ -1,0 +1,36 @@
+info:
+  name: Query the child series of an answer
+  type: http
+  seq: 34
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/queries/:id/answers/:index/query-series"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the query of interest
+    - name: index
+      value: ""
+      type: path
+      description: Index of the answer
+  body:
+    type: json
+    data: |-
+      {
+        "Query": {},
+        "Timeout": 0
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Issue a second DICOM C-FIND operation, in order to query the child series associated with one answer to some query/retrieve operation whose identifiers are provided in the URL

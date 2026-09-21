@@ -1,0 +1,29 @@
+info:
+  name: Test label (1)
+  type: http
+  seq: 25
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/labels/:label"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+    - name: label
+      value: ""
+      type: path
+      description: The label of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Test whether the series is associated with the given label

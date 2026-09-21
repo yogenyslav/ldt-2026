@@ -1,0 +1,42 @@
+info:
+  name: Delete some study
+  type: http
+  seq: 2
+  tags:
+    - Studies
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/studies/:id"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/studies/:id"
+      method: DELETE
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the study of interest
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Delete the DICOM study whose Orthanc identifier is provided in the URL

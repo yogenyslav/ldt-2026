@@ -1,0 +1,29 @@
+info:
+  name: Verify attachment (1)
+  type: http
+  seq: 20
+  tags:
+    - Series
+
+http:
+  method: POST
+  url: "{{baseUrl}}/series/:id/attachments/:name/verify-md5"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+    - name: name
+      value: ""
+      type: path
+      description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Verify that the attachment is not corrupted, by validating its MD5 hash

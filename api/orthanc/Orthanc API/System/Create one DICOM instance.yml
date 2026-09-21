@@ -1,0 +1,32 @@
+info:
+  name: Create one DICOM instance
+  type: http
+  seq: 16
+  tags:
+    - System
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tools/create-dicom"
+  body:
+    type: json
+    data: |-
+      {
+        "Content": "",
+        "Encapsulate": false,
+        "Force": false,
+        "InterpretBinaryTags": false,
+        "Parent": "",
+        "PrivateCreator": "",
+        "Tags": {}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Create one DICOM instance, and store it into Orthanc
