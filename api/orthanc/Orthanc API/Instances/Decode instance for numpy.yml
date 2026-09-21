@@ -20,7 +20,7 @@ http:
       description: On grayscale images, apply the rescaling and return floating-point values
       disabled: true
     - name: id
-      value: ""
+      value: fd6cea7e-d5063543-e9d9bab9-129be445-8927826f
       type: path
       description: Orthanc identifier of the DICOM resource of interest
   auth: inherit

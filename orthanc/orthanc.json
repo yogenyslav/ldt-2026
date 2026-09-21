@@ -14,5 +14,6 @@
   },
   "LuaScripts": [
     "/etc/orthanc/autoroute.lua"
-  ]
+  ],
+  "DefaultEncoding" : "Utf8"
 }

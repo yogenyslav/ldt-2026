@@ -25,7 +25,7 @@ http:
       description: If present, report the DICOM tags in hexadecimal format
       disabled: true
     - name: id
-      value: ff95b7c0-d14e3e42-d642eacd-281cb07c-4e0bbc8b
+      value: d2eb3ed6-2717bed6-3149ee32-53e690c3-0e3fcb0d
       type: path
       description: Orthanc identifier of the instance of interest
   auth: inherit
