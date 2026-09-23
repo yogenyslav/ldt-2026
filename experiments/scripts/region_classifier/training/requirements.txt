@@ -1,0 +1,8 @@
+albumentations
+opencv-python-headless
+numpy
+pydicom
+torch
+torchvision
+timm
+scikit-learn

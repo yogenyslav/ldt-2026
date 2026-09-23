@@ -49,3 +49,7 @@ venv/
 # Local
 context/
 data/
+
+# CVAT-выгрузки и датасет (локально)
+dataset/
+experiments/scripts/region_classifier/annotations/
