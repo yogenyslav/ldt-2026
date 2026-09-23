@@ -58,7 +58,6 @@ def evaluate_spine(axis_angle_deg: float | None, axis_note: str, artifact_result
     confidence = float(sum(confidences) / len(confidences)) if confidences else 0.0
     return ZoneVerdict(anatomical_region='spine', quality_class=quality_class, violation_type=','.join(violations), confidence=confidence, criteria_evaluated=','.join(criteria_evaluated), criteria_missing=','.join(criteria_missing), notes='; '.join(notes))
 POSITIONING_MIN_MISSING = 2
-'Сколько из 3 точек должны быть не видны, чтобы засчитать нарушение\n"positioning". Не 1 (как логично звучит из ТЗ буквально) — у каждой точки\nсвоя ошибка модели на предсказании видимости (7-23% на честном отложенном\nтесте, см. kp_cv_summary.json), и при правиле "хотя бы одна" эти ошибки\nперемножаются: 1-0.93*0.93*0.77 ≈ 33% ложных срабатываний на НОРМАЛЬНЫХ\nбёдрах — проверено на TEST_FOLD (30 бёдер, честная сверка со сборкой всего\nпайплайна: report_full_dataset.csv vs разметка.xlsx). Порог >=2 снижает\nдолю ложных срабатываний с 13/27 до 5/27 на том же тесте, ценой recall\n(модель и так почти не ловит редкие настоящие нарушения — 1 из 3 при любом\nпороге, слишком мало данных). Порог 3 (все точки) даёт ещё меньше ложных\nсрабатываний (4/27), но это уже подгонка под n=30 — не взяли.'
 
 def evaluate_hip(side_label: str, keypoints, rotation) -> ZoneVerdict:
     criteria_evaluated = list(CRITERIA_IMPLEMENTED['hip'])
