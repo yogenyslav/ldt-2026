@@ -9,6 +9,7 @@ package dicom_worker
 import (
 	protoreflect "google.golang.org/protobuf/reflect/protoreflect"
 	protoimpl "google.golang.org/protobuf/runtime/protoimpl"
+	timestamppb "google.golang.org/protobuf/types/known/timestamppb"
 	reflect "reflect"
 	sync "sync"
 	unsafe "unsafe"
@@ -76,17 +77,68 @@ func (JobStatus) EnumDescriptor() ([]byte, []int) {
 	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{0}
 }
 
+type DicomData struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Id            int64                  `protobuf:"varint,1,opt,name=id,proto3" json:"id,omitempty"`          // UID из Orthanc (instanceID).
+	Payload       []byte                 `protobuf:"bytes,2,opt,name=payload,proto3" json:"payload,omitempty"` // Байтовое представление DICOM объекта.
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *DicomData) Reset() {
+	*x = DicomData{}
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[0]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *DicomData) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*DicomData) ProtoMessage() {}
+
+func (x *DicomData) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[0]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use DicomData.ProtoReflect.Descriptor instead.
+func (*DicomData) Descriptor() ([]byte, []int) {
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *DicomData) GetId() int64 {
+	if x != nil {
+		return x.Id
+	}
+	return 0
+}
+
+func (x *DicomData) GetPayload() []byte {
+	if x != nil {
+		return x.Payload
+	}
+	return nil
+}
+
 type ProcessDicomIn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	DicomUid      string                 `protobuf:"bytes,1,opt,name=dicom_uid,json=dicomUid,proto3" json:"dicom_uid,omitempty"`
-	DicomStudyId  string                 `protobuf:"bytes,2,opt,name=dicom_study_id,json=dicomStudyId,proto3" json:"dicom_study_id,omitempty"`
+	Dicom         *DicomData             `protobuf:"bytes,1,opt,name=dicom,proto3" json:"dicom,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ProcessDicomIn) Reset() {
 	*x = ProcessDicomIn{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[0]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[1]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -98,7 +150,7 @@ func (x *ProcessDicomIn) String() string {
 func (*ProcessDicomIn) ProtoMessage() {}
 
 func (x *ProcessDicomIn) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[0]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[1]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -111,33 +163,26 @@ func (x *ProcessDicomIn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessDicomIn.ProtoReflect.Descriptor instead.
 func (*ProcessDicomIn) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{0}
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{1}
 }
 
-func (x *ProcessDicomIn) GetDicomUid() string {
+func (x *ProcessDicomIn) GetDicom() *DicomData {
 	if x != nil {
-		return x.DicomUid
+		return x.Dicom
 	}
-	return ""
-}
-
-func (x *ProcessDicomIn) GetDicomStudyId() string {
-	if x != nil {
-		return x.DicomStudyId
-	}
-	return ""
+	return nil
 }
 
 type ProcessDicomOut struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         int64                  `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *ProcessDicomOut) Reset() {
 	*x = ProcessDicomOut{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[1]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[2]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -149,7 +194,7 @@ func (x *ProcessDicomOut) String() string {
 func (*ProcessDicomOut) ProtoMessage() {}
 
 func (x *ProcessDicomOut) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[1]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[2]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -162,81 +207,37 @@ func (x *ProcessDicomOut) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use ProcessDicomOut.ProtoReflect.Descriptor instead.
 func (*ProcessDicomOut) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{1}
-}
-
-func (x *ProcessDicomOut) GetJobId() int64 {
-	if x != nil {
-		return x.JobId
-	}
-	return 0
-}
-
-type GetJobStatusIn struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         int64                  `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetJobStatusIn) Reset() {
-	*x = GetJobStatusIn{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[2]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetJobStatusIn) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetJobStatusIn) ProtoMessage() {}
-
-func (x *GetJobStatusIn) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[2]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetJobStatusIn.ProtoReflect.Descriptor instead.
-func (*GetJobStatusIn) Descriptor() ([]byte, []int) {
 	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{2}
 }
 
-func (x *GetJobStatusIn) GetJobId() int64 {
+func (x *ProcessDicomOut) GetJobId() string {
 	if x != nil {
 		return x.JobId
 	}
-	return 0
+	return ""
 }
 
-type GetJobStatusOut struct {
+type ProcessDicomBatchIn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	Status        JobStatus              `protobuf:"varint,1,opt,name=status,proto3,enum=api.dicom.worker.JobStatus" json:"status,omitempty"`
+	Dicoms        []*DicomData           `protobuf:"bytes,1,rep,name=dicoms,proto3" json:"dicoms,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
-func (x *GetJobStatusOut) Reset() {
-	*x = GetJobStatusOut{}
+func (x *ProcessDicomBatchIn) Reset() {
+	*x = ProcessDicomBatchIn{}
 	mi := &file_proto_api_dicom_worker_proto_msgTypes[3]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetJobStatusOut) String() string {
+func (x *ProcessDicomBatchIn) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetJobStatusOut) ProtoMessage() {}
+func (*ProcessDicomBatchIn) ProtoMessage() {}
 
-func (x *GetJobStatusOut) ProtoReflect() protoreflect.Message {
+func (x *ProcessDicomBatchIn) ProtoReflect() protoreflect.Message {
 	mi := &file_proto_api_dicom_worker_proto_msgTypes[3]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -248,32 +249,75 @@ func (x *GetJobStatusOut) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetJobStatusOut.ProtoReflect.Descriptor instead.
-func (*GetJobStatusOut) Descriptor() ([]byte, []int) {
+// Deprecated: Use ProcessDicomBatchIn.ProtoReflect.Descriptor instead.
+func (*ProcessDicomBatchIn) Descriptor() ([]byte, []int) {
 	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{3}
 }
 
-func (x *GetJobStatusOut) GetStatus() JobStatus {
+func (x *ProcessDicomBatchIn) GetDicoms() []*DicomData {
 	if x != nil {
-		return x.Status
+		return x.Dicoms
 	}
-	return JobStatus_JOB_STATUS_UNSPECIFIED
+	return nil
+}
+
+type ProcessDicomBatchOut struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	JobIds        []string               `protobuf:"bytes,1,rep,name=job_ids,json=jobIds,proto3" json:"job_ids,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *ProcessDicomBatchOut) Reset() {
+	*x = ProcessDicomBatchOut{}
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[4]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *ProcessDicomBatchOut) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*ProcessDicomBatchOut) ProtoMessage() {}
+
+func (x *ProcessDicomBatchOut) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[4]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use ProcessDicomBatchOut.ProtoReflect.Descriptor instead.
+func (*ProcessDicomBatchOut) Descriptor() ([]byte, []int) {
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{4}
+}
+
+func (x *ProcessDicomBatchOut) GetJobIds() []string {
+	if x != nil {
+		return x.JobIds
+	}
+	return nil
 }
 
 type JobInfo struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         int64                  `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
-	CreatorId     int64                  `protobuf:"varint,2,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
-	DicomUid      string                 `protobuf:"bytes,3,opt,name=dicom_uid,json=dicomUid,proto3" json:"dicom_uid,omitempty"`
-	DicomStudyId  string                 `protobuf:"bytes,4,opt,name=dicom_study_id,json=dicomStudyId,proto3" json:"dicom_study_id,omitempty"`
-	Status        JobStatus              `protobuf:"varint,5,opt,name=status,proto3,enum=api.dicom.worker.JobStatus" json:"status,omitempty"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	Status        JobStatus              `protobuf:"varint,2,opt,name=status,proto3,enum=api.dicom.worker.JobStatus" json:"status,omitempty"`
+	CreatedAt     *timestamppb.Timestamp `protobuf:"bytes,3,opt,name=created_at,json=createdAt,proto3" json:"created_at,omitempty"`
+	UpdatedAt     *timestamppb.Timestamp `protobuf:"bytes,4,opt,name=updated_at,json=updatedAt,proto3" json:"updated_at,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *JobInfo) Reset() {
 	*x = JobInfo{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[4]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[5]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -285,7 +329,7 @@ func (x *JobInfo) String() string {
 func (*JobInfo) ProtoMessage() {}
 
 func (x *JobInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[4]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[5]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -298,33 +342,12 @@ func (x *JobInfo) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use JobInfo.ProtoReflect.Descriptor instead.
 func (*JobInfo) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{4}
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{5}
 }
 
-func (x *JobInfo) GetJobId() int64 {
+func (x *JobInfo) GetJobId() string {
 	if x != nil {
 		return x.JobId
-	}
-	return 0
-}
-
-func (x *JobInfo) GetCreatorId() int64 {
-	if x != nil {
-		return x.CreatorId
-	}
-	return 0
-}
-
-func (x *JobInfo) GetDicomUid() string {
-	if x != nil {
-		return x.DicomUid
-	}
-	return ""
-}
-
-func (x *JobInfo) GetDicomStudyId() string {
-	if x != nil {
-		return x.DicomStudyId
 	}
 	return ""
 }
@@ -336,16 +359,30 @@ func (x *JobInfo) GetStatus() JobStatus {
 	return JobStatus_JOB_STATUS_UNSPECIFIED
 }
 
+func (x *JobInfo) GetCreatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.CreatedAt
+	}
+	return nil
+}
+
+func (x *JobInfo) GetUpdatedAt() *timestamppb.Timestamp {
+	if x != nil {
+		return x.UpdatedAt
+	}
+	return nil
+}
+
 type GetJobInfoIn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobId         int64                  `protobuf:"varint,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
+	JobId         string                 `protobuf:"bytes,1,opt,name=job_id,json=jobId,proto3" json:"job_id,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetJobInfoIn) Reset() {
 	*x = GetJobInfoIn{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[5]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[6]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -357,7 +394,7 @@ func (x *GetJobInfoIn) String() string {
 func (*GetJobInfoIn) ProtoMessage() {}
 
 func (x *GetJobInfoIn) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[5]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[6]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -370,14 +407,14 @@ func (x *GetJobInfoIn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobInfoIn.ProtoReflect.Descriptor instead.
 func (*GetJobInfoIn) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{5}
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{6}
 }
 
-func (x *GetJobInfoIn) GetJobId() int64 {
+func (x *GetJobInfoIn) GetJobId() string {
 	if x != nil {
 		return x.JobId
 	}
-	return 0
+	return ""
 }
 
 type GetJobInfoOut struct {
@@ -389,7 +426,7 @@ type GetJobInfoOut struct {
 
 func (x *GetJobInfoOut) Reset() {
 	*x = GetJobInfoOut{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[6]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[7]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -401,7 +438,7 @@ func (x *GetJobInfoOut) String() string {
 func (*GetJobInfoOut) ProtoMessage() {}
 
 func (x *GetJobInfoOut) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[6]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[7]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -414,7 +451,7 @@ func (x *GetJobInfoOut) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobInfoOut.ProtoReflect.Descriptor instead.
 func (*GetJobInfoOut) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{6}
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{7}
 }
 
 func (x *GetJobInfoOut) GetJob() *JobInfo {
@@ -426,14 +463,14 @@ func (x *GetJobInfoOut) GetJob() *JobInfo {
 
 type GetJobInfoByIDsIn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
-	JobIds        []int64                `protobuf:"varint,1,rep,packed,name=job_ids,json=jobIds,proto3" json:"job_ids,omitempty"`
+	JobIds        []string               `protobuf:"bytes,1,rep,name=job_ids,json=jobIds,proto3" json:"job_ids,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
 
 func (x *GetJobInfoByIDsIn) Reset() {
 	*x = GetJobInfoByIDsIn{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[7]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[8]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -445,7 +482,7 @@ func (x *GetJobInfoByIDsIn) String() string {
 func (*GetJobInfoByIDsIn) ProtoMessage() {}
 
 func (x *GetJobInfoByIDsIn) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[7]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[8]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -458,10 +495,10 @@ func (x *GetJobInfoByIDsIn) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobInfoByIDsIn.ProtoReflect.Descriptor instead.
 func (*GetJobInfoByIDsIn) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{7}
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{8}
 }
 
-func (x *GetJobInfoByIDsIn) GetJobIds() []int64 {
+func (x *GetJobInfoByIDsIn) GetJobIds() []string {
 	if x != nil {
 		return x.JobIds
 	}
@@ -477,7 +514,7 @@ type GetJobInfoByIDsOut struct {
 
 func (x *GetJobInfoByIDsOut) Reset() {
 	*x = GetJobInfoByIDsOut{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[8]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[9]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -489,7 +526,7 @@ func (x *GetJobInfoByIDsOut) String() string {
 func (*GetJobInfoByIDsOut) ProtoMessage() {}
 
 func (x *GetJobInfoByIDsOut) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[8]
+	mi := &file_proto_api_dicom_worker_proto_msgTypes[9]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -502,7 +539,7 @@ func (x *GetJobInfoByIDsOut) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use GetJobInfoByIDsOut.ProtoReflect.Descriptor instead.
 func (*GetJobInfoByIDsOut) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{8}
+	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{9}
 }
 
 func (x *GetJobInfoByIDsOut) GetJob() []*JobInfo {
@@ -512,159 +549,49 @@ func (x *GetJobInfoByIDsOut) GetJob() []*JobInfo {
 	return nil
 }
 
-type GetJobsByCreatorIn struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	CreatorId     string                 `protobuf:"bytes,1,opt,name=creator_id,json=creatorId,proto3" json:"creator_id,omitempty"`
-	Offset        int64                  `protobuf:"varint,2,opt,name=offset,proto3" json:"offset,omitempty"`
-	Limit         int64                  `protobuf:"varint,3,opt,name=limit,proto3" json:"limit,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetJobsByCreatorIn) Reset() {
-	*x = GetJobsByCreatorIn{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[9]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetJobsByCreatorIn) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetJobsByCreatorIn) ProtoMessage() {}
-
-func (x *GetJobsByCreatorIn) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[9]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetJobsByCreatorIn.ProtoReflect.Descriptor instead.
-func (*GetJobsByCreatorIn) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{9}
-}
-
-func (x *GetJobsByCreatorIn) GetCreatorId() string {
-	if x != nil {
-		return x.CreatorId
-	}
-	return ""
-}
-
-func (x *GetJobsByCreatorIn) GetOffset() int64 {
-	if x != nil {
-		return x.Offset
-	}
-	return 0
-}
-
-func (x *GetJobsByCreatorIn) GetLimit() int64 {
-	if x != nil {
-		return x.Limit
-	}
-	return 0
-}
-
-type GetJobsByCreatorOut struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	Jobs          []*JobInfo             `protobuf:"bytes,1,rep,name=jobs,proto3" json:"jobs,omitempty"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetJobsByCreatorOut) Reset() {
-	*x = GetJobsByCreatorOut{}
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[10]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetJobsByCreatorOut) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetJobsByCreatorOut) ProtoMessage() {}
-
-func (x *GetJobsByCreatorOut) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_api_dicom_worker_proto_msgTypes[10]
-	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetJobsByCreatorOut.ProtoReflect.Descriptor instead.
-func (*GetJobsByCreatorOut) Descriptor() ([]byte, []int) {
-	return file_proto_api_dicom_worker_proto_rawDescGZIP(), []int{10}
-}
-
-func (x *GetJobsByCreatorOut) GetJobs() []*JobInfo {
-	if x != nil {
-		return x.Jobs
-	}
-	return nil
-}
-
 var File_proto_api_dicom_worker_proto protoreflect.FileDescriptor
 
 const file_proto_api_dicom_worker_proto_rawDesc = "" +
 	"\n" +
-	"\x1cproto/api/dicom/worker.proto\x12\x10api.dicom.worker\"S\n" +
-	"\x0eProcessDicomIn\x12\x1b\n" +
-	"\tdicom_uid\x18\x01 \x01(\tR\bdicomUid\x12$\n" +
-	"\x0edicom_study_id\x18\x02 \x01(\tR\fdicomStudyId\"(\n" +
+	"\x1cproto/api/dicom/worker.proto\x12\x10api.dicom.worker\x1a\x1fgoogle/protobuf/timestamp.proto\"5\n" +
+	"\tDicomData\x12\x0e\n" +
+	"\x02id\x18\x01 \x01(\x03R\x02id\x12\x18\n" +
+	"\apayload\x18\x02 \x01(\fR\apayload\"C\n" +
+	"\x0eProcessDicomIn\x121\n" +
+	"\x05dicom\x18\x01 \x01(\v2\x1b.api.dicom.worker.DicomDataR\x05dicom\"(\n" +
 	"\x0fProcessDicomOut\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\"'\n" +
-	"\x0eGetJobStatusIn\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\"F\n" +
-	"\x0fGetJobStatusOut\x123\n" +
-	"\x06status\x18\x01 \x01(\x0e2\x1b.api.dicom.worker.JobStatusR\x06status\"\xb7\x01\n" +
+	"\x06job_id\x18\x01 \x01(\tR\x05jobId\"J\n" +
+	"\x13ProcessDicomBatchIn\x123\n" +
+	"\x06dicoms\x18\x01 \x03(\v2\x1b.api.dicom.worker.DicomDataR\x06dicoms\"/\n" +
+	"\x14ProcessDicomBatchOut\x12\x17\n" +
+	"\ajob_ids\x18\x01 \x03(\tR\x06jobIds\"\xcb\x01\n" +
 	"\aJobInfo\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\x12\x1d\n" +
+	"\x06job_id\x18\x01 \x01(\tR\x05jobId\x123\n" +
+	"\x06status\x18\x02 \x01(\x0e2\x1b.api.dicom.worker.JobStatusR\x06status\x129\n" +
 	"\n" +
-	"creator_id\x18\x02 \x01(\x03R\tcreatorId\x12\x1b\n" +
-	"\tdicom_uid\x18\x03 \x01(\tR\bdicomUid\x12$\n" +
-	"\x0edicom_study_id\x18\x04 \x01(\tR\fdicomStudyId\x123\n" +
-	"\x06status\x18\x05 \x01(\x0e2\x1b.api.dicom.worker.JobStatusR\x06status\"%\n" +
+	"created_at\x18\x03 \x01(\v2\x1a.google.protobuf.TimestampR\tcreatedAt\x129\n" +
+	"\n" +
+	"updated_at\x18\x04 \x01(\v2\x1a.google.protobuf.TimestampR\tupdatedAt\"%\n" +
 	"\fGetJobInfoIn\x12\x15\n" +
-	"\x06job_id\x18\x01 \x01(\x03R\x05jobId\"<\n" +
+	"\x06job_id\x18\x01 \x01(\tR\x05jobId\"<\n" +
 	"\rGetJobInfoOut\x12+\n" +
 	"\x03job\x18\x01 \x01(\v2\x19.api.dicom.worker.JobInfoR\x03job\",\n" +
 	"\x11GetJobInfoByIDsIn\x12\x17\n" +
-	"\ajob_ids\x18\x01 \x03(\x03R\x06jobIds\"A\n" +
+	"\ajob_ids\x18\x01 \x03(\tR\x06jobIds\"A\n" +
 	"\x12GetJobInfoByIDsOut\x12+\n" +
-	"\x03job\x18\x01 \x03(\v2\x19.api.dicom.worker.JobInfoR\x03job\"a\n" +
-	"\x12GetJobsByCreatorIn\x12\x1d\n" +
-	"\n" +
-	"creator_id\x18\x01 \x01(\tR\tcreatorId\x12\x16\n" +
-	"\x06offset\x18\x02 \x01(\x03R\x06offset\x12\x14\n" +
-	"\x05limit\x18\x03 \x01(\x03R\x05limit\"D\n" +
-	"\x13GetJobsByCreatorOut\x12-\n" +
-	"\x04jobs\x18\x01 \x03(\v2\x19.api.dicom.worker.JobInfoR\x04jobs*\x88\x01\n" +
+	"\x03job\x18\x01 \x03(\v2\x19.api.dicom.worker.JobInfoR\x03job*\x88\x01\n" +
 	"\tJobStatus\x12\x1a\n" +
 	"\x16JOB_STATUS_UNSPECIFIED\x10\x00\x12\x16\n" +
 	"\x12JOB_STATUS_PENDING\x10\x01\x12\x16\n" +
 	"\x12JOB_STATUS_RUNNING\x10\x02\x12\x18\n" +
 	"\x14JOB_STATUS_COMPLETED\x10\x03\x12\x15\n" +
-	"\x11JOB_STATUS_FAILED\x10\x042\xd6\x03\n" +
+	"\x11JOB_STATUS_FAILED\x10\x042\x86\x03\n" +
 	"\x12DicomWorkerService\x12U\n" +
-	"\fProcessDicom\x12 .api.dicom.worker.ProcessDicomIn\x1a!.api.dicom.worker.ProcessDicomOut\"\x00\x12U\n" +
-	"\fGetJobStatus\x12 .api.dicom.worker.GetJobStatusIn\x1a!.api.dicom.worker.GetJobStatusOut\"\x00\x12O\n" +
+	"\fProcessDicom\x12 .api.dicom.worker.ProcessDicomIn\x1a!.api.dicom.worker.ProcessDicomOut\"\x00\x12h\n" +
+	"\x11ProcessDicomBatch\x12%.api.dicom.worker.ProcessDicomBatchIn\x1a&.api.dicom.worker.ProcessDicomBatchOut\"\x00(\x010\x01\x12O\n" +
 	"\n" +
 	"GetJobInfo\x12\x1e.api.dicom.worker.GetJobInfoIn\x1a\x1f.api.dicom.worker.GetJobInfoOut\"\x00\x12^\n" +
-	"\x0fGetJobInfoByIDs\x12#.api.dicom.worker.GetJobInfoByIDsIn\x1a$.api.dicom.worker.GetJobInfoByIDsOut\"\x00\x12a\n" +
-	"\x10GetJobsByCreator\x12$.api.dicom.worker.GetJobsByCreatorIn\x1a%.api.dicom.worker.GetJobsByCreatorOut\"\x00B.Z,internal/generated/dicom-worker;dicom_workerb\x06proto3"
+	"\x0fGetJobInfoByIDs\x12#.api.dicom.worker.GetJobInfoByIDsIn\x1a$.api.dicom.worker.GetJobInfoByIDsOut\"\x00B.Z,internal/generated/dicom-worker;dicom_workerb\x06proto3"
 
 var (
 	file_proto_api_dicom_worker_proto_rawDescOnce sync.Once
@@ -679,42 +606,42 @@ func file_proto_api_dicom_worker_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_api_dicom_worker_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_api_dicom_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 11)
+var file_proto_api_dicom_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 10)
 var file_proto_api_dicom_worker_proto_goTypes = []any{
-	(JobStatus)(0),              // 0: api.dicom.worker.JobStatus
-	(*ProcessDicomIn)(nil),      // 1: api.dicom.worker.ProcessDicomIn
-	(*ProcessDicomOut)(nil),     // 2: api.dicom.worker.ProcessDicomOut
-	(*GetJobStatusIn)(nil),      // 3: api.dicom.worker.GetJobStatusIn
-	(*GetJobStatusOut)(nil),     // 4: api.dicom.worker.GetJobStatusOut
-	(*JobInfo)(nil),             // 5: api.dicom.worker.JobInfo
-	(*GetJobInfoIn)(nil),        // 6: api.dicom.worker.GetJobInfoIn
-	(*GetJobInfoOut)(nil),       // 7: api.dicom.worker.GetJobInfoOut
-	(*GetJobInfoByIDsIn)(nil),   // 8: api.dicom.worker.GetJobInfoByIDsIn
-	(*GetJobInfoByIDsOut)(nil),  // 9: api.dicom.worker.GetJobInfoByIDsOut
-	(*GetJobsByCreatorIn)(nil),  // 10: api.dicom.worker.GetJobsByCreatorIn
-	(*GetJobsByCreatorOut)(nil), // 11: api.dicom.worker.GetJobsByCreatorOut
+	(JobStatus)(0),                // 0: api.dicom.worker.JobStatus
+	(*DicomData)(nil),             // 1: api.dicom.worker.DicomData
+	(*ProcessDicomIn)(nil),        // 2: api.dicom.worker.ProcessDicomIn
+	(*ProcessDicomOut)(nil),       // 3: api.dicom.worker.ProcessDicomOut
+	(*ProcessDicomBatchIn)(nil),   // 4: api.dicom.worker.ProcessDicomBatchIn
+	(*ProcessDicomBatchOut)(nil),  // 5: api.dicom.worker.ProcessDicomBatchOut
+	(*JobInfo)(nil),               // 6: api.dicom.worker.JobInfo
+	(*GetJobInfoIn)(nil),          // 7: api.dicom.worker.GetJobInfoIn
+	(*GetJobInfoOut)(nil),         // 8: api.dicom.worker.GetJobInfoOut
+	(*GetJobInfoByIDsIn)(nil),     // 9: api.dicom.worker.GetJobInfoByIDsIn
+	(*GetJobInfoByIDsOut)(nil),    // 10: api.dicom.worker.GetJobInfoByIDsOut
+	(*timestamppb.Timestamp)(nil), // 11: google.protobuf.Timestamp
 }
 var file_proto_api_dicom_worker_proto_depIdxs = []int32{
-	0,  // 0: api.dicom.worker.GetJobStatusOut.status:type_name -> api.dicom.worker.JobStatus
-	0,  // 1: api.dicom.worker.JobInfo.status:type_name -> api.dicom.worker.JobStatus
-	5,  // 2: api.dicom.worker.GetJobInfoOut.job:type_name -> api.dicom.worker.JobInfo
-	5,  // 3: api.dicom.worker.GetJobInfoByIDsOut.job:type_name -> api.dicom.worker.JobInfo
-	5,  // 4: api.dicom.worker.GetJobsByCreatorOut.jobs:type_name -> api.dicom.worker.JobInfo
-	1,  // 5: api.dicom.worker.DicomWorkerService.ProcessDicom:input_type -> api.dicom.worker.ProcessDicomIn
-	3,  // 6: api.dicom.worker.DicomWorkerService.GetJobStatus:input_type -> api.dicom.worker.GetJobStatusIn
-	6,  // 7: api.dicom.worker.DicomWorkerService.GetJobInfo:input_type -> api.dicom.worker.GetJobInfoIn
-	8,  // 8: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:input_type -> api.dicom.worker.GetJobInfoByIDsIn
-	10, // 9: api.dicom.worker.DicomWorkerService.GetJobsByCreator:input_type -> api.dicom.worker.GetJobsByCreatorIn
-	2,  // 10: api.dicom.worker.DicomWorkerService.ProcessDicom:output_type -> api.dicom.worker.ProcessDicomOut
-	4,  // 11: api.dicom.worker.DicomWorkerService.GetJobStatus:output_type -> api.dicom.worker.GetJobStatusOut
-	7,  // 12: api.dicom.worker.DicomWorkerService.GetJobInfo:output_type -> api.dicom.worker.GetJobInfoOut
-	9,  // 13: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:output_type -> api.dicom.worker.GetJobInfoByIDsOut
-	11, // 14: api.dicom.worker.DicomWorkerService.GetJobsByCreator:output_type -> api.dicom.worker.GetJobsByCreatorOut
-	10, // [10:15] is the sub-list for method output_type
-	5,  // [5:10] is the sub-list for method input_type
-	5,  // [5:5] is the sub-list for extension type_name
-	5,  // [5:5] is the sub-list for extension extendee
-	0,  // [0:5] is the sub-list for field type_name
+	1,  // 0: api.dicom.worker.ProcessDicomIn.dicom:type_name -> api.dicom.worker.DicomData
+	1,  // 1: api.dicom.worker.ProcessDicomBatchIn.dicoms:type_name -> api.dicom.worker.DicomData
+	0,  // 2: api.dicom.worker.JobInfo.status:type_name -> api.dicom.worker.JobStatus
+	11, // 3: api.dicom.worker.JobInfo.created_at:type_name -> google.protobuf.Timestamp
+	11, // 4: api.dicom.worker.JobInfo.updated_at:type_name -> google.protobuf.Timestamp
+	6,  // 5: api.dicom.worker.GetJobInfoOut.job:type_name -> api.dicom.worker.JobInfo
+	6,  // 6: api.dicom.worker.GetJobInfoByIDsOut.job:type_name -> api.dicom.worker.JobInfo
+	2,  // 7: api.dicom.worker.DicomWorkerService.ProcessDicom:input_type -> api.dicom.worker.ProcessDicomIn
+	4,  // 8: api.dicom.worker.DicomWorkerService.ProcessDicomBatch:input_type -> api.dicom.worker.ProcessDicomBatchIn
+	7,  // 9: api.dicom.worker.DicomWorkerService.GetJobInfo:input_type -> api.dicom.worker.GetJobInfoIn
+	9,  // 10: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:input_type -> api.dicom.worker.GetJobInfoByIDsIn
+	3,  // 11: api.dicom.worker.DicomWorkerService.ProcessDicom:output_type -> api.dicom.worker.ProcessDicomOut
+	5,  // 12: api.dicom.worker.DicomWorkerService.ProcessDicomBatch:output_type -> api.dicom.worker.ProcessDicomBatchOut
+	8,  // 13: api.dicom.worker.DicomWorkerService.GetJobInfo:output_type -> api.dicom.worker.GetJobInfoOut
+	10, // 14: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:output_type -> api.dicom.worker.GetJobInfoByIDsOut
+	11, // [11:15] is the sub-list for method output_type
+	7,  // [7:11] is the sub-list for method input_type
+	7,  // [7:7] is the sub-list for extension type_name
+	7,  // [7:7] is the sub-list for extension extendee
+	0,  // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_api_dicom_worker_proto_init() }
@@ -728,7 +655,7 @@ func file_proto_api_dicom_worker_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_api_dicom_worker_proto_rawDesc), len(file_proto_api_dicom_worker_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   11,
+			NumMessages:   10,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

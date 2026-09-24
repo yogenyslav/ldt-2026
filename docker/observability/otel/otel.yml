@@ -52,6 +52,19 @@ receivers:
                 service: 'grafana'
                 group: 'infrastructure'
 
+        # Scrape from the DICOM services services.
+        - job_name: 'dicom-services'
+          scrape_interval: 2s
+          static_configs:
+#            - targets: [ 'dicom-manager:10000' ]
+#              labels:
+#                service: 'dicom-manager'
+#                group: 'dicom'
+            - targets: [ 'dicom-worker:11000' ]
+              labels:
+                service: 'dicom-worker'
+                group: 'dicom'
+
 # Define processors to process received data.
 # See https://opentelemetry.io/docs/collector/configuration/#processors
 processors:

@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://raw.githubusercontent.com/oapi-codegen/oapi-codegen/v2.8.0/configuration-schema.json
 package: orthanc
-output: dicom-worker/internal/generated/orthanc/orthanc.gen.go
+output: dicom-manager/internal/generated/orthanc/orthanc.gen.go
 generate:
   models: true
   client: true

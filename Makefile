@@ -5,11 +5,15 @@ data:
 	@python3 scripts/data.py
 	@echo "unzipped data from data.zip"
 
+.PHONY: migrate-new
+migrate-new:
+	@echo "creating new migration in $(service)/migrations"
+	@mkdir -p $(service)/migrations
+	@cd $(service)/migrations && goose create $(name) sql
+
 .PHONY: generate
-generate:
+generate: proto generate-orthanc
 	@echo "running available codegens"
-	@make proto
-	@make generate-orthanc
 
 .PHONY: proto
 proto:
@@ -32,7 +36,7 @@ proto:
 .PHONY: generate-orthanc
 generate-orthanc:
 	@echo "generating orthanc client"
-	@oapi-codegen -config dicom-worker/orthanc-generator.yaml api/orthanc/orthanc.yaml
+	@oapi-codegen -config dicom-manager/orthanc-generator.yaml api/orthanc/orthanc.yaml
 
 .PHONY: run-all
 run-all: run-nats run-orthanc run-storage run-observability run-worker
