@@ -7,15 +7,14 @@ info:
 
 http:
   method: GET
-  url: "{{baseUrl}}/studies/:id/attachments"
+  url: "{{baseUrl}}/studies/:id/attachments?full="
   params:
     - name: full
       value: ""
       type: query
       description: If present, retrieve the attachments list and their numerical ids
-      disabled: true
     - name: id
-      value: ""
+      value: 872f19d1-e5bd0268-a3ac55fb-90f1eb1a-83858d19
       type: path
       description: Orthanc identifier of the study of interest
   auth: inherit

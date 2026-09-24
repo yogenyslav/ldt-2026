@@ -20,7 +20,7 @@ http:
       description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
       disabled: true
     - name: id
-      value: ""
+      value: 0061643a-2100f3a1-8e27c951-43911b9d-7f75b080
       type: path
       description: Orthanc identifier of the DICOM instance of interest
   auth: inherit

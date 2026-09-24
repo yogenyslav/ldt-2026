@@ -3,14 +3,17 @@ syntax = "proto3";
 package api.dicom.worker;
 option go_package = "internal/generated/dicom-worker;dicom_worker";
 
+import "google/protobuf/timestamp.proto";
+
 service DicomWorkerService {
+  // ProcessDicom обработка одного DICOM объекта.
   rpc ProcessDicom (ProcessDicomIn) returns (ProcessDicomOut) {}
-  rpc BatchProcessDicom (stream ProcessDicomIn) returns (stream ProcessDicomOut) {}
-  rpc GetJobStatus (GetJobStatusIn) returns (GetJobStatusOut) {}
+  // ProcessDicomBatch обработка батча DICOM объектов.
+  rpc ProcessDicomBatch (stream ProcessDicomBatchIn) returns (stream ProcessDicomBatchOut) {}
+  // GetJobInfo получение информации о джобе обработки.
   rpc GetJobInfo (GetJobInfoIn) returns (GetJobInfoOut) {}
+  // GetJobInfoByIDs получение информации о нескольких джобах обработки.
   rpc GetJobInfoByIDs (GetJobInfoByIDsIn) returns (GetJobInfoByIDsOut) {}
-  rpc GetJobsByCreator (GetJobsByCreatorIn) returns (GetJobsByCreatorOut) {}
-  rpc GetJobsByOrganisation (GetJobsByOrganisationIn) returns (GetJobsByOrganisationOut) {}
 }
 
 enum JobStatus {
@@ -21,35 +24,35 @@ enum JobStatus {
   JOB_STATUS_FAILED      = 4;
 }
 
+message DicomData {
+  string id = 1; // UID из Orthanc (instanceID).
+}
+
 message ProcessDicomIn {
-  string dicom_uid      = 1;
-  string dicom_study_id = 2;
-  int64 creator_id = 3;
-  int64 organisation_id = 4;
+  DicomData dicom = 1;
 }
 
 message ProcessDicomOut {
-  int64 job_id = 1;
+  string job_id = 1;
 }
 
-message GetJobStatusIn {
-  int64 job_id = 1;
+message ProcessDicomBatchIn {
+  repeated DicomData dicoms = 1;
 }
 
-message GetJobStatusOut {
-  JobStatus status = 1;
+message ProcessDicomBatchOut {
+  repeated string job_ids = 1;
 }
 
 message JobInfo {
-  int64     job_id         = 1;
-  int64     creator_id     = 2;
-  string    dicom_uid      = 3;
-  string    dicom_study_id = 4;
-  JobStatus status         = 5;
+  string                    job_id     = 1;
+  JobStatus                 status     = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
 }
 
 message GetJobInfoIn {
-  int64 job_id = 1;
+  string job_id = 1;
 }
 
 message GetJobInfoOut {
@@ -57,19 +60,9 @@ message GetJobInfoOut {
 }
 
 message GetJobInfoByIDsIn {
-  repeated int64 job_ids = 1;
+  repeated string job_ids = 1;
 }
 
 message GetJobInfoByIDsOut {
   repeated JobInfo job = 1;
-}
-
-message GetJobsByCreatorIn {
-  string creator_id = 1;
-  int64  offset     = 2;
-  int64  limit      = 3;
-}
-
-message GetJobsByCreatorOut {
-  repeated JobInfo jobs = 1;
 }

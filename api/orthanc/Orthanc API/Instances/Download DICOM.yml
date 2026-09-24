@@ -30,7 +30,7 @@ http:
       description: "If present, the DICOM file will be transcoded to the provided transfer syntax: https://orthanc.uclouvain.be/book/faq/transcoding.html"
       disabled: true
     - name: id
-      value: ""
+      value: fff757da-57423cee-f01c4342-3034efc5-e9453f90
       type: path
       description: Orthanc identifier of the DICOM instance of interest
   auth: inherit

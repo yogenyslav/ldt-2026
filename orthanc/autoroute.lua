@@ -1,4 +1,4 @@
-local DICOM_WORKER_URL = "http://dicom-worker:11000/dicom"
+local DICOM_WORKER_URL = "http://dicom-manager:10000/dicom"
 local HTTP_TIMEOUT_SECONDS = 5
 
 function Initialize()

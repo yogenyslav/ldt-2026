@@ -3,12 +3,12 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
-	"os"
-	"time"
 
+	"github.com/pressly/goose/v3"
+	"github.com/yogenyslav/errs"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/internal/dicomer"
 	dicom_worker "github.com/yogenyslav/ldt-2026/dicom-worker/internal/generated/dicom-worker"
+	"github.com/yogenyslav/ldt-2026/dicom-worker/migrations"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/database"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/observability"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/server"
@@ -25,7 +25,7 @@ func run() error {
 
 	obs, err := observability.New()
 	if err != nil {
-		return err
+		return errs.Wrap(err, "init observability")
 	}
 
 	defer func() {
@@ -34,42 +34,37 @@ func run() error {
 
 	db, err := database.NewPostgres(ctx)
 	if err != nil {
-		return err
+		return errs.Wrap(err, "connect to database")
 	}
 	defer db.Close()
 
+	dbConn, err := db.SQLDB()
+	if err != nil {
+		return errs.Wrap(err, "get sql db")
+	}
+	defer func() {
+		_ = dbConn.Close() //nolint:errcheck // nothing we can do
+	}()
+
+	goose.SetBaseFS(migrations.GetMigrationsFS())
+	if err = goose.SetDialect("postgres"); err != nil {
+		return errs.Wrap(err, "set goose dialect")
+	}
+	err = goose.Up(dbConn, ".")
+	if err != nil {
+		return errs.Wrap(err, "apply migrations")
+	}
+
 	srv, err := server.New(obs)
 	if err != nil {
-		return err
+		return errs.Wrap(err, "init server")
 	}
 
 	dicom_worker.RegisterDicomWorkerServiceServer(srv.GRPCServer(), &dicomer.Worker{})
 
-	port, ok := os.LookupEnv("DICOM_WORKER_PORT")
-	if !ok {
-		port = "8080"
+	if err = srv.Serve(); err != nil {
+		return errs.Wrap(err, "serve server")
 	}
-
-	http.HandleFunc(
-		"GET /health", func(w http.ResponseWriter, r *http.Request) {
-			_, span := obs.Tracing().Tracer().Start(r.Context(), "health-check")
-			defer span.End()
-
-			obs.Metrics().Counter("health_check_requests_total").Inc()
-
-			time.Sleep(1 * time.Second)
-			w.WriteHeader(http.StatusOK)
-			_, _ = w.Write([]byte("OK"))
-
-			obs.Logger().Info().Msg("Health check request processed")
-		},
-	)
-
-	http.ListenAndServe(":"+port, nil)
-
-	// if err = srv.Serve(); err != nil {
-	// 	return err
-	// }
 
 	return nil
 }
