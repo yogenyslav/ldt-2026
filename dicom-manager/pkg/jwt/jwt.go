@@ -5,9 +5,9 @@ import (
 	"errors"
 	"time"
 
-	"github.com/golang-jwt/jwt/v5"
+	"github.com/golang-jwt/jwt/v4"
 	"github.com/yogenyslav/errs"
-	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/secure"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/secure"
 )
 
 // TypeBearerToken константа, представляющая тип токена "Bearer".

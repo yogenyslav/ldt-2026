@@ -15,6 +15,7 @@ create table if not exists analyzer_job_results
     confidence        double precision         not null default 0,                -- уверенность в результатах анализа от 0 до 1
     violations        text[]                   not null default array []::text[], -- типы нарушений по критериям
     duration_ms       integer                  not null default 0,                -- время обработки в миллисекундах
+    metadata          jsonb                    not null default '{}'::jsonb,      -- дополнительные данные
     created_at        timestamp with time zone not null default now()
 );
 
