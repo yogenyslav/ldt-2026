@@ -5,7 +5,7 @@ import (
 
 	jwtwire "github.com/golang-jwt/jwt/v5"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
-	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/jwt"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )

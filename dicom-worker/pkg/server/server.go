@@ -7,11 +7,8 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/auth"
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/yogenyslav/errs"
-	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -30,12 +27,6 @@ type Server struct {
 
 // New создает новый экземпляр сервера.
 func New(obs *observability.Observability) (*Server, error) {
-	var jwtConfig jwt.Config
-	if err := cleanenv.ReadEnv(&jwtConfig); err != nil {
-		return nil, errs.Wrap(err, "parse jwt config from env")
-	}
-	jwtProvider := jwt.New(jwtConfig)
-
 	logOpts := []logging.Option{
 		logging.WithLogOnEvents(logging.StartCall), logging.WithLogOnEvents(logging.FinishCall),
 	}
@@ -43,7 +34,6 @@ func New(obs *observability.Observability) (*Server, error) {
 	grpcOpts := []grpc.ServerOption{
 		grpc.ChainUnaryInterceptor(
 			logging.UnaryServerInterceptor(LoggerInterceptor(obs.Logger()), logOpts...),
-			auth.UnaryServerInterceptor(AuthInterceptor(jwtProvider)),
 		),
 		grpc.StatsHandler(otelgrpc.NewServerHandler(otelgrpc.WithTracerProvider(obs.Tracing().Provider()))),
 	}

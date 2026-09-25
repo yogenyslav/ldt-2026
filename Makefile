@@ -2,6 +2,11 @@
 run-all: run-nats run-orthanc run-storage
 	@echo "starting all services"
 
+.PHONY: swag
+swag:
+	@echo "generating swagger docs"
+	@cd dicom-manager && swag fmt && swag init -g cmd/service/main.go -o docs
+
 .PHONY: migrate-new
 migrate-new:
 	@echo "creating new migration in $(service)/migrations"
