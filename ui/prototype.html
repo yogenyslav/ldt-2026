@@ -1,0 +1,1790 @@
+<title>Контроль укладки ДРА</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap">
+
+<style>
+/* ============================================================
+   Контроль укладки ДРА — прототип двух интерфейсов
+   Палитра: синий ЦДиТ (CMYK 100/60/0/0 из методических
+   рекомендаций НПКЦ ДиТ) + московский красный только в знаке.
+   Серии графиков проверены валидатором палитр.
+   ============================================================ */
+
+:root{
+  color-scheme: light;
+
+  /* бренд */
+  --brand-900:#071F3F;
+  --brand-800:#0A2E58;
+  --brand-700:#0E4A86;
+  --brand:#1266AE;
+  --brand-300:#7FB3DC;
+  --brand-100:#DCEAF7;
+  --brand-050:#EFF6FC;
+  --moscow:#D8232A;
+
+  /* нейтральные с синим уклоном */
+  --bg:#EEF2F7;
+  --surface:#FFFFFF;
+  --surface-2:#F6F9FC;
+  --surface-3:#E7EEF6;
+  --line:#D5DFEC;
+  --line-strong:#B9C9DD;
+  --ink:#0D2440;
+  --ink-2:#3C5675;
+  --muted:#6E87A6;
+
+  /* статусы — зарезервированы, не используются как серии */
+  --ok:#12805A;      --ok-bg:#E3F5EC;   --ok-line:#9FD9BF;
+  --warn:#9A6400;    --warn-bg:#FCF1DC; --warn-line:#E5C07A;
+  --bad:#B3261E;     --bad-bg:#FBE9E7;  --bad-line:#EDA9A2;
+  --dead:#5A6B7F;    --dead-bg:#EDF1F5; --dead-line:#C3CEDA;
+
+  /* серии графиков (light) */
+  --s1:#1266AE;
+  --s2:#0E9B7C;
+  --grid:#E3EAF3;
+
+  /* снимок */
+  --scan-bg:#0B1420;
+  --scan-1:#1E3347;
+  --scan-2:#4E6C85;
+  --scan-3:#9FB6C9;
+  --scan-4:#E4EDF4;
+
+  --radius:14px;
+  --radius-sm:9px;
+  --shadow:0 1px 2px rgba(13,36,64,.06), 0 8px 24px -14px rgba(13,36,64,.28);
+  --font:"Golos Text","PT Sans","Segoe UI",system-ui,-apple-system,sans-serif;
+  --mono:"JetBrains Mono","SFMono-Regular",Consolas,"Liberation Mono",monospace;
+}
+
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]){
+    color-scheme: dark;
+    --brand-900:#050E1A; --brand-800:#0A1B2E; --brand-700:#13537F;
+    --brand:#4691D6; --brand-300:#2C6E9F; --brand-100:#16324B; --brand-050:#132435;
+    --moscow:#F06A63;
+    --bg:#0A1421; --surface:#12202F; --surface-2:#172A3D; --surface-3:#1E3348;
+    --line:#263B52; --line-strong:#375070;
+    --ink:#E6EDF6; --ink-2:#BACCE0; --muted:#8FA5C0;
+    --ok:#4FBE90;   --ok-bg:#12312A;   --ok-line:#2D6B55;
+    --warn:#E0AE4E; --warn-bg:#332812; --warn-line:#7A5E23;
+    --bad:#F08B81;  --bad-bg:#3A1D1C;  --bad-line:#7E3B36;
+    --dead:#93A6BB; --dead-bg:#1B2938; --dead-line:#33475E;
+    --s1:#4691D6; --s2:#0B8C6D;
+    --grid:#213348;
+    --scan-bg:#05090F; --scan-1:#16283A; --scan-2:#40596F; --scan-3:#8AA2B8; --scan-4:#D9E6F0;
+    --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme: dark;
+  --brand-900:#050E1A; --brand-800:#0A1B2E; --brand-700:#13537F;
+  --brand:#4691D6; --brand-300:#2C6E9F; --brand-100:#16324B; --brand-050:#132435;
+  --moscow:#F06A63;
+  --bg:#0A1421; --surface:#12202F; --surface-2:#172A3D; --surface-3:#1E3348;
+  --line:#263B52; --line-strong:#375070;
+  --ink:#E6EDF6; --ink-2:#BACCE0; --muted:#8FA5C0;
+  --ok:#4FBE90;   --ok-bg:#12312A;   --ok-line:#2D6B55;
+  --warn:#E0AE4E; --warn-bg:#332812; --warn-line:#7A5E23;
+  --bad:#F08B81;  --bad-bg:#3A1D1C;  --bad-line:#7E3B36;
+  --dead:#93A6BB; --dead-bg:#1B2938; --dead-line:#33475E;
+  --s1:#4691D6; --s2:#0B8C6D;
+  --grid:#213348;
+  --scan-bg:#05090F; --scan-1:#16283A; --scan-2:#40596F; --scan-3:#8AA2B8; --scan-4:#D9E6F0;
+  --shadow:0 1px 2px rgba(0,0,0,.4), 0 10px 28px -16px rgba(0,0,0,.8);
+}
+
+*,*::before,*::after{box-sizing:border-box}
+body{
+  margin:0; background:var(--bg); color:var(--ink);
+  font-family:var(--font); font-size:15px; line-height:1.5;
+  -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0; text-wrap:balance; font-weight:700; letter-spacing:-.01em}
+p{margin:0}
+button{font:inherit; color:inherit; cursor:pointer}
+table{border-collapse:collapse; width:100%}
+:focus-visible{outline:2px solid var(--brand); outline-offset:2px; border-radius:4px}
+@media (prefers-reduced-motion: reduce){
+  *{animation-duration:.001ms !important; transition-duration:.001ms !important}
+}
+.mono{font-family:var(--mono); font-variant-numeric:tabular-nums}
+.num{font-variant-numeric:tabular-nums}
+
+/* ---------- шапка ---------- */
+.topbar{
+  position:sticky; top:env(safe-area-inset-top,0px); z-index:40;
+  background:var(--brand-900); color:#EAF2FA;
+  border-bottom:1px solid rgba(255,255,255,.08);
+}
+.topbar-in{
+  max-width:1560px; margin:0 auto; padding:10px 20px;
+  display:flex; align-items:center; gap:18px; flex-wrap:wrap;
+}
+.lockup{display:flex; align-items:center; gap:11px; min-width:0}
+.mark{
+  width:34px; height:34px; border-radius:8px; flex:none;
+  background:linear-gradient(150deg,var(--moscow) 0 48%, #FFFFFF 48% 52%, #1266AE 52% 100%);
+  box-shadow:inset 0 0 0 1px rgba(255,255,255,.22);
+}
+.lockup-txt{display:flex; flex-direction:column; line-height:1.15; min-width:0}
+.lockup-txt b{font-size:15px; font-weight:700; letter-spacing:-.015em; white-space:nowrap}
+.lockup-txt span{font-size:11px; color:#93B4D4; letter-spacing:.04em; text-transform:uppercase}
+.topbar-spacer{flex:1 1 auto}
+.seg{display:flex; background:rgba(255,255,255,.09); border-radius:10px; padding:3px; gap:3px}
+.seg button{
+  border:0; background:transparent; color:#BFD6EC; padding:7px 14px;
+  border-radius:8px; font-size:13.5px; font-weight:600; white-space:nowrap;
+}
+.seg button[aria-pressed="true"]{background:#FFFFFF; color:var(--brand-900)}
+.chip-demo{
+  font-size:11px; font-weight:700; letter-spacing:.09em; padding:5px 9px;
+  border-radius:6px; background:rgba(216,35,42,.16); color:#FF9E9A;
+  border:1px solid rgba(216,35,42,.4); white-space:nowrap;
+}
+.icon-btn{
+  border:1px solid rgba(255,255,255,.18); background:transparent; color:#D6E6F6;
+  width:34px; height:34px; border-radius:9px; display:grid; place-items:center; font-size:15px;
+}
+.icon-btn:hover{background:rgba(255,255,255,.1)}
+
+/* ---------- каркас ---------- */
+.wrap{max-width:1560px; margin:0 auto; padding-inline:16px; padding-block:18px 48px}
+.note{
+  background:var(--brand-050); border:1px solid var(--line); border-left:3px solid var(--brand);
+  border-radius:var(--radius-sm); padding:11px 14px; font-size:13px; color:var(--ink-2);
+}
+.note b{color:var(--ink)}
+.eyebrow{
+  font-size:11px; font-weight:700; letter-spacing:.1em; text-transform:uppercase; color:var(--muted);
+}
+.card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius)}
+.pad{padding:18px}
+
+/* ---------- ПОСТ (фронт A) ---------- */
+.demo-rail{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  padding:10px 12px; margin-bottom:14px;
+  background:var(--surface-2); border:1px dashed var(--line-strong); border-radius:var(--radius-sm);
+}
+.demo-rail .eyebrow{margin-right:4px}
+.dbtn{
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-2);
+  padding:6px 11px; border-radius:99px; font-size:12.5px; font-weight:600;
+}
+.dbtn[aria-pressed="true"]{background:var(--brand); border-color:var(--brand); color:#fff}
+.dbtn.primary{background:var(--brand-700); border-color:var(--brand-700); color:#fff}
+
+.post{
+  border-radius:var(--radius); overflow:hidden; border:1px solid var(--line);
+  background:var(--surface); box-shadow:var(--shadow);
+}
+.post-head{
+  display:flex; align-items:center; gap:14px; flex-wrap:wrap;
+  padding:11px 18px; background:var(--brand-800); color:#DCEBF9; font-size:13.5px;
+}
+.post-head .sep{opacity:.4}
+.live{display:inline-flex; align-items:center; gap:7px; font-weight:600}
+.live i{width:9px; height:9px; border-radius:50%; background:#37D399; display:block; flex:none}
+.live.off i{background:#F0A58B}
+.post-body{display:grid; grid-template-columns:minmax(0,1fr) minmax(320px,.82fr)}
+.scan-pane{
+  position:relative; background:var(--scan-bg); padding:18px;
+  display:flex; flex-direction:column; gap:12px; min-height:440px;
+}
+.scan-holder{flex:1; display:flex; align-items:center; justify-content:center; gap:16px}
+.ba-grid{
+  display:grid; grid-template-columns:1fr 1fr; gap:14px; width:100%; align-items:stretch;
+}
+.ba-cell{
+  display:flex; flex-direction:column; gap:9px; min-width:0;
+  border:1px solid rgba(255,255,255,.13); border-radius:10px; padding:11px;
+  background:rgba(255,255,255,.035);
+}
+.ba-cell.now{border-color:rgba(95,200,245,.45); background:rgba(95,200,245,.07)}
+.ba-top{display:flex; align-items:center; gap:7px; min-height:30px}
+.ba-title{font-size:12px; font-weight:700; color:#CFE0F0; letter-spacing:.03em; flex:1; text-align:center}
+.ba-arrow{
+  border:1px solid rgba(255,255,255,.2); background:rgba(255,255,255,.06); color:#DCE9F5;
+  width:28px; height:28px; border-radius:8px; display:grid; place-items:center; font-size:15px; flex:none;
+}
+.ba-arrow:disabled{opacity:.3; cursor:default}
+.ba-cell svg{width:100%; height:auto; border-radius:7px; box-shadow:0 0 0 1px rgba(255,255,255,.09); display:block}
+.ba-verdict{
+  display:flex; align-items:center; gap:7px; font-size:12.5px; font-weight:700;
+  padding:6px 9px; border-radius:8px; border:1px solid;
+}
+.ba-verdict.ok{color:#6FE0AE; border-color:rgba(111,224,174,.4); background:rgba(111,224,174,.1)}
+.ba-verdict.warn{color:#F4C56B; border-color:rgba(244,197,107,.4); background:rgba(244,197,107,.1)}
+.ba-verdict.bad{color:#F5A199; border-color:rgba(245,161,153,.4); background:rgba(245,161,153,.1)}
+.ba-verdict.dead{color:#A8BACD; border-color:rgba(168,186,205,.35); background:rgba(168,186,205,.08)}
+.ba-accept{
+  border:1px solid rgba(255,255,255,.28); background:rgba(255,255,255,.1); color:#EAF3FB;
+  padding:8px 10px; border-radius:8px; font-size:12.5px; font-weight:600; margin-top:auto;
+}
+.ba-accept:hover{background:rgba(255,255,255,.18)}
+.ba-accept[data-on="true"]{background:#3FD9A8; border-color:#3FD9A8; color:#06251B}
+.ba-dots{display:flex; gap:5px; justify-content:center}
+.ba-dots i{width:6px; height:6px; border-radius:50%; background:rgba(255,255,255,.28); display:block}
+.ba-dots i[data-on="true"]{background:#5FC8F5; transform:scale(1.35)}
+@media (max-width:520px){
+  .ba-grid{gap:8px}
+  .ba-cell{padding:7px; gap:6px}
+  .ba-title{font-size:10.5px}
+  .ba-arrow{width:24px; height:24px; font-size:13px}
+  .ba-verdict{font-size:11px; padding:5px 6px}
+  .ba-accept{font-size:11px; padding:7px 6px}
+}
+.scan-fig{display:flex; flex-direction:column; gap:7px; align-items:center}
+.scan-fig figcaption{font-size:11.5px; color:#8FA8C0; letter-spacing:.04em}
+.scan-fig svg, .viewer svg, .case .art svg{background:var(--scan-bg)}
+.scan-fig svg{
+  width:100%; max-width:260px; height:auto; border-radius:8px;
+  box-shadow:0 0 0 1px rgba(255,255,255,.09);
+}
+.scan-tools{display:flex; gap:8px; flex-wrap:wrap}
+.tool{
+  border:1px solid rgba(255,255,255,.18); background:rgba(255,255,255,.05); color:#CFE0F0;
+  padding:6px 12px; border-radius:99px; font-size:12.5px; font-weight:600;
+}
+.tool[aria-pressed="true"]{background:#fff; color:var(--brand-900); border-color:#fff}
+.scan-legend{
+  display:flex; gap:14px; flex-wrap:wrap; font-size:11.5px; color:#9DB4CA;
+}
+.scan-legend span{display:inline-flex; align-items:center; gap:6px}
+.scan-legend i{width:14px; height:3px; border-radius:2px; display:block}
+
+.verdict-pane{display:flex; flex-direction:column; padding:18px; gap:16px; min-width:0}
+.verdict{
+  border-radius:12px; padding:20px; border:2px solid; display:flex; flex-direction:column; gap:6px;
+}
+.verdict .big{font-size:clamp(28px,4.4vw,40px); font-weight:800; letter-spacing:-.025em; line-height:1.05}
+.verdict .sub{font-size:14px; font-weight:600; opacity:.9}
+.verdict.ok{background:var(--ok-bg); border-color:var(--ok-line); color:var(--ok)}
+.verdict.warn{background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn)}
+.verdict.bad{background:var(--bad-bg); border-color:var(--bad-line); color:var(--bad)}
+.verdict.dead{background:var(--dead-bg); border-color:var(--dead-line); color:var(--dead)}
+.verdict-icon{font-size:26px; line-height:1}
+
+.ctx{font-size:13.5px; color:var(--muted); display:flex; gap:8px; flex-wrap:wrap; align-items:center}
+.ctx b{color:var(--ink); font-weight:600}
+
+.steps{display:flex; flex-direction:column; gap:12px; margin:0; padding:0; list-style:none}
+.step{display:grid; grid-template-columns:26px minmax(0,1fr); gap:11px; align-items:start}
+.step-n{
+  width:26px; height:26px; border-radius:8px; background:var(--brand-100); color:var(--brand-700);
+  display:grid; place-items:center; font-weight:700; font-size:13px;
+}
+.step-what{font-weight:600; font-size:15px; color:var(--ink)}
+.step-do{font-size:14.5px; color:var(--ink-2); margin-top:3px}
+.step-do::before{content:"→ "; color:var(--brand); font-weight:700}
+
+.acts{display:flex; gap:10px; flex-wrap:wrap; margin-top:auto; padding-top:6px}
+.btn{
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink);
+  padding:11px 18px; border-radius:10px; font-weight:600; font-size:14.5px;
+}
+.btn:hover{background:var(--surface-2)}
+.btn.primary{background:var(--brand); border-color:var(--brand); color:#fff}
+.btn.primary:hover{background:var(--brand-700)}
+.btn.ghost{border-style:dashed; color:var(--ink-2)}
+.btn.sm{padding:7px 13px; font-size:13px; border-radius:8px}
+
+.post-foot{
+  display:flex; gap:16px; flex-wrap:wrap; align-items:center; justify-content:space-between;
+  padding:11px 18px; background:var(--surface-2); border-top:1px solid var(--line);
+  font-size:13px; color:var(--ink-2);
+}
+.report-line{
+  font-family:var(--mono); font-size:11.5px; color:var(--muted);
+  background:var(--surface-3); border-radius:6px; padding:4px 9px;
+  overflow-x:auto; white-space:nowrap; max-width:100%;
+}
+.progress{height:3px; background:rgba(255,255,255,.14); border-radius:2px; overflow:hidden}
+.progress i{display:block; height:100%; background:#5FC8F5; width:0%; transition:width .12s linear}
+
+/* ---------- ЦЕНТР (фронт B) ---------- */
+.console{display:grid; grid-template-columns:232px minmax(0,1fr); gap:18px; align-items:start}
+.side{
+  position:sticky; top:calc(env(safe-area-inset-top,0px) + 70px);
+  background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:10px;
+}
+.side nav{display:flex; flex-direction:column; gap:2px}
+.side button{
+  border:0; background:transparent; text-align:left; padding:9px 11px; border-radius:9px;
+  font-size:14px; font-weight:600; color:var(--ink-2); display:flex; gap:9px; align-items:center;
+}
+.side button:hover{background:var(--surface-2)}
+.side button[aria-current="true"]{background:var(--brand-100); color:var(--brand-700)}
+.side .kbd{
+  margin-left:auto; font-family:var(--mono); font-size:10.5px; color:var(--muted);
+  border:1px solid var(--line); border-radius:4px; padding:0 4px;
+}
+.side-foot{border-top:1px solid var(--line); margin-top:10px; padding:11px; font-size:11.5px; color:var(--muted)}
+
+.panel{display:flex; flex-direction:column; gap:16px; min-width:0}
+.panel-head{display:flex; gap:14px; align-items:flex-end; flex-wrap:wrap; justify-content:space-between}
+.panel-head h2{font-size:21px}
+.panel-head p{font-size:13.5px; color:var(--muted); margin-top:3px; max-width:68ch}
+
+.filters{display:flex; gap:7px; flex-wrap:wrap; align-items:center}
+.fchip{
+  border:1px solid var(--line-strong); background:var(--surface); color:var(--ink-2);
+  padding:6px 12px; border-radius:99px; font-size:13px; font-weight:600;
+}
+.fchip[aria-pressed="true"]{background:var(--ink); border-color:var(--ink); color:var(--surface)}
+.fchip .cnt{opacity:.65; font-variant-numeric:tabular-nums; margin-left:5px}
+
+.tbl-scroll{overflow-x:auto; border:1px solid var(--line); border-radius:var(--radius); background:var(--surface)}
+table.grid{font-size:13.5px; min-width:860px}
+table.grid th{
+  text-align:left; font-size:11px; letter-spacing:.07em; text-transform:uppercase; color:var(--muted);
+  font-weight:700; padding:11px 12px; border-bottom:1px solid var(--line); white-space:nowrap;
+  background:var(--surface-2); position:sticky; top:0;
+}
+table.grid td{padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:middle}
+table.grid tbody tr:last-child td{border-bottom:0}
+table.grid tbody tr{cursor:pointer}
+table.grid tbody tr:hover{background:var(--brand-050)}
+table.grid tbody tr[aria-selected="true"]{background:var(--brand-100)}
+.sev{width:4px; padding:0 !important}
+.sev-i{display:block; width:4px; height:34px; border-radius:2px}
+
+.pill{
+  display:inline-flex; align-items:center; gap:6px; padding:3px 9px; border-radius:99px;
+  font-size:12px; font-weight:700; border:1px solid; white-space:nowrap;
+}
+.pill.ok{background:var(--ok-bg); border-color:var(--ok-line); color:var(--ok)}
+.pill.warn{background:var(--warn-bg); border-color:var(--warn-line); color:var(--warn)}
+.pill.bad{background:var(--bad-bg); border-color:var(--bad-line); color:var(--bad)}
+.pill.dead{background:var(--dead-bg); border-color:var(--dead-line); color:var(--dead)}
+.pill.flat{background:var(--surface-2); border-color:var(--line); color:var(--ink-2); font-weight:600}
+.vio{display:flex; gap:5px; flex-wrap:wrap}
+.tag{
+  font-size:11.5px; padding:2px 8px; border-radius:6px; background:var(--surface-3);
+  color:var(--ink-2); border:1px solid var(--line); white-space:nowrap;
+}
+.dispute{color:var(--warn); font-weight:700; font-size:12px; white-space:nowrap}
+
+/* карточка исследования */
+.study{display:grid; grid-template-columns:minmax(0,1.05fr) minmax(300px,.95fr); gap:16px; align-items:start}
+.viewer{background:var(--scan-bg); border-radius:var(--radius); padding:16px; display:flex; flex-direction:column; gap:12px}
+.layers{display:flex; gap:7px; flex-wrap:wrap}
+.crit{display:flex; flex-direction:column; gap:0}
+.crit-row{
+  display:grid; grid-template-columns:minmax(0,1fr) auto auto; gap:12px; align-items:center;
+  padding:11px 0; border-bottom:1px solid var(--line);
+}
+.crit-row:last-child{border-bottom:0}
+.crit-name{font-weight:600; font-size:14px}
+.crit-sub{font-size:12.5px; color:var(--muted)}
+.crit-val{font-family:var(--mono); font-size:14px; font-weight:500; white-space:nowrap}
+.kv{display:grid; grid-template-columns:auto minmax(0,1fr); gap:6px 14px; font-size:13px}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0; font-family:var(--mono); font-size:12.5px; word-break:break-all}
+.clin{border:1px solid var(--warn-line); background:var(--warn-bg); border-radius:var(--radius-sm); padding:13px}
+.clin h4{font-size:13.5px; color:var(--warn); margin-bottom:7px}
+.clin ul{margin:0; padding-left:18px; font-size:13px; color:var(--ink-2); display:flex; flex-direction:column; gap:5px}
+.clin .foot{font-size:11.5px; color:var(--muted); margin-top:9px}
+
+/* редактор */
+.editor{display:grid; grid-template-columns:minmax(0,1fr) minmax(280px,.72fr); gap:16px; align-items:start}
+.handle{cursor:grab; touch-action:none}
+.handle:active{cursor:grabbing}
+.readout{
+  display:flex; flex-direction:column; gap:4px; padding:14px; border-radius:var(--radius-sm);
+  border:1px solid var(--line); background:var(--surface-2);
+}
+.readout .v{font-family:var(--mono); font-size:34px; font-weight:700; letter-spacing:-.02em; line-height:1}
+.slider{width:100%; accent-color:var(--brand)}
+
+/* батч */
+.drop{
+  border:2px dashed var(--line-strong); border-radius:var(--radius); padding:30px 18px;
+  text-align:center; background:var(--surface-2); color:var(--muted); font-size:14px;
+}
+.bar{height:10px; border-radius:99px; background:var(--surface-3); overflow:hidden}
+.bar i{display:block; height:100%; background:var(--brand); width:0%; transition:width .1s linear}
+
+/* аналитика */
+.tiles{display:grid; grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); gap:12px}
+.tile{padding:16px; border-radius:var(--radius); border:1px solid var(--line); background:var(--surface)}
+.tile .lab{font-size:12.5px; color:var(--muted); font-weight:600}
+.tile .val{font-size:30px; font-weight:800; letter-spacing:-.03em; margin-top:5px; font-variant-numeric:tabular-nums}
+.tile .hint{font-size:12px; color:var(--muted); margin-top:3px}
+.tile.accent{background:var(--brand-050); border-color:var(--brand-300)}
+.tile.accent .val{color:var(--brand)}
+.charts{display:grid; grid-template-columns:repeat(auto-fit,minmax(330px,1fr)); gap:16px}
+.chart-card{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); padding:16px; min-width:0}
+.chart-card h3{font-size:15px}
+.chart-card .cap{font-size:12.5px; color:var(--muted); margin-top:3px}
+.chart-wrap{position:relative; margin-top:14px}
+.chart-wrap svg{width:100%; height:auto; display:block; overflow:visible}
+.legend{display:flex; gap:14px; flex-wrap:wrap; font-size:12.5px; color:var(--ink-2); margin-top:10px}
+.legend span{display:inline-flex; align-items:center; gap:6px}
+.legend i{width:12px; height:3px; border-radius:2px; display:block}
+.tip{
+  position:absolute; pointer-events:none; z-index:5; background:var(--surface);
+  border:1px solid var(--line-strong); border-radius:8px; padding:7px 10px; font-size:12.5px;
+  box-shadow:var(--shadow); white-space:nowrap; transform:translate(-50%,-115%); opacity:0; transition:opacity .1s;
+}
+.tip b{font-variant-numeric:tabular-nums}
+.tbl-mini{font-size:12.5px; margin-top:12px}
+.tbl-mini th,.tbl-mini td{padding:5px 8px; border-bottom:1px solid var(--line); text-align:right}
+.tbl-mini th:first-child,.tbl-mini td:first-child{text-align:left}
+.tbl-mini th{color:var(--muted); font-size:11px; text-transform:uppercase; letter-spacing:.06em}
+
+/* кейсы */
+.cases{display:grid; grid-template-columns:repeat(auto-fit,minmax(250px,1fr)); gap:14px}
+.case{background:var(--surface); border:1px solid var(--line); border-radius:var(--radius); overflow:hidden; display:flex; flex-direction:column}
+.case .art{background:var(--scan-bg); padding:12px; display:grid; place-items:center}
+.case .art svg{width:100%; max-width:150px; height:auto}
+.case .txt{padding:13px; display:flex; flex-direction:column; gap:6px}
+.case h4{font-size:14px}
+.case p{font-size:12.5px; color:var(--ink-2)}
+.case .norm{font-family:var(--mono); font-size:11.5px; color:var(--muted)}
+
+/* служебное */
+.health{display:flex; flex-direction:column; gap:0}
+.health-row{display:flex; align-items:center; gap:10px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px}
+.health-row:last-child{border-bottom:0}
+.health-row .nm{font-weight:600}
+.health-row .mt{margin-left:auto; font-family:var(--mono); font-size:12px; color:var(--muted)}
+.dot{width:8px; height:8px; border-radius:50%; flex:none}
+
+.toast{
+  position:fixed; left:50%; bottom:22px; transform:translateX(-50%) translateY(12px);
+  background:var(--ink); color:var(--surface); padding:11px 18px; border-radius:10px;
+  font-size:13.5px; box-shadow:var(--shadow); opacity:0; pointer-events:none; transition:.18s; z-index:80;
+  max-width:calc(100vw - 32px); text-align:center;
+}
+.toast.on{opacity:1; transform:translateX(-50%) translateY(0)}
+
+.footer{
+  margin-top:34px; padding-top:18px; border-top:1px solid var(--line);
+  font-size:12.5px; color:var(--muted); display:flex; gap:16px; flex-wrap:wrap; justify-content:space-between;
+}
+
+@media (max-width: 1080px){
+  .console{grid-template-columns:1fr}
+  .side{position:static}
+  .side nav{flex-direction:row; overflow-x:auto; gap:4px}
+  .side button{white-space:nowrap}
+  .side .kbd{display:none}
+  .study,.editor{grid-template-columns:1fr}
+}
+@media (max-width: 760px){
+  .post-body{grid-template-columns:1fr}
+  .scan-pane{min-height:0}
+  .verdict .big{font-size:30px}
+}
+</style>
+
+<header class="topbar">
+  <div class="topbar-in">
+    <div class="lockup">
+      <div class="mark" aria-hidden="true"></div>
+      <div class="lockup-txt">
+        <b>Контроль укладки ДРА</b>
+        <span>денситометрия · контроль качества</span>
+      </div>
+    </div>
+    <div class="topbar-spacer"></div>
+    <div class="seg" role="group" aria-label="Выбор интерфейса">
+      <button id="nav-post" aria-pressed="true">Пост лаборанта</button>
+      <button id="nav-center" aria-pressed="false">Центр обработки</button>
+    </div>
+    <span class="chip-demo">ПРОТОТИП · ДЕМО-ДАННЫЕ</span>
+    <button class="icon-btn" id="theme-btn" title="Светлая / тёмная тема" aria-label="Переключить тему">◐</button>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ ФРОНТ A ============ -->
+  <section id="view-post">
+    <div class="demo-rail">
+      <span class="eyebrow">Сценарий демо</span>
+      <button class="dbtn" data-case="ok" aria-pressed="true">Корректно</button>
+      <button class="dbtn" data-case="spine-bad" aria-pressed="false">Ось + укладка</button>
+      <button class="dbtn" data-case="artifact" aria-pressed="false">Посторонний предмет</button>
+      <button class="dbtn" data-case="hip-warn" aria-pressed="false">Ротация — сомнительно</button>
+      <button class="dbtn" data-case="hip-roi" aria-pressed="false">Область интереса</button>
+      <button class="dbtn" data-case="offline" aria-pressed="false">Сервис недоступен</button>
+      <span style="flex:1"></span>
+      <button class="dbtn" id="series">Серия из 3 попыток</button>
+      <button class="dbtn primary" id="simulate">▶ Пришёл новый снимок</button>
+    </div>
+
+    <div class="post">
+      <div class="post-head">
+        <span><b>Кабинет 3</b></span><span class="sep">·</span>
+        <span>GE Lunar Prodigy Advance</span><span class="sep">·</span>
+        <span>enCORE 18.41.005</span><span class="sep">·</span>
+        <span>Смена: Иванова А. П.</span>
+        <span style="flex:1"></span>
+        <span class="live" id="live-badge"><i></i> связь есть</span>
+        <span class="mono" id="clock">14:22</span>
+      </div>
+      <div class="progress" aria-hidden="true"><i id="prog"></i></div>
+
+      <div class="post-body">
+        <div class="scan-pane">
+          <div class="scan-holder" id="scan-holder"></div>
+          <div class="scan-legend" id="scan-legend"></div>
+          <div class="scan-tools">
+            <button class="tool" id="t-overlay" aria-pressed="true">Подсказка на снимке</button>
+            <button class="tool" id="t-target" aria-pressed="true">Контур «как надо»</button>
+            <button class="tool" id="t-ba" aria-pressed="false">Сравнить попытки</button>
+          </div>
+        </div>
+
+        <div class="verdict-pane">
+          <div class="verdict" id="verdict">
+            <div class="verdict-icon" id="v-icon">✓</div>
+            <div class="big" id="v-big">КОРРЕКТНО</div>
+            <div class="sub" id="v-sub">Поясничный отдел · всё в порядке</div>
+          </div>
+          <div class="ctx" id="v-ctx"></div>
+          <ol class="steps" id="steps"></ol>
+          <div class="acts" id="acts"></div>
+        </div>
+      </div>
+
+      <div class="post-foot">
+        <span>Сегодня: <b class="num">24</b> исследования · <b class="num">3</b> пересняты · пропущенного брака нет</span>
+        <span class="report-line" id="report-line"></span>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:14px">
+      <b>Почему экран такой.</b> Лаборант ничего не загружает: снимок приходит в Orthanc → NATS → воркер, экран
+      обновляется сам за 2–3 секунды. Вердикт читается с двух метров, замечаний не больше трёх, формулировки —
+      в повелительном наклонении. Процентов уверенности нет: вместо них третье, жёлтое состояние
+      «нужен взгляд специалиста». Кнопка «Всё равно принять» есть всегда — система рекомендует, а не запрещает.
+    </div>
+  </section>
+
+  <!-- ============ ФРОНТ B ============ -->
+  <section id="view-center" hidden>
+    <div class="console">
+      <aside class="side">
+        <nav id="side-nav">
+          <button data-sec="queue" aria-current="true">Очередь<span class="kbd">1</span></button>
+          <button data-sec="study">Карточка<span class="kbd">2</span></button>
+          <button data-sec="editor">Разметка<span class="kbd">3</span></button>
+          <button data-sec="batch">Пакетная обработка<span class="kbd">4</span></button>
+          <button data-sec="analytics">Аналитика<span class="kbd">5</span></button>
+          <button data-sec="cases">Кейсы<span class="kbd">6</span></button>
+          <button data-sec="service">Служебное<span class="kbd">7</span></button>
+        </nav>
+        <div class="side-foot">
+          Модель <span class="mono">dxa-qc 0.4.2</span><br>
+          Последний прогон 21.09, 11:04
+        </div>
+      </aside>
+
+      <div class="panel" id="panel"></div>
+    </div>
+  </section>
+
+  <div class="footer">
+    <span>Прототип интерфейса к ТЗ «Сервис ИИ по оценке качества исследований плотности костей человека».
+      Все данные синтетические; изображения — схематические иллюстрации, а не медицинские снимки.</span>
+    <span>Стилистика: синий из методических рекомендаций НПКЦ ДиТ (CMYK 100/60/0/0)</span>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+/* ==========================================================
+   1. Отрисовка схематических снимков (параметрическая)
+   Размеры viewBox — реальные размеры кадров в наборе:
+   позвоночник 300×289 px, бедро 280×263 px.
+   Масштаб 1.05 мм/px по Y и 0.6 мм/px по X (ответ организаторов),
+   значит 3 см = 28.6 px по вертикали, 2 см = 33.3 px по горизонтали.
+   ========================================================== */
+const PX_Y = 1.05, PX_X = 0.6;                 // мм на пиксель
+const MARGIN_V = 30 / PX_Y;                    // 28.6 px = 3 см
+const MARGIN_H = 20 / PX_X;                    // 33.3 px = 2 см
+
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+/* --- позвоночник --- */
+function spineSVG(o){
+  o = Object.assign({ tilt:1.6, shift:0, artifact:false, overlay:true, target:true,
+                      points:false, ids:false, w:300, h:289 }, o);
+  const cx = 150, top = 26 + o.shift, bottom = 250 + o.shift;
+  const verts = [
+    {n:'Th12', y:top,      w:46, h:24},
+    {n:'L1',   y:top+34,   w:50, h:28},
+    {n:'L2',   y:top+70,   w:53, h:30},
+    {n:'L3',   y:top+108,  w:56, h:32},
+    {n:'L4',   y:top+148,  w:59, h:33},
+    {n:'L5',   y:top+189,  w:61, h:30}
+  ];
+  const rad = o.tilt * Math.PI/180;
+  const axisY = (top + bottom)/2;
+  const px = (x,y)=>[ cx + (x-cx)*Math.cos(rad) - (y-axisY)*Math.sin(rad),
+                      axisY + (x-cx)*Math.sin(rad) + (y-axisY)*Math.cos(rad) ];
+  let s = '';
+  s += `<rect x="0" y="0" width="${o.w}" height="${o.h}" fill="var(--scan-bg)"/>`;
+  // мягкие ткани
+  s += `<path d="M42 0 C34 90 40 190 58 289 L242 289 C260 190 266 90 258 0 Z" fill="var(--scan-1)"/>`;
+  s += `<path d="M70 0 C64 90 70 190 84 289 L216 289 C230 190 236 90 230 0 Z" fill="var(--scan-1)" opacity=".7"/>`;
+  // рёбра сверху
+  for(let i=0;i<3;i++){
+    const y = 12 + i*17 + o.shift;
+    s += `<path d="M62 ${y} Q110 ${y-9} 128 ${y+6}" stroke="var(--scan-2)" stroke-width="4" fill="none" opacity=".75"/>`;
+    s += `<path d="M238 ${y} Q190 ${y-9} 172 ${y+6}" stroke="var(--scan-2)" stroke-width="4" fill="none" opacity=".75"/>`;
+  }
+  // крылья подвздошных костей
+  const ilY = bottom - 6;
+  if(ilY < o.h){
+    s += `<path d="M46 ${ilY+52} C48 ${ilY+4} 84 ${ilY-6} 112 ${ilY+18} L112 ${ilY+70} L46 ${ilY+70} Z" fill="var(--scan-2)" opacity=".92"/>`;
+    s += `<path d="M254 ${ilY+52} C252 ${ilY+4} 216 ${ilY-6} 188 ${ilY+18} L188 ${ilY+70} L254 ${ilY+70} Z" fill="var(--scan-2)" opacity=".92"/>`;
+  }
+  // тела позвонков
+  verts.forEach(v=>{
+    s += `<g transform="rotate(${o.tilt} ${cx} ${axisY})">`
+      +  `<rect x="${cx - v.w/2}" y="${v.y}" width="${v.w}" height="${v.h}" rx="5" fill="var(--scan-4)" opacity=".93"/>`
+      +  `<rect x="${cx - v.w/2 + 4}" y="${v.y+4}" width="${v.w-8}" height="${v.h-8}" rx="3" fill="var(--scan-3)" opacity=".55"/>`
+      +  `</g>`;
+  });
+  // остистые отростки
+  s += `<g transform="rotate(${o.tilt} ${cx} ${axisY})" opacity=".8">`;
+  verts.forEach(v=>{ s += `<rect x="${cx-4}" y="${v.y+v.h/2-5}" width="8" height="11" rx="2" fill="var(--scan-3)"/>`; });
+  s += `</g>`;
+  // артефакт — дуги косточек белья
+  if(o.artifact){
+    s += `<g stroke="#FFFFFF" stroke-width="3" fill="none" opacity=".95">`
+      +  `<path d="M74 40 Q108 16 140 42"/><path d="M226 40 Q192 16 160 42"/></g>`;
+    s += `<circle cx="107" cy="30" r="15" fill="none" stroke="#F0A58B" stroke-width="2" stroke-dasharray="4 3"/>`;
+    s += `<circle cx="193" cy="30" r="15" fill="none" stroke="#F0A58B" stroke-width="2" stroke-dasharray="4 3"/>`;
+  }
+  /* --- оверлей --- */
+  if(o.overlay){
+    const [ax1,ay1] = px(cx, top-4), [ax2,ay2] = px(cx, bottom+14);
+    s += `<line x1="${cx}" y1="${top-10}" x2="${cx}" y2="${bottom+20}" stroke="#7FB3DC" stroke-width="1.5" stroke-dasharray="5 5" opacity=".8"/>`;
+    s += `<line x1="${ax1}" y1="${ay1}" x2="${ax2}" y2="${ay2}" stroke="#5FC8F5" stroke-width="2.5"/>`;
+    const lbl = Math.abs(o.tilt).toFixed(1).replace('.',',') + '°';
+    s += `<text x="${cx+11}" y="${top+4}" fill="#5FC8F5" font-size="15" font-weight="700" font-family="var(--mono)">${lbl}</text>`;
+  }
+  if(o.target && o.shift !== 0){
+    const ty = 26, tb = 250;
+    s += `<rect x="30" y="${ty-12}" width="240" height="${tb-ty+34}" rx="6" fill="none" stroke="#3FD9A8" stroke-width="2" stroke-dasharray="7 5" opacity=".95"/>`;
+    const dy = o.shift;
+    s += `<g stroke="#3FD9A8" stroke-width="3" fill="none">`
+      +  `<line x1="272" y1="${140-dy/2}" x2="272" y2="${140+dy/2}"/>`
+      +  `<path d="M266 ${140+dy/2-7} L272 ${140+dy/2} L278 ${140+dy/2-7}"/></g>`;
+    const cm = (Math.abs(dy)*PX_Y/10).toFixed(1).replace('.',',');
+    s += `<text x="${262}" y="${138}" fill="#3FD9A8" font-size="14" font-weight="700" text-anchor="end" font-family="var(--mono)">${cm} см</text>`;
+  }
+  if(o.points){
+    const p = [[cx, top+12,'Th12'],[70, bottom+46,'подвзд.'],[230, bottom+46,'подвзд.']];
+    p.forEach(([x,y])=>{ s += `<circle cx="${x}" cy="${y}" r="5" fill="#FFCA5F" stroke="#0B1420" stroke-width="2"/>`; });
+  }
+  return `<svg viewBox="0 0 ${o.w} ${o.h}" role="img" aria-label="Схематический снимок поясничного отдела позвоночника">${s}</svg>`;
+}
+
+/* --- бедро --- (right = таз справа на изображении) */
+function hipSVG(o){
+  o = Object.assign({ prot:1.0, overlay:true, roi:false, points:false, margins:null,
+                      side:'right', w:280, h:263 }, o);
+  let s = '';
+  s += `<rect x="0" y="0" width="${o.w}" height="${o.h}" fill="var(--scan-bg)"/>`;
+  s += `<rect x="18" y="0" width="244" height="263" fill="var(--scan-1)"/>`;
+  const g = (o.side==='right') ? '' : `transform="translate(${o.w},0) scale(-1,1)"`;
+  s += `<g ${g}>`;
+  // седалищная кость / таз справа
+  s += `<path d="M196 58 C232 66 244 104 236 142 C230 176 208 190 190 184 C176 178 174 150 180 122 C185 96 186 72 196 58 Z" fill="var(--scan-3)" opacity=".85"/>`;
+  s += `<path d="M204 104 C224 112 228 140 218 160 C210 174 198 172 194 160 C190 144 194 118 204 104 Z" fill="var(--scan-1)" opacity=".8"/>`;
+  // диафиз
+  s += `<path d="M64 244 L104 244 L134 104 L96 96 Z" fill="var(--scan-4)" opacity=".92"/>`;
+  s += `<path d="M76 240 L96 240 L120 110 L104 106 Z" fill="var(--scan-3)" opacity=".5"/>`;
+  // большой вертел
+  s += `<path d="M92 98 C74 84 70 60 84 48 C100 36 122 44 128 62 L134 100 Z" fill="var(--scan-4)" opacity=".92"/>`;
+  // шейка
+  s += `<path d="M126 92 L166 66 L176 86 L136 110 Z" fill="var(--scan-4)" opacity=".92"/>`;
+  // головка
+  s += `<circle cx="180" cy="70" r="25" fill="var(--scan-4)" opacity=".94"/>`;
+  s += `<circle cx="180" cy="70" r="17" fill="var(--scan-3)" opacity=".45"/>`;
+  // малый вертел — выступ зависит от prot
+  const pr = Math.max(0, o.prot);
+  if(pr > 0.08){
+    const bulge = 6 + pr*16;
+    s += `<path d="M132 108 C${132+bulge} ${112} ${132+bulge} ${126} 130 ${132} Z" fill="var(--scan-4)" opacity=".9"/>`;
+    s += `<ellipse cx="${134+bulge*0.45}" cy="120" rx="${4+bulge*0.42}" ry="10" fill="var(--scan-4)" opacity=".9"/>`;
+  }
+  s += `</g>`;
+
+  if(o.overlay && o.roi){
+    s += `<g fill="none" stroke="#5FC8F5" stroke-width="1.8">`
+      +  `<rect x="128" y="62" width="46" height="34" rx="3" transform="rotate(-31 151 79)"/>`
+      +  `<text x="150" y="52" fill="#5FC8F5" font-size="11" font-weight="700" text-anchor="middle" font-family="var(--mono)">FN</text>`
+      +  `</g>`;
+    s += `<g fill="none" stroke="#7FB3DC" stroke-width="1.5" opacity=".9">`
+      +  `<path d="M84 50 L132 62 L98 98 Z"/><text x="103" y="64" fill="#7FB3DC" font-size="10" font-family="var(--mono)">TR</text>`
+      +  `<path d="M98 100 L136 108 L120 142 Z"/><text x="114" y="122" fill="#7FB3DC" font-size="10" font-family="var(--mono)">IT</text>`
+      +  `<rect x="138" y="88" width="17" height="17" transform="rotate(-31 146 96)"/>`
+      +  `</g>`;
+  }
+  if(o.points){
+    [[104,52,'большой вертел'],[152,80,'шейка'],[206,150,'седалищная']].forEach(([x,y])=>{
+      s += `<circle cx="${x}" cy="${y}" r="5.5" fill="#FFCA5F" stroke="#0B1420" stroke-width="2"/>`;
+    });
+  }
+  if(o.margins){
+    const m = o.margins; // {top,bottom,side} в см
+    const bad = v=>v < 3 ? '#F0A58B' : '#3FD9A8';
+    const badS = v=>v < 2 ? '#F0A58B' : '#3FD9A8';
+    const mk = (x1,y1,x2,y2,col)=>`<g stroke="${col}" stroke-width="2"><line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}"/>`
+      + `<line x1="${x1-4}" y1="${y1}" x2="${x1+4}" y2="${y1}"/><line x1="${x2-4}" y1="${y2}" x2="${x2+4}" y2="${y2}"/></g>`;
+    const tpx = m.top*10/PX_Y, bpx = m.bottom*10/PX_Y;
+    s += mk(44, 2, 44, 2+tpx, bad(m.top));
+    s += `<text x="50" y="${6+tpx/2}" fill="${bad(m.top)}" font-size="12" font-weight="700" font-family="var(--mono)">${String(m.top).replace('.',',')} см</text>`;
+    s += mk(44, 261-bpx, 44, 261, bad(m.bottom));
+    s += `<text x="50" y="${263-bpx/2}" fill="${bad(m.bottom)}" font-size="12" font-weight="700" font-family="var(--mono)">${String(m.bottom).replace('.',',')} см</text>`;
+    const spx = m.side*10/PX_X;
+    s += `<g stroke="${badS(m.side)}" stroke-width="2"><line x1="${262-spx}" y1="208" x2="262" y2="208"/>`
+      +  `<line x1="${262-spx}" y1="204" x2="${262-spx}" y2="212"/><line x1="262" y1="204" x2="262" y2="212"/></g>`;
+    s += `<text x="${262-spx/2}" y="224" fill="${badS(m.side)}" font-size="12" font-weight="700" text-anchor="middle" font-family="var(--mono)">${String(m.side).replace('.',',')} см</text>`;
+  }
+  return `<svg viewBox="0 0 ${o.w} ${o.h}" role="img" aria-label="Схематический снимок проксимального отдела бедра">${s}</svg>`;
+}
+
+/* ==========================================================
+   2. Фронт A — пост лаборанта
+   ========================================================== */
+const VOC = {                       /* точные строки словаря организаторов */
+  spinePlace : 'Некорректная укладка',
+  spineAxis  : 'Не выравнена ось позвоночника',
+  spineObj   : 'Присутствуют посторонние предметы',
+  hipPlace   : 'Некорректная укладка',
+  hipRoi     : 'Некорректная область интереса'
+};
+const REGION = { spine:'Поясничный отдел позвоночника', hip:'Проксимальный отдел бедра' };
+
+const CASES = {
+  ok: {
+    state:'ok', icon:'✓', big:'КОРРЕКТНО', sub:'Поясничный отдел · можно отпускать пациента',
+    region:'spine', ctx:'Снимок 1 из 3 · исследование 14:21:38',
+    scan:{ kind:'spine', a:{tilt:1.6, shift:0, overlay:true, target:false} },
+    legend:[['#5FC8F5','ось позвоночника']],
+    steps:[], prob:0.06,
+    row:{ region:REGION.spine, cls:0, vio:'', t:1.7 },
+    acts:[['Готово','primary'],['Открыть в центре','']]
+  },
+  'spine-bad': {
+    state:'bad', icon:'⟲', big:'ПЕРЕСНЯТЬ', sub:'Поясничный отдел · два замечания',
+    region:'spine', ctx:'Снимок 1 из 3 · исследование 14:22:06',
+    scan:{ kind:'spine', a:{tilt:6.9, shift:24, overlay:true, target:true},
+           b:{tilt:1.8, shift:0, overlay:true, target:false} },
+    legend:[['#5FC8F5','текущая ось'],['#3FD9A8','как надо']],
+    steps:[
+      ['Ось наклонена 6,9° (норма — до 5°)','Выпрямите пациента: плечи и таз на одной линии, ноги на кубе'],
+      ['Снизу не видны верхние края подвздошных костей','Опустите поле сканирования примерно на 2,5 см']
+    ], prob:0.94,
+    row:{ region:REGION.spine, cls:1, vio:VOC.spineAxis+';'+VOC.spinePlace, t:1.8 },
+    acts:[['Переснял','primary'],['Всё равно принять',''],['Не согласен','ghost']]
+  },
+  artifact: {
+    state:'bad', icon:'⚠', big:'ПЕРЕСНЯТЬ', sub:'Поясничный отдел · посторонний предмет',
+    region:'spine', ctx:'Снимок 1 из 1 · исследование 14:24:11',
+    scan:{ kind:'spine', a:{tilt:2.1, shift:0, artifact:true, overlay:false, target:false} },
+    legend:[['#F0A58B','область артефакта']],
+    steps:[
+      ['В кадре металлические дуги — вероятно, косточки белья','Попросите снять бельё с металлом и переснимите']
+    ], prob:0.88,
+    row:{ region:REGION.spine, cls:1, vio:VOC.spineObj, t:1.6 },
+    acts:[['Переснял','primary'],['Всё равно принять',''],['Не согласен','ghost']]
+  },
+  'spine-warn': {
+    state:'warn', icon:'?', big:'НУЖЕН ВЗГЛЯД СПЕЦИАЛИСТА', sub:'Поясничный отдел · уровень укладки на границе',
+    region:'spine', ctx:'исследование 14:22:48',
+    scan:{ kind:'spine', a:{tilt:4.6, shift:7, overlay:true, target:true} },
+    legend:[['#5FC8F5','текущая ось'],['#3FD9A8','как надо']],
+    steps:[
+      ['Подвздошные кости видны краем, ось 4,6° — почти на пределе','Если пациенту тяжело лежать, снимок можно принять; иначе опустите поле на 0,7 см']
+    ], prob:0.47,
+    row:{ region:REGION.spine, cls:1, vio:VOC.spinePlace, t:1.8 },
+    acts:[['Принять','primary'],['Переснять',''],['Не согласен','ghost']]
+  },
+  'hip-warn': {
+    state:'warn', icon:'?', big:'НУЖЕН ВЗГЛЯД СПЕЦИАЛИСТА', sub:'Левое бедро · ротация на границе нормы',
+    region:'hip', ctx:'Снимок 3 из 3 · исследование 14:26:02',
+    scan:{ kind:'hip', a:{prot:1.75, side:'left', overlay:true, points:true} },
+    legend:[['#FFCA5F','найденные ориентиры']],
+    steps:[
+      ['Малый вертел выступает сильнее обычного — похоже на недоротацию','Доверните стопу внутрь и закрепите в фиксаторе; если сомневаетесь — отправьте в центр']
+    ], prob:0.52, rot:true,
+    row:{ region:REGION.hip, cls:1, vio:VOC.hipPlace, t:2.1 },
+    acts:[['Переснял','primary'],['Принять и отправить врачу',''],['Не согласен','ghost']]
+  },
+  'hip-roi': {
+    state:'bad', icon:'⟲', big:'ПЕРЕСНЯТЬ', sub:'Правое бедро · мало запаса по полю',
+    region:'hip', ctx:'Снимок 2 из 3 · исследование 14:27:40',
+    scan:{ kind:'hip', a:{prot:0.9, side:'right', overlay:true, margins:{top:3.4,bottom:1.4,side:2.6}} },
+    legend:[['#3FD9A8','запас в норме'],['#F0A58B','запаса не хватает']],
+    steps:[
+      ['Снизу от седалищной кости всего 1,4 см (нужно не меньше 3 см)','Сместите начальную точку сканирования на 2 см ниже']
+    ], prob:0.79,
+    row:{ region:REGION.hip, cls:1, vio:VOC.hipRoi, t:1.9 },
+    acts:[['Переснял','primary'],['Всё равно принять',''],['Не согласен','ghost']]
+  },
+  offline: {
+    state:'dead', icon:'⦸', big:'ПРОВЕРКА НЕДОСТУПНА', sub:'Работайте как обычно',
+    region:'spine', ctx:'Последний ответ сервиса: 14:19:55',
+    scan:{ kind:'spine', a:{tilt:2.4, shift:0, overlay:false, target:false} },
+    legend:[],
+    steps:[
+      ['Связь с сервисом контроля потеряна','Снимки сохраняются и будут проверены позже; смена продолжается в обычном режиме']
+    ], prob:null,
+    row:null,
+    acts:[['Повторить подключение','primary']]
+  }
+};
+
+let showOverlay = true, showTarget = true, showBA = false;
+let history = ['ok'];     /* серия попыток по текущему исследованию, последняя — новая */
+let histCursor = 0;       /* какая прошлая попытка показана слева */
+let shownIdx = 0;         /* чей вердикт в правой панели */
+let acceptedIdx = null;   /* какая попытка принята в отчёт */
+
+const CHAIN = { spine:['ok','spine-bad','spine-warn','artifact'], hip:['hip-warn','hip-roi'] };
+const SERIES_DEMO = ['spine-bad','spine-warn','artifact'];
+
+function shotSVG(cfg, kind){
+  const opts = Object.assign({}, cfg, {
+    overlay: showOverlay && cfg.overlay !== false,
+    target:  showTarget && showOverlay && cfg.target === true,
+    points:  showOverlay && !!cfg.points,
+    margins: showOverlay ? cfg.margins : null,
+    roi:     false
+  });
+  return kind === 'spine' ? spineSVG(opts) : hipSVG(opts);
+}
+function chip(c){
+  const w = {ok:'корректно', warn:'нужен взгляд специалиста', bad:'переснять', dead:'нет проверки'};
+  const ic = {ok:'✓', warn:'?', bad:'⟲', dead:'⦸'};
+  return `<span class="ba-verdict ${c.state}">${ic[c.state]} ${w[c.state]}</span>`;
+}
+
+function baGrid(){
+  const total = history.length;
+  const prevMax = total - 2;
+  histCursor = Math.max(0, Math.min(prevMax, histCursor));
+  const pc = CASES[history[histCursor]], nc = CASES[history[total-1]];
+  const dots = Array.from({length: prevMax+1}, (_,i)=>`<i data-on="${i===histCursor}"></i>`).join('');
+  return `
+  <div class="ba-grid">
+    <div class="ba-cell">
+      <div class="ba-top">
+        <button class="ba-arrow" id="ba-prev" ${histCursor===0?'disabled':''} aria-label="Предыдущая попытка">‹</button>
+        <span class="ba-title">Попытка ${histCursor+1} из ${total}</span>
+        <button class="ba-arrow" id="ba-next" ${histCursor===prevMax?'disabled':''} aria-label="Следующая попытка">›</button>
+      </div>
+      ${shotSVG(pc.scan.a, pc.scan.kind)}
+      <div class="ba-dots">${dots}</div>
+      ${chip(pc)}
+      <button class="ba-accept" data-accept="${histCursor}" data-on="${acceptedIdx===histCursor}">${acceptedIdx===histCursor ? '✓ Принята в отчёт' : 'Принять эту попытку'}</button>
+    </div>
+    <div class="ba-cell now">
+      <div class="ba-top"><span class="ba-title">Новый снимок · попытка ${total}</span></div>
+      ${shotSVG(nc.scan.a, nc.scan.kind)}
+      <div class="ba-dots"><i data-on="true"></i></div>
+      ${chip(nc)}
+      <button class="ba-accept" data-accept="${total-1}" data-on="${acceptedIdx===total-1}">${acceptedIdx===total-1 ? '✓ Принята в отчёт' : 'Принять новый'}</button>
+    </div>
+  </div>`;
+}
+
+function renderPost(){
+  const total = history.length;
+  shownIdx = Math.max(0, Math.min(total-1, shownIdx));
+  const c = CASES[history[shownIdx]];
+  const holder = document.getElementById('scan-holder');
+  const canBA = total >= 2;
+
+  if(showBA && canBA){
+    holder.innerHTML = baGrid();
+    document.getElementById('ba-prev').addEventListener('click',()=>{ histCursor--; renderPost(); });
+    document.getElementById('ba-next').addEventListener('click',()=>{ histCursor++; renderPost(); });
+    holder.querySelectorAll('[data-accept]').forEach(b=>b.addEventListener('click',()=>{
+      acceptedIdx = +b.dataset.accept; shownIdx = acceptedIdx;
+      toast(acceptedIdx === total-1
+        ? 'В отчёт принят новый снимок'
+        : `В отчёт принята попытка ${acceptedIdx+1} — ещё одна пересъёмка не нужна, доза не набрана`);
+      renderPost();
+    }));
+  } else {
+    const cap = c.scan.kind==='spine' ? 'поясничный отдел, 300 × 289 px' : 'проксимальный отдел бедра, 280 × 263 px';
+    holder.innerHTML = `<figure class="scan-fig">${shotSVG(c.scan.a, c.scan.kind)}<figcaption>${cap}</figcaption></figure>`;
+  }
+
+  const baBtn = document.getElementById('t-ba');
+  baBtn.disabled = !canBA;
+  baBtn.style.opacity = canBA ? 1 : .45;
+  baBtn.title = canBA ? '' : 'Появится, когда в исследовании больше одной попытки';
+
+  document.getElementById('scan-legend').innerHTML = (showOverlay ? c.legend : [])
+    .map(([col,txt])=>`<span><i style="background:${col}"></i>${esc(txt)}</span>`).join('');
+
+  const v = document.getElementById('verdict');
+  v.className = 'verdict ' + c.state;
+  document.getElementById('v-icon').textContent = c.icon;
+  document.getElementById('v-big').textContent = c.big;
+  document.getElementById('v-sub').textContent = c.sub;
+
+  let ctx = `<span>${esc(c.ctx)}</span>`;
+  if(total > 1) ctx += `<span class="pill flat">попытка ${shownIdx+1} из ${total}</span>`;
+  if(acceptedIdx !== null && acceptedIdx === shownIdx) ctx += `<span class="pill ok">принята в отчёт</span>`;
+  if(c.rot) ctx += `<span class="pill warn">шкала ротации: недо ▸ норма ▸ пере</span>`;
+  document.getElementById('v-ctx').innerHTML = ctx;
+
+  document.getElementById('steps').innerHTML = c.steps.map((st,i)=>`
+    <li class="step">
+      <span class="step-n">${i+1}</span>
+      <span><span class="step-what">${esc(st[0])}</span><span class="step-do">${esc(st[1])}</span></span>
+    </li>`).join('');
+
+  document.getElementById('acts').innerHTML = c.acts
+    .map(([t,cls])=>`<button class="btn ${cls}">${esc(t)}</button>`).join('');
+  document.querySelectorAll('#acts .btn').forEach(b=>b.addEventListener('click',()=>{
+    const label = b.textContent.trim();
+    if(label === 'Не согласен'){
+      toast('Случай отправлен в центр обработки, в очередь «лаборант не согласился»');
+    } else if(label === 'Принять' || label === 'Готово'){
+      acceptedIdx = shownIdx; toast('Снимок принят, исследование закрыто'); renderPost();
+    } else {
+      toast('Действие записано в журнал смены');
+    }
+  }));
+
+  const r = c.row;
+  const acc = (acceptedIdx !== null && total > 1) ? ` | accepted_attempt=${acceptedIdx+1}/${total}` : '';
+  document.getElementById('report-line').textContent = r
+    ? `в отчёт → ${r.region} | quality_class=${r.cls} | quality_prob=${c.prob.toFixed(2)} | violation_type="${r.vio}" | ${r.t} с${acc}`
+    : 'в отчёт → processing_status=Failure (сервис недоступен)';
+
+  const lb = document.getElementById('live-badge');
+  const offline = history[shownIdx] === 'offline';
+  lb.className = 'live' + (offline ? ' off' : '');
+  lb.lastChild.textContent = offline ? ' связи нет' : ' связь есть';
+}
+
+function resetTo(key){
+  history = [key]; histCursor = 0; shownIdx = 0; acceptedIdx = null;
+  showBA = false; document.getElementById('t-ba').setAttribute('aria-pressed','false');
+  renderPost();
+}
+
+document.querySelectorAll('.dbtn[data-case]').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.dbtn[data-case]').forEach(x=>x.setAttribute('aria-pressed','false'));
+    b.setAttribute('aria-pressed','true');
+    resetTo(b.dataset.case);
+  });
+});
+function bindTool(id, get, set){
+  const el = document.getElementById(id);
+  el.addEventListener('click',()=>{
+    if(el.disabled) return;
+    set(!get()); el.setAttribute('aria-pressed', String(get())); renderPost();
+  });
+}
+bindTool('t-overlay', ()=>showOverlay, v=>showOverlay=v);
+bindTool('t-target',  ()=>showTarget,  v=>showTarget=v);
+bindTool('t-ba',      ()=>showBA,      v=>showBA=v);
+
+document.getElementById('series').addEventListener('click',()=>{
+  document.querySelectorAll('.dbtn[data-case]').forEach(x=>x.setAttribute('aria-pressed','false'));
+  history = SERIES_DEMO.slice(); histCursor = 1; shownIdx = history.length-1; acceptedIdx = null;
+  showBA = true; document.getElementById('t-ba').setAttribute('aria-pressed','true');
+  renderPost();
+  toast('Три попытки по одному исследованию: красная, жёлтая, красная. Лучшая — вторая, её и можно принять');
+});
+
+document.getElementById('simulate').addEventListener('click',()=>{
+  const prog = document.getElementById('prog');
+  const last = CASES[history[history.length-1]];
+  const chain = CHAIN[last.region] || CHAIN.spine;
+  const at = chain.indexOf(history[history.length-1]);
+  const next = chain[(at + 1) % chain.length];
+  prog.style.width = '0%';
+  let t = 0;
+  const iv = setInterval(()=>{
+    t += 60; prog.style.width = Math.min(100, t/24*10) + '%';
+    if(t >= 2400){
+      clearInterval(iv); prog.style.width = '100%';
+      setTimeout(()=>{ prog.style.width='0%'; },400);
+      history.push(next);
+      histCursor = history.length - 2;
+      shownIdx = history.length - 1;
+      acceptedIdx = null;
+      showBA = true; document.getElementById('t-ba').setAttribute('aria-pressed','true');
+      document.querySelectorAll('.dbtn[data-case]').forEach(x=>x.setAttribute('aria-pressed','false'));
+      renderPost();
+      toast(`Снимок принят из Orthanc и проверен за 2,4 с. Попытка ${history.length} — сравните с предыдущими`);
+    }
+  },60);
+});
+
+/* часы */
+function tick(){
+  const d = new Date();
+  document.getElementById('clock').textContent =
+    String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0');
+}
+tick(); setInterval(tick, 20000);
+
+/* ==========================================================
+   3. Фронт B — центр обработки
+   ========================================================== */
+const STUDIES = [
+  {uid:'1.2.643.5.1.13…0304', clinic:'ГП № 68, филиал 2', region:'spine', verdict:'bad',  prob:0.94,
+   vio:[VOC.spineAxis, VOC.spinePlace], t:1.8, st:'Success', disp:false, ang:6.9, note:null},
+  {uid:'1.2.643.5.1.13…1107', clinic:'ГП № 68, филиал 2', region:'hip',   verdict:'warn', prob:0.52,
+   vio:[VOC.hipPlace], t:2.1, st:'Success', disp:true, ang:null, note:'ротация на границе нормы'},
+  {uid:'1.2.643.5.1.13…0915', clinic:'ДЦ № 3',            region:'hip',   verdict:'ok',   prob:0.08,
+   vio:[], t:1.6, st:'Success', disp:false, ang:null, note:null},
+  {uid:'1.2.643.5.1.13…4412', clinic:'ГП № 180',          region:null,    verdict:'fail', prob:null,
+   vio:[], t:null, st:'Failure', disp:false, ang:null, note:'не читается PixelData'},
+  {uid:'1.2.643.5.1.13…2231', clinic:'ГП № 2, филиал 3',  region:'spine', verdict:'bad',  prob:0.88,
+   vio:[VOC.spineObj], t:1.6, st:'Success', disp:false, ang:2.1, note:null},
+  {uid:'1.2.643.5.1.13…7756', clinic:'ГП № 2, филиал 3',  region:'hip',   verdict:'bad',  prob:0.79,
+   vio:[VOC.hipRoi], t:1.9, st:'Success', disp:false, ang:null, note:'запас снизу 1,4 см'},
+  {uid:'1.2.643.5.1.13…3390', clinic:'ДЦ № 3',            region:'spine', verdict:'ok',   prob:0.11,
+   vio:[], t:1.7, st:'Success', disp:false, ang:1.4, note:null},
+  {uid:'1.2.643.5.1.13…6621', clinic:'ГП № 180',          region:'hip',   verdict:'ok',   prob:0.19,
+   vio:[], t:2.0, st:'Success', disp:true,  ang:null, note:null},
+  {uid:'1.2.643.5.1.13…8148', clinic:'ГП № 68, филиал 2', region:'hip',   verdict:'bad',  prob:0.91,
+   vio:[VOC.hipPlace, VOC.hipRoi], t:2.2, st:'Success', disp:false, ang:null, note:null},
+  {uid:'1.2.643.5.1.13…5027', clinic:'ГП № 2, филиал 3',  region:'spine', verdict:'warn', prob:0.47,
+   vio:[VOC.spinePlace], t:1.8, st:'Success', disp:false, ang:4.6, note:'уровень укладки на границе'},
+  {uid:'1.2.643.5.1.13…9903', clinic:'ДЦ № 3',            region:'spine', verdict:'ok',   prob:0.05,
+   vio:[], t:1.5, st:'Success', disp:false, ang:0.9, note:null},
+  {uid:'1.2.643.5.1.13…1480', clinic:'ГП № 180',          region:'hip',   verdict:'ok',   prob:0.14,
+   vio:[], t:1.8, st:'Success', disp:false, ang:null, note:'эндопротез слева — зона исключена'}
+];
+const VMETA = {
+  ok:  {cls:'ok',   txt:'Корректно', col:'var(--ok)'},
+  warn:{cls:'warn', txt:'Сомнительно', col:'var(--warn)'},
+  bad: {cls:'bad',  txt:'Брак',        col:'var(--bad)'},
+  fail:{cls:'dead', txt:'Failure',     col:'var(--dead)'}
+};
+
+let curSec = 'queue', qFilter = 'all', selStudy = 0;
+
+const FILTERS = [
+  ['all','Все'],['bad','Брак'],['warn','Сомнительно'],['ok','Корректно'],
+  ['fail','Failure'],['disp','Лаборант не согласился']
+];
+function filtered(){
+  if(qFilter==='all') return STUDIES;
+  if(qFilter==='disp') return STUDIES.filter(s=>s.disp);
+  return STUDIES.filter(s=>s.verdict===qFilter);
+}
+function fcount(k){
+  if(k==='all') return STUDIES.length;
+  if(k==='disp') return STUDIES.filter(s=>s.disp).length;
+  return STUDIES.filter(s=>s.verdict===k).length;
+}
+
+/* ---- секция: очередь ---- */
+function secQueue(){
+  const rows = filtered().map((s,i)=>{
+    const m = VMETA[s.verdict];
+    const idx = STUDIES.indexOf(s);
+    return `<tr data-i="${idx}" ${idx===selStudy?'aria-selected="true"':''}>
+      <td class="sev"><span class="sev-i" style="background:${m.col}"></span></td>
+      <td class="mono">${esc(s.uid)}</td>
+      <td>${esc(s.clinic)}</td>
+      <td>${s.region ? esc(REGION[s.region]) : '—'}</td>
+      <td><span class="pill ${m.cls}">${m.txt}</span></td>
+      <td><div class="vio">${s.vio.length ? s.vio.map(v=>`<span class="tag">${esc(v)}</span>`).join('') : '<span style="color:var(--muted)">—</span>'}</div></td>
+      <td class="mono">${s.prob===null?'—':s.prob.toFixed(2)}</td>
+      <td class="mono">${s.t===null?'—':s.t.toFixed(1)+' с'}</td>
+      <td>${s.disp?'<span class="dispute">⚑ спор</span>':(s.st==='Failure'?'<span class="pill dead">Failure</span>':'<span style="color:var(--muted)">Success</span>')}</td>
+    </tr>`;
+  }).join('');
+
+  return `
+  <div class="panel-head">
+    <div><h2>Очередь исследований</h2>
+      <p>Строка — одно изображение, как требует п. 2.5 ТЗ. Значения в колонках «Зона» и «Нарушения» —
+         точные строки из словаря организаторов, по ним считаются метрики.</p></div>
+    <div class="filters">
+      <button class="btn sm" data-act="export-xlsx">Выгрузить xlsx</button>
+      <button class="btn sm" data-act="export-zip">Выгрузить zip с сериями</button>
+    </div>
+  </div>
+  <div class="filters">
+    ${FILTERS.map(([k,t])=>`<button class="fchip" data-f="${k}" aria-pressed="${qFilter===k}">${t}<span class="cnt">${fcount(k)}</span></button>`).join('')}
+  </div>
+  <div class="tbl-scroll"><table class="grid">
+    <thead><tr><th class="sev"></th><th>study_uid</th><th>Поликлиника</th><th>anatomical_region</th>
+      <th>Вердикт</th><th>violation_type</th><th>prob</th><th>Время</th><th>Статус</th></tr></thead>
+    <tbody>${rows}</tbody>
+  </table></div>
+  <div class="note"><b>Очередь «Лаборант не согласился»</b> — самая ценная: там либо ошибка модели, либо ошибка
+    человека, и то и другое нужно знать. Именно из неё набирается feedback-датасет для офлайн-дообучения.</div>`;
+}
+
+/* ---- секция: карточка ---- */
+let layers = {points:true, target:true, roi:true, heat:false};
+function secStudy(){
+  const s = STUDIES[selStudy];
+  const m = VMETA[s.verdict];
+  if(s.st === 'Failure') return studyFailure(s);
+  const isSpine = s.region === 'spine';
+  const svg = isSpine
+    ? spineSVG({tilt:s.ang ?? 2.0, shift: s.vio.includes(VOC.spinePlace)?22:0,
+                artifact: s.vio.includes(VOC.spineObj), overlay:true,
+                target: layers.target && s.vio.includes(VOC.spinePlace), points:layers.points})
+    : hipSVG({prot: s.vio.includes(VOC.hipPlace)?1.75:0.95, side:'left', overlay:true,
+              roi:layers.roi, points:layers.points,
+              margins: s.vio.includes(VOC.hipRoi) ? {top:3.4,bottom:1.4,side:2.6} : (layers.target?{top:3.8,bottom:3.6,side:2.9}:null)});
+
+  const crit = isSpine ? [
+    ['Уровень укладки','видны верхние края подвздошных костей и половина Th12',
+      s.vio.includes(VOC.spinePlace)?'не видны':'в норме', !s.vio.includes(VOC.spinePlace)],
+    ['Ось позвоночника','наклон не более 5°', (s.ang??0).toFixed(1).replace('.',',')+'°', (s.ang??0) <= 5],
+    ['Посторонние предметы','нет металла и наложений',
+      s.vio.includes(VOC.spineObj)?'найдены':'не найдены', !s.vio.includes(VOC.spineObj)]
+  ] : [
+    ['Позиционирование','видны большой вертел, шейка, седалищная кость','3 из 3 найдены', true],
+    ['Ротация','малый вертел выступает минимально',
+      s.vio.includes(VOC.hipPlace)?'индекс 1,75 — недоротация':'индекс 0,95 — норма', !s.vio.includes(VOC.hipPlace)],
+    ['Область интереса','≥ 3 см сверху и снизу, ≥ 2 см сбоку',
+      s.vio.includes(VOC.hipRoi)?'снизу 1,4 см':'запас достаточен', !s.vio.includes(VOC.hipRoi)]
+  ];
+
+  const csv = s.st==='Failure'
+    ? `…/${s.uid};${s.uid};—;—;—;—;Failure;—;—`
+    : `…/${s.uid};${s.uid};1.2.643…;${REGION[s.region]};${s.verdict==='ok'?0:1};${s.vio.join(';')};Success;${s.t.toFixed(1)};${s.prob.toFixed(2)}`;
+
+  return `
+  <div class="panel-head">
+    <div><h2>Карточка исследования</h2>
+      <p>Слои включаются по одному. Все числа — те же, что уходят в правила: их можно проверить глазами.</p></div>
+    <button class="btn sm" data-act="to-queue">← К очереди</button>
+  </div>
+  <div class="study">
+    <div class="viewer">
+      <div>${svg}</div>
+      <div class="layers">
+        <button class="tool" data-layer="points" aria-pressed="${layers.points}">Ключевые точки</button>
+        <button class="tool" data-layer="target" aria-pressed="${layers.target}">Эталонное поле</button>
+        <button class="tool" data-layer="roi" aria-pressed="${layers.roi}">ROI (FN / TR / IT / Ward)</button>
+        <button class="tool" data-layer="heat" aria-pressed="${layers.heat}">Тепловая карта</button>
+      </div>
+      <p style="font-size:11.5px;color:#8FA8C0;margin:0">
+        Схематическая иллюстрация. В рабочей версии — просмотрщик DICOM (cornerstone.js) с теми же слоями.</p>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:14px;min-width:0">
+      <div class="card pad" style="display:flex;flex-direction:column;gap:12px">
+        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+          <span class="pill ${m.cls}">${m.txt}</span>
+          <span class="mono" style="font-size:13px;color:var(--muted)">quality_prob ${s.prob===null?'—':s.prob.toFixed(2)}</span>
+          ${s.disp?'<span class="dispute">⚑ лаборант не согласился</span>':''}
+        </div>
+        <div class="crit">
+          ${crit.map(([n,sub,val,ok])=>`
+            <div class="crit-row">
+              <div><div class="crit-name">${esc(n)}</div><div class="crit-sub">${esc(sub)}</div></div>
+              <div class="crit-val" style="color:${ok?'var(--ok)':'var(--bad)'}">${esc(val)}</div>
+              <span class="pill ${ok?'ok':'bad'}">${ok?'✓':'✕'}</span>
+            </div>`).join('')}
+        </div>
+      </div>
+
+      <div class="card pad">
+        <div class="eyebrow" style="margin-bottom:8px">Строка отчёта</div>
+        <div class="report-line" style="font-size:11px">${esc(csv)}</div>
+        <dl class="kv" style="margin-top:12px">
+          <dt>Версия модели</dt><dd>dxa-qc 0.4.2 · sha 9f2c1ab</dd>
+          <dt>Порог</dt><dd>0.38 (целевая чувствительность 0,90)</dd>
+          <dt>Обработано</dt><dd>21.09.2026 11:04:17</dd>
+        </dl>
+      </div>
+
+      ${s.note && s.note.includes('эндопротез') ? `
+      <div class="clin">
+        <h4>Клинические флаги — требуют подтверждения врачом</h4>
+        <ul>
+          <li>Эндопротез тазобедренного сустава. По п. 3.3 методических рекомендаций стандартная программа
+              денситометрии проксимального отдела бедра <b>не должна применяться</b> — зона исключена из оценки.</li>
+        </ul>
+        <div class="foot">Вспомогательный слой. Метрики по этим флагам не заявляются: в обучающей выборке
+          таких случаев единицы.</div>
+      </div>` : `
+      <div class="clin">
+        <h4>Клинические флаги — требуют подтверждения врачом</h4>
+        <ul>
+          <li>Нумерация позвонков: Th12 → L5, переходных позвонков не обнаружено.</li>
+          <li>Кандидатов на исключение из анализа нет (металл, гиперостоз, вертебропластика).</li>
+        </ul>
+        <div class="foot">Вспомогательный слой поверх того же keypoint-ядра. Отвечает на вопрос врача
+          «можно ли доверять измерению», а не «какая МПК» — МПК из этих файлов не считается.</div>
+      </div>`}
+
+      <div class="filters">
+        <button class="btn primary" data-act="agree">Согласен</button>
+        <button class="btn" data-act="disagree">Не согласен</button>
+        <button class="btn" data-act="to-editor">Исправить разметку</button>
+      </div>
+    </div>
+  </div>`;
+}
+
+function studyFailure(s){
+  return `
+  <div class="panel-head">
+    <div><h2>Карточка исследования</h2>
+      <p>Файл не обработан. По п. 2.7 ТЗ необработанных исключений быть не должно: пайплайн не падает,
+         а записывает причину в отчёт.</p></div>
+    <button class="btn sm" data-act="to-queue">← К очереди</button>
+  </div>
+  <div class="study">
+    <div class="viewer" style="min-height:260px;display:grid;place-items:center;text-align:center">
+      <div style="color:#8FA8C0;font-size:14px">
+        <div style="font-size:34px;margin-bottom:8px">⦸</div>
+        Изображение не восстановлено
+      </div>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="card pad" style="display:flex;flex-direction:column;gap:12px">
+        <span class="pill dead">Failure</span>
+        <div class="crit">
+          <div class="crit-row"><div><div class="crit-name">Чтение DICOM</div>
+            <div class="crit-sub">pydicom, VOI LUT, дедупликация по хэшу пикселей</div></div>
+            <div class="crit-val" style="color:var(--bad)">${esc(s.note || 'ошибка чтения')}</div>
+            <span class="pill bad">✕</span></div>
+          <div class="crit-row"><div><div class="crit-name">Определение зоны</div>
+            <div class="crit-sub">не выполнялось — нет пикселей</div></div>
+            <div class="crit-val" style="color:var(--muted)">—</div>
+            <span class="pill flat">—</span></div>
+        </div>
+      </div>
+      <div class="card pad">
+        <div class="eyebrow" style="margin-bottom:8px">Строка отчёта</div>
+        <div class="report-line" style="font-size:11px">…/${esc(s.uid)};${esc(s.uid)};—;—;—;—;Failure;—;—</div>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px">
+          Прогон продолжился: остальные 119 файлов обработаны.</p>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---- секция: редактор разметки ---- */
+let edTilt = 6.9, edShift = 22;
+function secEditor(){
+  return `
+  <div class="panel-head">
+    <div><h2>Редактор разметки</h2>
+      <p>Тот самый п. 2.6 ТЗ — «автоматическая коррекция разметки с возможностью подтверждения специалистом».
+         Потяните точки на снимке: угол и вердикт пересчитываются на лету.</p></div>
+    <button class="btn sm" data-act="to-study">← К карточке</button>
+  </div>
+  <div class="editor">
+    <div class="viewer">
+      <div id="ed-canvas"></div>
+      <p style="font-size:11.5px;color:#8FA8C0;margin:0">Жёлтые точки перетаскиваются мышью или пальцем.</p>
+    </div>
+    <div style="display:flex;flex-direction:column;gap:14px">
+      <div class="readout">
+        <span class="eyebrow">Угол оси позвоночника</span>
+        <span class="v" id="ed-angle">6,9°</span>
+        <span id="ed-verdict" style="font-size:13px"></span>
+      </div>
+      <div class="card pad" style="display:flex;flex-direction:column;gap:10px">
+        <label style="font-size:13px;font-weight:600" for="ed-slider">Наклон оси</label>
+        <input class="slider" type="range" id="ed-slider" min="0" max="12" step="0.1" value="6.9">
+        <label style="font-size:13px;font-weight:600" for="ed-shift">Сдвиг поля сканирования</label>
+        <input class="slider" type="range" id="ed-shift" min="0" max="34" step="1" value="22">
+        <div style="font-size:12.5px;color:var(--muted)" id="ed-shift-lab"></div>
+      </div>
+      <div class="card pad">
+        <div class="eyebrow" style="margin-bottom:8px">Что сохранится</div>
+        <dl class="kv">
+          <dt>study_uid</dt><dd>1.2.643.5.1.13…0304</dd>
+          <dt>image_uid</dt><dd>1.2.643.5.1.13…0505</dd>
+          <dt>confirmed_by_expert</dt><dd>true</dd>
+          <dt>Версия правок</dt><dd>v3 · 21.09.2026</dd>
+        </dl>
+        <p style="font-size:12px;color:var(--muted);margin-top:10px">
+          Правка уходит в feedback-датасет, но <b>не запускает дообучение автоматически</b> — иначе ломается
+          воспроизводимость по п. 2.7 ТЗ.</p>
+      </div>
+      <button class="btn primary" data-act="save-edit">Сохранить как подтверждённое экспертом</button>
+    </div>
+  </div>`;
+}
+function paintEditor(){
+  const canvas = document.getElementById('ed-canvas');
+  if(!canvas) return;
+  canvas.innerHTML = spineSVG({tilt:edTilt, shift:edShift, overlay:true, target:edShift>0, points:true});
+  const svg = canvas.querySelector('svg');
+  svg.style.width = '100%'; svg.style.maxWidth = '300px'; svg.style.height = 'auto';
+  svg.style.display = 'block'; svg.style.margin = '0 auto';
+  svg.querySelectorAll('circle[fill="#FFCA5F"]').forEach((c,i)=>{
+    c.setAttribute('class','handle'); c.setAttribute('r','7');
+    c.addEventListener('pointerdown', ev=>{ ev.preventDefault(); dragIdx = i; });
+  });
+  const ok = edTilt <= 5, okShift = edShift < 6;
+  document.getElementById('ed-angle').textContent = edTilt.toFixed(1).replace('.',',') + '°';
+  const vEl = document.getElementById('ed-verdict');
+  const vio = [];
+  if(!ok) vio.push(VOC.spineAxis);
+  if(!okShift) vio.push(VOC.spinePlace);
+  vEl.innerHTML = vio.length
+    ? `<span class="pill bad">Брак</span> <span class="mono" style="font-size:11.5px">${esc(vio.join(';'))}</span>`
+    : `<span class="pill ok">Корректно</span> <span class="mono" style="font-size:11.5px">violation_type пустой</span>`;
+  document.getElementById('ed-shift-lab').textContent =
+    edShift < 6 ? 'Подвздошные кости в кадре — уровень укладки в норме'
+                : `Нужно опустить поле на ${(edShift*PX_Y/10).toFixed(1).replace('.',',')} см`;
+  const sl = document.getElementById('ed-slider'), sh = document.getElementById('ed-shift');
+  if(sl && document.activeElement !== sl) sl.value = edTilt.toFixed(1);
+  if(sh && document.activeElement !== sh) sh.value = Math.round(edShift);
+}
+let dragIdx = null;
+window.addEventListener('pointermove', e=>{
+  if(dragIdx === null) return;
+  const svg = document.querySelector('#ed-canvas svg');
+  if(!svg){ dragIdx = null; return; }
+  const r = svg.getBoundingClientRect();
+  const x = (e.clientX - r.left)/r.width*300, y = (e.clientY - r.top)/r.height*289;
+  if(dragIdx === 0) edTilt = Math.max(0, Math.min(12, Math.abs(x-150)/9));
+  else               edShift = Math.max(0, Math.min(34, y - 250));
+  paintEditor();
+});
+window.addEventListener('pointerup', ()=>{ dragIdx = null; });
+
+/* ---- секция: пакетная обработка ---- */
+let batchRun = false;
+function secBatch(){
+  return `
+  <div class="panel-head">
+    <div><h2>Пакетная обработка</h2>
+      <p>Требование п. 2.7 ТЗ в виде кнопки: папка или zip на входе, общая таблица xlsx/csv и zip
+         с дополнительными сериями на выходе. Ошибки не роняют прогон, а попадают в отчёт.</p></div>
+  </div>
+  <div class="drop">Перетащите папку исследований или zip-архив<br>
+    <span style="font-size:12.5px">или</span><br>
+    <button class="btn sm primary" data-act="run-batch" style="margin-top:9px">Запустить демо-прогон (120 файлов)</button>
+  </div>
+  <div class="card pad" style="display:flex;flex-direction:column;gap:12px">
+    <div style="display:flex;justify-content:space-between;font-size:13.5px">
+      <span id="b-label">Прогон не запускался</span>
+      <span class="mono" id="b-pct">0 %</span>
+    </div>
+    <div class="bar"><i id="b-bar"></i></div>
+    <div class="tiles" style="margin-top:4px">
+      <div class="tile"><div class="lab">Success</div><div class="val num" id="b-ok">0</div></div>
+      <div class="tile"><div class="lab">Failure</div><div class="val num" id="b-fail">0</div></div>
+      <div class="tile"><div class="lab">Брак найден</div><div class="val num" id="b-bad">0</div></div>
+      <div class="tile accent"><div class="lab">Среднее время на снимок</div><div class="val num" id="b-t">—</div>
+        <div class="hint">лимит ТЗ — 3 мин на исследование</div></div>
+    </div>
+    <div id="b-errors"></div>
+    <div class="filters">
+      <button class="btn sm" data-act="export-xlsx">Выгрузить xlsx</button>
+      <button class="btn sm" data-act="export-zip">Выгрузить zip с сериями</button>
+      <button class="btn sm" data-act="export-sr">Выгрузить DICOM SR</button>
+    </div>
+  </div>`;
+}
+function runBatch(){
+  if(batchRun) return; batchRun = true;
+  const N = 120; let i = 0, ok = 0, fail = 0, bad = 0;
+  const lab = document.getElementById('b-label');
+  const iv = setInterval(()=>{
+    i += 3;
+    if(i > N) i = N;
+    fail = Math.floor(i/55); ok = i - fail; bad = Math.round(i*0.19);
+    document.getElementById('b-bar').style.width = (i/N*100)+'%';
+    document.getElementById('b-pct').textContent = Math.round(i/N*100)+' %';
+    document.getElementById('b-ok').textContent = ok;
+    document.getElementById('b-fail').textContent = fail;
+    document.getElementById('b-bad').textContent = bad;
+    document.getElementById('b-t').textContent = '1,9 с';
+    lab.textContent = i<N ? `Обработка… ${i} из ${N}` : `Готово: ${N} файлов`;
+    if(i>=N){
+      clearInterval(iv); batchRun = false;
+      document.getElementById('b-errors').innerHTML = `
+        <div class="eyebrow" style="margin:6px 0 8px">Ошибки прогона — все попали в отчёт</div>
+        <div class="tbl-scroll"><table class="grid" style="min-width:520px">
+          <thead><tr><th>Файл</th><th>Причина</th><th>processing_status</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">CR000044.dcm</td><td>не читается PixelData</td><td><span class="pill dead">Failure</span></td></tr>
+            <tr><td class="mono">CR000099.dcm</td><td>зона не определена (нетипичный размер кадра)</td><td><span class="pill dead">Failure</span></td></tr>
+          </tbody></table></div>`;
+      toast('Прогон завершён. Таблица и zip готовы к выгрузке');
+    }
+  }, 70);
+}
+
+/* ---- секция: аналитика ---- */
+const CLINICS = [
+  {n:'ГП № 68, ф. 2', v:27.4}, {n:'ГП № 2, ф. 3', v:21.8}, {n:'ГП № 180', v:18.1},
+  {n:'ДЦ № 3', v:12.6}, {n:'ГП № 45', v:11.2}, {n:'ГП № 115', v:8.4}
+];
+const WEEKS = ['32','33','34','35','36','37','38','39'];
+const TREND_SPINE = [26,24,25,21,19,17,16,14];
+const TREND_HIP   = [19,20,18,18,15,14,13,12];
+const VIOS = [
+  {n:'Некорректная укладка (бедро)', v:36},
+  {n:'Присутствуют посторонние предметы', v:17},
+  {n:'Не выравнена ось позвоночника', v:10},
+  {n:'Некорректная область интереса', v:7},
+  {n:'Некорректная укладка (позвоночник)', v:6}
+];
+
+function barChart(){
+  const W=520,H=220,L=108,R=18,T=8,B=30;
+  const max=30, iw=W-L-R, ih=H-T-B;
+  let s='';
+  for(let g=0; g<=3; g++){
+    const x = L + iw*g/3;
+    s += `<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ih}" stroke="var(--grid)" stroke-width="1"/>`;
+    s += `<text x="${x}" y="${H-10}" fill="var(--muted)" font-size="11" text-anchor="middle">${(max*g/3).toFixed(0)} %</text>`;
+  }
+  const bh = ih/CLINICS.length - 8;
+  CLINICS.forEach((c,i)=>{
+    const y = T + i*(ih/CLINICS.length) + 4;
+    const w = Math.max(4, c.v/max*iw);
+    s += `<text x="${L-10}" y="${y+bh/2+4}" fill="var(--ink-2)" font-size="12" text-anchor="end">${esc(c.n)}</text>`;
+    s += `<rect class="hb" data-i="${i}" x="${L}" y="${y}" width="${w}" height="${bh}" rx="4" fill="var(--s1)"/>`;
+    s += `<text x="${L+w+8}" y="${y+bh/2+4}" fill="var(--ink-2)" font-size="12" font-weight="600" font-family="var(--mono)">${String(c.v).replace('.',',')}</text>`;
+  });
+  s += `<line x1="${L}" y1="${T}" x2="${L}" y2="${T+ih}" stroke="var(--line-strong)" stroke-width="1"/>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Доля брака по поликлиникам, проценты">${s}</svg>`;
+}
+function lineChart(){
+  const W=520,H=240,L=38,R=54,T=14,B=34;
+  const iw=W-L-R, ih=H-T-B, max=30;
+  const x = i => L + iw*i/(WEEKS.length-1);
+  const y = v => T + ih - v/max*ih;
+  let s='';
+  for(let g=0; g<=3; g++){
+    const yy = T + ih*g/3;
+    s += `<line x1="${L}" y1="${yy}" x2="${L+iw}" y2="${yy}" stroke="var(--grid)" stroke-width="1"/>`;
+    s += `<text x="${L-8}" y="${yy+4}" fill="var(--muted)" font-size="11" text-anchor="end">${(max-max*g/3).toFixed(0)}</text>`;
+  }
+  WEEKS.forEach((w,i)=>{ s += `<text x="${x(i)}" y="${H-12}" fill="var(--muted)" font-size="11" text-anchor="middle">${w}</text>`; });
+  const path = a => a.map((v,i)=>`${i?'L':'M'}${x(i)} ${y(v)}`).join(' ');
+  s += `<path d="${path(TREND_SPINE)}" fill="none" stroke="var(--s1)" stroke-width="2" stroke-linecap="round"/>`;
+  s += `<path d="${path(TREND_HIP)}"   fill="none" stroke="var(--s2)" stroke-width="2" stroke-linecap="round"/>`;
+  [['s1',TREND_SPINE],['s2',TREND_HIP]].forEach(([c,a])=>{
+    const i=a.length-1;
+    s += `<circle cx="${x(i)}" cy="${y(a[i])}" r="4.5" fill="var(--${c})" stroke="var(--surface)" stroke-width="2"/>`;
+  });
+  s += `<text x="${x(7)+9}" y="${y(TREND_SPINE[7])+4}" fill="var(--s1)" font-size="11.5" font-weight="700">Позвоночник</text>`;
+  s += `<text x="${x(7)+9}" y="${y(TREND_HIP[7])+4}"   fill="var(--s2)" font-size="11.5" font-weight="700">Бедро</text>`;
+  s += `<line id="cross" x1="0" y1="${T}" x2="0" y2="${T+ih}" stroke="var(--line-strong)" stroke-width="1" opacity="0"/>`;
+  s += `<rect id="hit" x="${L}" y="${T}" width="${iw}" height="${ih}" fill="transparent"/>`;
+  s += `<text x="${L}" y="${H-1}" fill="var(--muted)" font-size="10.5">неделя</text>`;
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Доля брака по неделям, проценты, две зоны">${s}</svg>`;
+}
+function vioChart(){
+  const W=520,H=210,L=8,R=8,T=8,B=8;
+  const max=40, iw=W-L-R;
+  let s='';
+  VIOS.forEach((v,i)=>{
+    const y = T + i*40;
+    const w = Math.max(4, v.v/max*(iw-160));
+    s += `<text x="${L}" y="${y+12}" fill="var(--ink-2)" font-size="12">${esc(v.n)}</text>`;
+    s += `<rect class="vb" data-i="${i}" x="${L}" y="${y+18}" width="${w}" height="12" rx="4" fill="var(--s1)"/>`;
+    s += `<text x="${L+w+9}" y="${y+28}" fill="var(--ink-2)" font-size="12" font-weight="700" font-family="var(--mono)">${v.v}</text>`;
+  });
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-label="Число нарушений по типам в обучающей выборке">${s}</svg>`;
+}
+
+function secAnalytics(){
+  return `
+  <div class="panel-head">
+    <div><h2>Аналитика качества</h2>
+      <p>Единственный экран целиком вне ТЗ — и, вероятно, самый убедительный на питче: он переводит метрики
+         модели в пересъёмки, дозу и адреса, где нужно вмешаться.</p></div>
+  </div>
+  <div class="tiles">
+    <div class="tile"><div class="lab">Доля брака за месяц</div><div class="val">18,4 %</div>
+      <div class="hint">было 24,1 % до внедрения</div></div>
+    <div class="tile accent"><div class="lab">Предотвращено пересъёмок</div><div class="val">37</div>
+      <div class="hint">брак пойман на посту, пациент не ушёл</div></div>
+    <div class="tile accent"><div class="lab">Не набрано дозы</div><div class="val">0,48 мЗв</div>
+      <div class="hint">37 × 13 мкЗв (позвоночник, табл. 2 методички)</div></div>
+    <div class="tile"><div class="lab">Среднее время обработки</div><div class="val">1,9 с</div>
+      <div class="hint">лимит ТЗ — 180 с</div></div>
+  </div>
+
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Доля брака по поликлиникам</h3>
+      <p class="cap">Доля изображений с quality_class = 1, сентябрь 2026. Демо-данные.</p>
+      <div class="chart-wrap" id="w-bar">${barChart()}<div class="tip" id="tip-bar"></div></div>
+      <button class="btn sm" data-act="tbl-bar" style="margin-top:12px">Показать таблицей</button>
+      <div id="tbl-bar" hidden>
+        <table class="tbl-mini"><thead><tr><th>Поликлиника</th><th>Доля брака</th></tr></thead>
+        <tbody>${CLINICS.map(c=>`<tr><td>${esc(c.n)}</td><td class="mono">${String(c.v).replace('.',',')} %</td></tr>`).join('')}</tbody></table>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Динамика по неделям</h3>
+      <p class="cap">Доля брака, %, по зонам. Наведите курсор на график. Демо-данные.</p>
+      <div class="chart-wrap" id="w-line">${lineChart()}<div class="tip" id="tip-line"></div></div>
+      <div class="legend">
+        <span><i style="background:var(--s1)"></i>Поясничный отдел позвоночника</span>
+        <span><i style="background:var(--s2)"></i>Проксимальный отдел бедра</span>
+      </div>
+      <button class="btn sm" data-act="tbl-line" style="margin-top:12px">Показать таблицей</button>
+      <div id="tbl-line" hidden>
+        <table class="tbl-mini"><thead><tr><th>Неделя</th><th>Позвоночник</th><th>Бедро</th></tr></thead>
+        <tbody>${WEEKS.map((w,i)=>`<tr><td>${w}</td><td class="mono">${TREND_SPINE[i]} %</td><td class="mono">${TREND_HIP[i]} %</td></tr>`).join('')}</tbody></table>
+      </div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Нарушения по типам</h3>
+      <p class="cap">Число размеченных зон в обучающей выборке, 249 зон. Это реальные цифры из разметки.</p>
+      <div class="chart-wrap" id="w-vio">${vioChart()}<div class="tip" id="tip-vio"></div></div>
+      <div class="note" style="margin-top:12px">Два самых редких класса — <b>область интереса (7)</b> и
+        <b>укладка позвоночника (6)</b>. Именно они определяют macro-F1, и именно поэтому мы берём их
+        правилом, а не обучением.</div>
+    </div>
+
+    <div class="chart-card">
+      <h3>Что с этим делать</h3>
+      <p class="cap">Выводы, которые аналитика даёт заведующему, а не ML-инженеру.</p>
+      <ul style="margin:14px 0 0;padding-left:18px;display:flex;flex-direction:column;gap:10px;font-size:13.5px;color:var(--ink-2)">
+        <li><b>ГП № 68, филиал 2</b> — 27,4 % брака, из них две трети ротация бедра. Это не обучение
+            персонала, а фиксатор ног: заявка в сервис.</li>
+        <li><b>Посторонние предметы</b> — второй по частоте тип. Чинится памяткой на двери кабинета,
+            а не моделью.</li>
+        <li>Доля брака падает восьмую неделю подряд — эффект обучения на экране «до / после».</li>
+      </ul>
+    </div>
+  </div>`;
+}
+
+/* ---- секция: кейсы ---- */
+const CASE_LIB = [
+  {t:'Корректная укладка позвоночника', svg:()=>spineSVG({tilt:1.6,overlay:false,target:false}),
+   p:'Сверху половина Th12, снизу — верхние края подвздошных костей.', n:'наклон 1,6° · норма ≤ 5°'},
+  {t:'Ось не выровнена', svg:()=>spineSVG({tilt:6.9,overlay:true,target:false}),
+   p:'Наклон оси больше допустимого: плечи и таз не на одной линии.', n:'наклон 6,9° · Не выравнена ось позвоночника'},
+  {t:'Посторонний предмет', svg:()=>spineSVG({tilt:2.0,artifact:true,overlay:false,target:false}),
+   p:'Дуги косточек белья в верхней части кадра — самый частый артефакт в выборке.', n:'17 случаев из 99'},
+  {t:'Корректная укладка бедра', svg:()=>hipSVG({prot:0.95,overlay:false}),
+   p:'Малый вертел выступает минимально, шейка в боковой проекции.', n:'индекс ротации 0,95'},
+  {t:'Недоротация', svg:()=>hipSVG({prot:1.9,overlay:false}),
+   p:'Малый вертел слишком велик, шейка укорочена — ROI шейки захватит большой вертел.', n:'индекс 1,90 · Некорректная укладка'},
+  {t:'Мало запаса поля', svg:()=>hipSVG({prot:1.0,overlay:true,margins:{top:3.4,bottom:1.4,side:2.6}}),
+   p:'Снизу от седалищной кости меньше 3 см — измерение непригодно.', n:'1,4 см < 3 см (28,6 px)'}
+];
+function secCases(){
+  return `
+  <div class="panel-head">
+    <div><h2>Библиотека кейсов</h2>
+      <p>Эталон и типичная ошибка по каждому критерию. Работает и как тренажёр для лаборанта,
+         и как готовый материал для п. 4 ТЗ — «кейсы, демонстрирующие работу решения».</p></div>
+  </div>
+  <div class="cases">
+    ${CASE_LIB.map(c=>`<article class="case">
+      <div class="art">${c.svg()}</div>
+      <div class="txt"><h4>${esc(c.t)}</h4><p>${esc(c.p)}</p><span class="norm">${esc(c.n)}</span></div>
+    </article>`).join('')}
+  </div>`;
+}
+
+/* ---- секция: служебное ---- */
+function secService(){
+  const metrics = [
+    ['Позвоночник — quality_class','0,87','[0,79; 0,93]','0,92'],
+    ['Бедро — quality_class','0,84','[0,75; 0,90]','0,90'],
+    ['Не выравнена ось позвоночника','0,81','[0,68; 0,91]','0,89'],
+    ['Присутствуют посторонние предметы','0,76','[0,62; 0,87]','0,85'],
+    ['Некорректная область интереса','—','мало данных (7 позитивов)','—']
+  ];
+  const health = [
+    ['Orthanc','ok','12 мс'],['NATS','ok','3 мс'],['Postgres','ok','5 мс'],
+    ['S3 (отчёты)','ok','28 мс'],['dicom-analyzer','warn','очередь 14']
+  ];
+  return `
+  <div class="panel-head">
+    <div><h2>Служебное</h2>
+      <p>Версия модели в каждом вердикте, журнал прогонов и health-check. Трассируемость — обязательное
+         свойство клинического ПО, а не украшение.</p></div>
+  </div>
+  <div class="charts">
+    <div class="chart-card">
+      <h3>Метрики текущей версии</h3>
+      <p class="cap">dxa-qc 0.4.2, отложенный фолд. <b>Демонстрационные числа</b>, не результат прогона.</p>
+      <div class="tbl-scroll" style="margin-top:12px;border:0">
+        <table class="grid" style="min-width:460px">
+          <thead><tr><th>Показатель</th><th>F1</th><th>95 % ДИ</th><th>ROC-AUC</th></tr></thead>
+          <tbody>${metrics.map(m=>`<tr style="cursor:default"><td>${esc(m[0])}</td><td class="mono">${m[1]}</td>
+            <td class="mono" style="color:var(--muted)">${esc(m[2])}</td><td class="mono">${m[3]}</td></tr>`).join('')}</tbody>
+        </table>
+      </div>
+      <div class="note" style="margin-top:12px">Интервалы широкие — в выборке 100 исследований.
+        Это честная картина, а не недоработка: бутстрэп считается по исследованиям, а не по снимкам.</div>
+    </div>
+    <div class="chart-card">
+      <h3>Состояние сервисов</h3>
+      <p class="cap">Опрос каждые 15 с.</p>
+      <div class="health" style="margin-top:8px">
+        ${health.map(h=>`<div class="health-row">
+          <span class="dot" style="background:${h[1]==='ok'?'var(--ok)':'var(--warn)'}"></span>
+          <span class="nm">${esc(h[0])}</span>
+          <span class="pill ${h[1]==='ok'?'ok':'warn'}">${h[1]==='ok'?'норма':'нагрузка'}</span>
+          <span class="mt">${esc(h[2])}</span></div>`).join('')}
+      </div>
+      <div class="eyebrow" style="margin:18px 0 8px">Журнал прогонов</div>
+      <div class="health">
+        <div class="health-row"><span class="nm">21.09 11:04</span><span>120 файлов · 2 Failure</span><span class="mt">3 м 48 с</span></div>
+        <div class="health-row"><span class="nm">20.09 18:30</span><span>96 файлов · 0 Failure</span><span class="mt">3 м 02 с</span></div>
+        <div class="health-row"><span class="nm">20.09 09:12</span><span>252 файла · 1 Failure</span><span class="mt">8 м 11 с</span></div>
+      </div>
+    </div>
+  </div>`;
+}
+
+/* ---- маршрутизация фронта B ---- */
+const SECTIONS = {queue:secQueue, study:secStudy, editor:secEditor, batch:secBatch,
+                  analytics:secAnalytics, cases:secCases, service:secService};
+function renderPanel(){
+  const p = document.getElementById('panel');
+  p.innerHTML = SECTIONS[curSec]();
+  document.querySelectorAll('#side-nav button').forEach(b=>
+    b.setAttribute('aria-current', String(b.dataset.sec === curSec)));
+
+  p.querySelectorAll('.fchip[data-f]').forEach(b=>b.addEventListener('click',()=>{
+    qFilter = b.dataset.f; renderPanel();
+  }));
+  p.querySelectorAll('table.grid tbody tr[data-i]').forEach(tr=>tr.addEventListener('click',()=>{
+    selStudy = +tr.dataset.i; curSec = 'study'; renderPanel();
+  }));
+  p.querySelectorAll('.tool[data-layer]').forEach(b=>b.addEventListener('click',()=>{
+    layers[b.dataset.layer] = !layers[b.dataset.layer]; renderPanel();
+  }));
+  p.querySelectorAll('[data-act]').forEach(b=>b.addEventListener('click',()=>onAct(b.dataset.act)));
+
+  if(curSec === 'editor'){
+    paintEditor();
+    document.getElementById('ed-slider').addEventListener('input',e=>{ edTilt = +e.target.value; paintEditor(); });
+    document.getElementById('ed-shift').addEventListener('input',e=>{ edShift = +e.target.value; paintEditor(); });
+  }
+  if(curSec === 'analytics') wireCharts();
+}
+function onAct(a){
+  if(a==='to-queue'){ curSec='queue'; renderPanel(); return; }
+  if(a==='to-study'){ curSec='study'; renderPanel(); return; }
+  if(a==='to-editor'){ curSec='editor'; renderPanel(); return; }
+  if(a==='run-batch'){ runBatch(); return; }
+  if(a==='tbl-bar'){ const t=document.getElementById('tbl-bar'); t.hidden=!t.hidden; return; }
+  if(a==='tbl-line'){ const t=document.getElementById('tbl-line'); t.hidden=!t.hidden; return; }
+  if(a==='agree'){ toast('Вердикт подтверждён врачом'); return; }
+  if(a==='disagree'){ toast('Случай помечен как спорный и уйдёт в feedback-датасет'); return; }
+  if(a==='save-edit'){ toast('Разметка сохранена: confirmed_by_expert = true, дообучение не запускается'); return; }
+  if(a.startsWith('export')){
+    toast('В прототипе выгрузка отключена. В рабочей версии — xlsx по схеме п. 2.5 и zip с дополнительными сериями');
+    return;
+  }
+}
+document.querySelectorAll('#side-nav button').forEach(b=>b.addEventListener('click',()=>{
+  curSec = b.dataset.sec; renderPanel(); window.scrollTo({top:0, behavior:'smooth'});
+}));
+
+/* ---- наведение на графики ---- */
+function wireCharts(){
+  const wl = document.getElementById('w-line');
+  if(wl){
+    const svg = wl.querySelector('svg'), tip = document.getElementById('tip-line');
+    const hit = svg.querySelector('#hit'), cross = svg.querySelector('#cross');
+    const L=38,R=54,W=520,T=14,ih=240-14-34, iw=W-L-R, max=30;
+    const show = e=>{
+      const r = svg.getBoundingClientRect();
+      const rel = (e.clientX - r.left)/r.width*W;
+      let i = Math.round((rel - L)/iw*(WEEKS.length-1));
+      i = Math.max(0, Math.min(WEEKS.length-1, i));
+      const x = L + iw*i/(WEEKS.length-1);
+      cross.setAttribute('x1',x); cross.setAttribute('x2',x); cross.setAttribute('opacity','.6');
+      tip.innerHTML = `Неделя ${WEEKS[i]}<br>Позвоночник <b>${TREND_SPINE[i]} %</b><br>Бедро <b>${TREND_HIP[i]} %</b>`;
+      tip.style.left = (x/W*100)+'%';
+      tip.style.top  = ((T + ih - Math.max(TREND_SPINE[i],TREND_HIP[i])/max*ih)/240*100)+'%';
+      tip.style.opacity = 1;
+    };
+    hit.addEventListener('pointermove', show);
+    hit.addEventListener('pointerenter', show);
+    wl.addEventListener('pointerleave', ()=>{ tip.style.opacity=0; cross.setAttribute('opacity','0'); });
+  }
+  const pairs = [['w-bar','tip-bar','.hb',CLINICS,(c)=>`${c.n}<br>брак <b>${String(c.v).replace('.',',')} %</b>`],
+                 ['w-vio','tip-vio','.vb',VIOS,(c)=>`${c.n}<br><b>${c.v}</b> зон из 249`]];
+  pairs.forEach(([wid,tid,sel,data,fmt])=>{
+    const w = document.getElementById(wid); if(!w) return;
+    const tip = document.getElementById(tid);
+    w.querySelectorAll(sel).forEach(el=>{
+      el.style.cursor='pointer';
+      el.addEventListener('pointerenter',ev=>{
+        const b = el.getBoundingClientRect(), p = w.getBoundingClientRect();
+        tip.innerHTML = fmt(data[+el.dataset.i]);
+        tip.style.left = (b.left - p.left + b.width/2)+'px';
+        tip.style.top  = (b.top - p.top)+'px';
+        tip.style.opacity = 1;
+      });
+      el.addEventListener('pointerleave',()=>{ tip.style.opacity=0; });
+    });
+  });
+}
+
+/* ==========================================================
+   4. Общее
+   ========================================================== */
+let toastT;
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.classList.add('on');
+  clearTimeout(toastT); toastT = setTimeout(()=>t.classList.remove('on'), 3400);
+}
+const vPost = document.getElementById('view-post'), vCenter = document.getElementById('view-center');
+const bPost = document.getElementById('nav-post'), bCenter = document.getElementById('nav-center');
+function showView(which){
+  const post = which === 'post';
+  vPost.hidden = !post; vCenter.hidden = post;
+  bPost.setAttribute('aria-pressed', String(post));
+  bCenter.setAttribute('aria-pressed', String(!post));
+  if(!post) renderPanel();
+}
+bPost.addEventListener('click',()=>showView('post'));
+bCenter.addEventListener('click',()=>showView('center'));
+
+const themeBtn = document.getElementById('theme-btn');
+themeBtn.addEventListener('click',()=>{
+  const cur = document.documentElement.getAttribute('data-theme');
+  const dark = cur ? cur === 'dark'
+    : window.matchMedia('(prefers-color-scheme: dark)').matches;
+  document.documentElement.setAttribute('data-theme', dark ? 'light' : 'dark');
+  try{ localStorage.setItem('dxa-theme', dark ? 'light' : 'dark'); }catch(e){}
+  if(curSec === 'analytics' && !vCenter.hidden) renderPanel();
+});
+try{
+  const saved = localStorage.getItem('dxa-theme');
+  if(saved) document.documentElement.setAttribute('data-theme', saved);
+}catch(e){}
+
+document.addEventListener('keydown',e=>{
+  if(vCenter.hidden || e.target.matches('input,textarea')) return;
+  const map = {'1':'queue','2':'study','3':'editor','4':'batch','5':'analytics','6':'cases','7':'service'};
+  if(map[e.key]){ curSec = map[e.key]; renderPanel(); }
+});
+
+renderPost();
+</script>

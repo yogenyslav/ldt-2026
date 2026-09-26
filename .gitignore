@@ -35,3 +35,4 @@ go.work.sum
 data/
 .mypy_cache/
 venv/
+context/
