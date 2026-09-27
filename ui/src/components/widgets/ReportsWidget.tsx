@@ -1,16 +1,17 @@
 import { useNavigate } from 'react-router-dom'
 import { Download, List } from 'lucide-react'
 import Button from '@/components/ui/button'
+import { buttonVariants } from '@/components/ui/buttonVariants'
 import Card from '@/components/ui/card'
 import Empty from '@/components/shared/Empty'
 import Loader from '@/components/shared/Loader'
-import { useToast } from '@/components/ui/toast'
 import { useReports } from '@/hooks/useReports'
 import { whenOf } from '@/lib/utils'
 
+const fileNameOf = (id: number) => `dxa-qc-otchet-${id}.csv`
+
 const ReportsWidget = () => {
   const { data: reports, isLoading } = useReports()
-  const { toast } = useToast()
   const navigate = useNavigate()
 
   if (isLoading) return <Loader />
@@ -44,13 +45,20 @@ const ReportsWidget = () => {
                     {whenOf(report.created_at)}
                   </td>
                   <td className="tabular border-b border-line px-4 py-3.5 text-muted">
-                    {report.download_url}
+                    {fileNameOf(report.id)}
                   </td>
                   <td className="border-b border-line px-4 py-3.5">
-                    <Button onClick={() => toast({ title: 'Файл отчёта выгружен' })}>
+                    {/* The backend hands over a link to the file: an S3 URL in
+                        production, a data URL in demo mode. Either way it has to
+                        be a real <a href>, or the browser will not save it. */}
+                    <a
+                      className={buttonVariants()}
+                      href={report.download_url}
+                      download={fileNameOf(report.id)}
+                    >
                       <Download size={16} />
                       Скачать
-                    </Button>
+                    </a>
                   </td>
                 </tr>
               ))}

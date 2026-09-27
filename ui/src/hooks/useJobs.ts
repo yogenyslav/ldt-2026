@@ -1,13 +1,17 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ApiJob from '@/services/apiJob'
 import { groupByStudy } from '@/lib/verdict'
-import { POLL_INTERVAL } from '@/config'
+import { POLL_INTERVAL, QUEUE_POLL_INTERVAL } from '@/config'
 import type { Decision } from '@/types'
 
-export const useJobs = (limit = 50, offset = 0) =>
+/* refetchInterval is per observer, and react-query takes the shortest one of
+   them: a screen that watches a batch being processed asks for a faster pace
+   than the queue behind it. */
+export const useJobs = (limit = 50, offset = 0, refetchInterval = QUEUE_POLL_INTERVAL) =>
   useQuery({
     queryKey: ['jobs', limit, offset],
     queryFn: () => ApiJob.getJobs({ limit, offset }).then((r) => r.data.jobs),
+    refetchInterval,
   })
 
 /* Centre queue: a list of visits instead of a flat list of scans. */
@@ -16,14 +20,16 @@ export const useStudies = (limit = 50, offset = 0) => {
   return { ...query, studies: query.data ? groupByStudy(query.data) : [] }
 }
 
-/* Technologist station: the screen refreshes itself while open.
-   Will be replaced by a subscription once the backend exposes a push channel. */
-export const useLatestJobs = (enabled = true) =>
+/* Technologist station. In the device mode the screen refreshes itself while it
+   is open — that polling is the whole mechanism by which a scan "arrives on its
+   own", and it will be replaced by a subscription once the backend exposes a push
+   channel. In the manual mode there is nothing to wait for, so the station asks
+   once and then only while a scan of its own is being processed. */
+export const useLatestJobs = (poll = true) =>
   useQuery({
     queryKey: ['jobs', 'latest'],
     queryFn: () => ApiJob.getJobs({ limit: 20, offset: 0 }).then((r) => r.data.jobs),
-    refetchInterval: POLL_INTERVAL,
-    enabled,
+    refetchInterval: poll ? POLL_INTERVAL : false,
   })
 
 export const useJob = (jobId?: string) =>

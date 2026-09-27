@@ -6,6 +6,8 @@ import { useJobs } from '@/hooks/useJobs'
 const RootLayout = () => {
   const { data: jobs } = useJobs()
   const undecided = jobs?.filter((job) => !job.specialist_decision).length
+  const today = new Date().toISOString().slice(0, 10)
+  const todayCount = jobs?.filter((job) => job.created_at.startsWith(today)).length
 
   return (
     <div className="flex min-h-screen flex-col">
@@ -17,7 +19,7 @@ const RootLayout = () => {
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-[258px_1fr]">
-        <SideNav queueCount={undecided} />
+        <SideNav queueCount={undecided} todayCount={todayCount} />
         <main className="min-w-0 overflow-auto px-8 pt-7 pb-12">
           <Outlet />
         </main>

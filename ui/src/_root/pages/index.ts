@@ -1,4 +1,5 @@
 export { default as Post } from './Post'
+export { default as Setup } from './Setup'
 export { default as Queue } from './Queue'
 export { default as Study } from './Study'
 export { default as Batch } from './Batch'

@@ -19,7 +19,11 @@ api.interceptors.request.use((config) => {
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    /* An expired token throws the specialist back to the sign-in screen. A wrong
+       password must not: the sign-in screen is already open and shows the error
+       itself, a reload would only wipe what was typed. */
+    const onSignIn = String(error.config?.url ?? '').includes('/user/login')
+    if (error.response?.status === 401 && !onSignIn) {
       storage.clearAll()
       window.location.assign('/sign-in')
     }

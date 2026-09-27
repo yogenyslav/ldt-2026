@@ -166,7 +166,9 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
             <Cell label="Поступило" value={whenOf(job.created_at)} />
             <Cell label="Область" value={job.anatomical_region ? REGION[job.anatomical_region] : '—'} />
             <Cell label="Состояние" value={STATUS[job.status]} />
-            <Cell label="Направившая организация" value="Поликлиника № 218" />
+            {/* The referring organisation is in the dicom_file table but not in
+                the DTO — context/backend_requests.md. The file name is. */}
+            <Cell label="Файл" value={job.file_name ?? '—'} />
             <Cell label="Аппарат" value={job.metadata?.device ?? '—'} />
           </div>
 

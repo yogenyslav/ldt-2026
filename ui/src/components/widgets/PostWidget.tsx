@@ -1,12 +1,23 @@
-import { useMemo, useState } from 'react'
-import { ArrowRight, Check, ChevronLeft, ChevronRight, RefreshCw, ScanLine, TriangleAlert } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
+import {
+  ArrowRight,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  RefreshCw,
+  ScanLine,
+  TriangleAlert,
+} from 'lucide-react'
 import Button from '@/components/ui/button'
 import CriteriaList from '@/components/shared/CriteriaList'
+import DropZone from '@/components/shared/DropZone'
 import Picker from '@/components/shared/Picker'
 import Viewer from '@/components/shared/Viewer'
 import { useToast } from '@/components/ui/toast'
-import { DECISION, REGION, VERDICT_POST } from '@/constants'
+import { DECISION, REGION, STATUS, VERDICT_POST } from '@/constants'
+import { useCabinet } from '@/context/CabinetContext'
 import { useDecideJob, useLatestJobs } from '@/hooks/useJobs'
+import { useUploadScan } from '@/hooks/useUpload'
 import { brokenNames } from '@/lib/criteria'
 import { cn, timeOf } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
@@ -14,7 +25,11 @@ import type { Decision, IJobInfo, VerdictKind } from '@/types'
 
 /* Scope A — radiographer station.
    A single screen: verdict, criteria with expandable explanations, actions.
-   The scan arrives on its own; nothing has to be uploaded. */
+
+   How the scan gets here is decided once, in the settings of the room: either
+   the densitometer sends it to the PACS itself and the screen picks it up, or
+   the technologist uploads the file. Two ways of working, not a switch to flip
+   in the middle of a queue of patients. */
 
 const TONE: Record<string, { box: string; icon: string; title: string }> = {
   ok: { box: 'border-ok-line bg-ok-bg', icon: 'text-ok', title: 'text-ok' },
@@ -32,6 +47,9 @@ const ICON: Record<VerdictKind, React.ComponentType<{ size?: number; strokeWidth
   wait: RefreshCw,
 }
 
+const isBusy = (job?: IJobInfo) => job?.status === 'pending' || job?.status === 'processing'
+
+/* Device mode: nothing to do but wait. */
 const Waiting = () => (
   <div className="flex-center h-full flex-col gap-3.5 p-10 text-center text-muted">
     <ScanLine size={22} />
@@ -45,25 +63,33 @@ const Waiting = () => (
 )
 
 const PostWidget = () => {
-  const { data: jobs, isLoading } = useLatestJobs()
+  const { cabinet } = useCabinet()
   const decide = useDecideJob()
+  const upload = useUploadScan()
   const { toast } = useToast()
 
   const [compare, setCompare] = useState(false)
   const [focus, setFocus] = useState<'now' | 'prev'>('now')
   const [prevIndex, setPrevIndex] = useState(0)
+  /* Manual mode does not poll, so a scan of our own is followed until it is
+     processed and then the screen goes quiet again. */
+  const [follow, setFollow] = useState(false)
+
+  const { data: jobs, isLoading } = useLatestJobs(cabinet.intake === 'device' || follow)
 
   /* Scans are reviewed in arrival order: a patient must not be skipped.
      Reviewed ones become earlier attempts of the shift and can be flipped
      through in comparison mode. */
   const { current, history } = useMemo(() => {
     const byTime = [...(jobs ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
-    const fresh = byTime.filter(
-      (job) => !job.specialist_decision && (job.status === 'completed' || job.status === 'failed'),
-    )
+    const fresh = byTime.filter((job) => !job.specialist_decision)
     const done = [...byTime].reverse().filter((job) => job.specialist_decision)
     return { current: fresh[0] as IJobInfo | undefined, history: done }
   }, [jobs])
+
+  useEffect(() => {
+    if (follow && !isBusy(current)) setFollow(false)
+  }, [follow, current])
 
   const previous = history.length ? history[Math.min(prevIndex, history.length - 1)] : undefined
   const showPrev = compare && !!previous && focus === 'prev'
@@ -78,12 +104,44 @@ const PostWidget = () => {
     )
   }
 
+  const send = async (file: File) => {
+    try {
+      await upload.mutateAsync(file)
+      setFollow(true)
+      setCompare(false)
+      setFocus('now')
+      toast({ title: 'Снимок принят, идёт обработка' })
+    } catch {
+      toast({ title: 'Не удалось загрузить снимок', variant: 'destructive' })
+    }
+  }
+
   if (!current || !shown) {
     return (
       <div className="min-h-0 flex-1 p-5">
-        <div className="h-full rounded-panel border border-scan-line bg-scan-bg">
-          <Waiting />
-        </div>
+        {cabinet.intake === 'device' ? (
+          <div className="h-full rounded-panel border border-scan-line bg-scan-bg">
+            <Waiting />
+          </div>
+        ) : (
+          <div className="flex-center h-full">
+            <div className="w-full max-w-[600px] rounded-panel bg-surface p-[22px] shadow-card">
+              <div className="mb-1 h2-bold text-[22px]">Загрузка снимка</div>
+              <p className="mt-0 mb-4.5 base-regular text-muted">
+                Кабинет работает в режиме загрузки по кнопке. Выберите файл исследования — разбор
+                появится на этом же экране через несколько секунд.
+              </p>
+              <DropZone
+                accept=".dcm,application/dicom"
+                title="Перетащите файл исследования"
+                hint="или нажмите, чтобы выбрать .dcm"
+                busy={upload.isPending}
+                busyLabel="Снимок загружается"
+                onFile={(file) => void send(file)}
+              />
+            </div>
+          </div>
+        )}
       </div>
     )
   }
@@ -92,10 +150,12 @@ const PostWidget = () => {
   const meta = VERDICT_POST[level]
   const tone = TONE[meta.tone] ?? TONE.none
   const Icon = ICON[level]
+  const busy = isBusy(shown)
 
   const broken = shown.status === 'completed' ? brokenNames(shown) : []
-  const subtitle =
-    shown.status === 'failed'
+  const subtitle = busy
+    ? `${STATUS[shown.status]} — несколько секунд`
+    : shown.status === 'failed'
       ? 'Снимок не удалось обработать'
       : `${shown.anatomical_region ? REGION[shown.anatomical_region] : 'Область не определена'} — ${
           broken.length ? broken.join(', ') : 'замечаний нет'
@@ -106,7 +166,10 @@ const PostWidget = () => {
     setCompare(false)
     setFocus('now')
     setPrevIndex(0)
-    toast({ title: DECISION[decision], variant: decision === 'rejected' ? 'destructive' : 'default' })
+    toast({
+      title: DECISION[decision],
+      variant: decision === 'rejected' ? 'destructive' : 'default',
+    })
   }
 
   const actions = showPrev ? (
@@ -114,6 +177,11 @@ const PostWidget = () => {
       <ArrowRight size={16} />
       Вернуться к новому снимку
     </Button>
+  ) : busy ? (
+    <div className="col-span-2 flex items-center justify-center gap-3 py-3.5 small-regular text-muted">
+      <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />
+      Решение можно принять, когда разбор будет готов
+    </div>
   ) : level === 'ok' ? (
     <>
       <Button variant="ok" size="lg" onClick={() => apply('approved')}>
@@ -237,7 +305,14 @@ const PostWidget = () => {
           </div>
 
           <div className="min-h-0 overflow-auto">
-            {shown.status === 'failed' ? (
+            {busy ? (
+              <div className="p-[22px]">
+                <p className="m-0 base-regular text-ink-2">
+                  {shown.file_name ? `Файл ${shown.file_name} принят. ` : ''}
+                  Идёт разбор укладки: система определяет область съёмки и проверяет критерии.
+                </p>
+              </div>
+            ) : shown.status === 'failed' ? (
               <div className="p-[22px]">
                 <p className="m-0 base-regular">
                   Переснимите исследование. Если ошибка повторится, сообщите в центр обработки.

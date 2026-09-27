@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Check, ChevronRight, FileText, Search, X } from 'lucide-react'
+import { Check, ChevronRight, FileText, Inbox, Search, X } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card from '@/components/ui/card'
 import Empty from '@/components/shared/Empty'
@@ -106,6 +106,26 @@ const QueueWidget = () => {
   }
 
   if (isLoading) return <Loader />
+
+  /* A fresh installation: nothing has been sent by the clinics and nothing has
+     been uploaded yet. Not the same thing as filters that match nothing. */
+  if (!jobs?.length) {
+    return (
+      <>
+        <div className="mb-5.5 flex items-center gap-3.5">
+          <h1 className="h1-bold">Очередь исследований</h1>
+          <span className="small-regular text-muted">пока пусто</span>
+        </div>
+        <Card>
+          <Empty
+            icon={<Inbox size={22} />}
+            title="Исследований ещё нет"
+            text="Снимки появятся здесь, как только поликлиники начнут их присылать. Архив можно загрузить вручную в разделе «Пакетная обработка»."
+          />
+        </Card>
+      </>
+    )
+  }
 
   return (
     <>

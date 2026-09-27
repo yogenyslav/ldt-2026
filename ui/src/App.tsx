@@ -4,7 +4,7 @@ import AuthLayout from './_auth/AuthLayout'
 import RootLayout from './_root/RootLayout'
 import PostLayout from './_root/PostLayout'
 import PrivateRoute from './routes/PrivateRoute'
-import { Queue, Study, Batch, Reports, Service, Soon, Post } from './_root/pages'
+import { Queue, Study, Batch, Reports, Service, Soon, Post, Setup } from './_root/pages'
 
 const App = () => {
   return (
@@ -19,6 +19,8 @@ const App = () => {
         <Route element={<PrivateRoute scope="post" />}>
           <Route element={<PostLayout />}>
             <Route path="/post" element={<Post />} />
+            {/* settings of the room: intake mode, shift, statistics, log */}
+            <Route path="/setup" element={<Setup />} />
           </Route>
         </Route>
 

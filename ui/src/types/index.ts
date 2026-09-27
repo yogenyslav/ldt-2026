@@ -70,6 +70,9 @@ export interface IJobInfo {
   /* duplicated in metadata; lifted to the top level for convenient lists */
   study_id?: string
   patient_ref?: string
+  /* the column exists in the dicom_file table but is missing from the DTO —
+     requested in context/backend_requests.md, lists fall back to the job id */
+  file_name?: string
 }
 
 /* A visit: the scans taken for one patient during a single appointment. */
@@ -80,14 +83,21 @@ export interface IStudy {
   jobs: IJobInfo[]
 }
 
+/* Sign-in answers with the token and the two ids and nothing else: the role
+   comes from GET /user/{id}, and the interface contour is derived from it —
+   see item 4 in context/backend_requests.md */
 export interface IUserResponse {
   token: string
   user_id: number
   org_id: number
-  role: UserRole
-  /* UI scope; the backend does not yet distinguish a technologist from a
-     radiologist — see item 4 in context/backend_requests.md */
-  scope?: Scope
+}
+
+/* What is kept between sessions after a sign-in. */
+export interface ISession {
+  user_id: number
+  org_id: number
+  role?: UserRole
+  full_name?: string
 }
 
 export interface IUserInfo {

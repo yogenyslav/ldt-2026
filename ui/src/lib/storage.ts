@@ -1,3 +1,5 @@
+import type { ISession, Scope } from '@/types'
+
 const storagePrefix = 'dxa_qc_react_'
 
 const read = (key: string) => {
@@ -10,21 +12,21 @@ const read = (key: string) => {
   }
 }
 
+const write = (key: string, value: unknown) =>
+  window.localStorage.setItem(`${storagePrefix}${key}`, JSON.stringify(value))
+
 const storage = {
   getToken: (): string | null => read('token'),
-  setToken: (token: string) =>
-    window.localStorage.setItem(`${storagePrefix}token`, JSON.stringify(token)),
+  setToken: (token: string) => write('token', token),
 
-  getScope: (): 'post' | 'center' | null => read('scope'),
-  setScope: (scope: string) =>
-    window.localStorage.setItem(`${storagePrefix}scope`, JSON.stringify(scope)),
+  getScope: (): Scope | null => read('scope'),
+  setScope: (scope: Scope) => write('scope', scope),
 
-  getUser: () => read('user'),
-  setUser: (user: unknown) =>
-    window.localStorage.setItem(`${storagePrefix}user`, JSON.stringify(user)),
+  getSession: (): ISession | null => read('session'),
+  setSession: (session: ISession) => write('session', session),
 
   clearAll: () => {
-    for (const key of ['token', 'scope', 'user']) {
+    for (const key of ['token', 'scope', 'session']) {
       window.localStorage.removeItem(`${storagePrefix}${key}`)
     }
   },

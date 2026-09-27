@@ -15,9 +15,10 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 
 interface SideNavProps {
   queueCount?: number
+  todayCount?: number
 }
 
-const SideNav = ({ queueCount }: SideNavProps) => {
+const SideNav = ({ queueCount, todayCount }: SideNavProps) => {
   return (
     <aside className="flex flex-col border-r border-line bg-surface">
       <nav className="flex flex-col gap-0.5 p-3">
@@ -61,10 +62,10 @@ const SideNav = ({ queueCount }: SideNavProps) => {
         ))}
       </nav>
 
+      {/* Counted over the loaded page: the backend has no aggregates yet —
+          context/backend_requests.md */}
       <div className="mt-auto border-t border-line px-4.5 py-3.5 text-[13px] text-muted">
-        Модель <span className="tabular">dxa-qc 0.4.2</span>
-        <br />
-        Снимков за сутки <span className="tabular">148</span>
+        Снимков за сутки <span className="tabular">{todayCount ?? '—'}</span>
       </div>
     </aside>
   )

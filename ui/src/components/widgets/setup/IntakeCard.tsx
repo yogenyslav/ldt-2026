@@ -1,0 +1,161 @@
+import { useEffect, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { Check, Radio, Upload } from 'lucide-react'
+import Button from '@/components/ui/button'
+import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
+import { USE_MOCKS } from '@/config'
+import { useCabinet } from '@/context/CabinetContext'
+import { useLatestJobs } from '@/hooks/useJobs'
+import store from '@/services/mock/store'
+import { cn, timeOf } from '@/lib/utils'
+import type { Intake } from '@/lib/cabinet'
+
+/* How scans reach this room. Decided once, during setup: with a queue of
+   patients there is no time to work out mid-shift why nothing is arriving. */
+
+const OPTIONS: Array<{
+  value: Intake
+  title: string
+  text: string
+  icon: React.ComponentType<{ size?: number }>
+}> = [
+  {
+    value: 'device',
+    title: 'Приём с аппарата',
+    text: 'Денситометр сам отправляет исследование в архив, экран приёма подхватывает его через несколько секунд. Лаборанту не нужно ничего загружать.',
+    icon: Radio,
+  },
+  {
+    value: 'upload',
+    title: 'Загрузка по кнопке',
+    text: 'Лаборант выбирает файл исследования на экране приёма. Подходит, если аппарат не настроен на отправку или снимок принесли на носителе.',
+    icon: Upload,
+  },
+]
+
+/* Setup check: the installer sends a test study from the densitometer and sees
+   whether it arrives. Any job created after the check has started counts. */
+const WINDOW_MS = 90_000
+
+const IntakeCheck = () => {
+  const queryClient = useQueryClient()
+  const [startedAt, setStartedAt] = useState<number | null>(null)
+  const { data: jobs } = useLatestJobs(startedAt !== null)
+
+  const arrived = startedAt
+    ? [...(jobs ?? [])].find((job) => Date.parse(job.created_at) >= startedAt)
+    : undefined
+
+  useEffect(() => {
+    if (startedAt === null) return
+    const timer = setTimeout(() => setStartedAt(null), WINDOW_MS)
+    return () => clearTimeout(timer)
+  }, [startedAt])
+
+  if (arrived) {
+    return (
+      <div className="flex items-center gap-3 rounded-soft border border-ok-line bg-ok-bg px-4 py-3.5">
+        <Check size={18} className="text-ok" />
+        <span className="flex-1 base-semibold text-ok">
+          Снимок получен в {timeOf(arrived.created_at)}
+        </span>
+        <Button variant="quiet" onClick={() => setStartedAt(null)}>
+          Закрыть
+        </Button>
+      </div>
+    )
+  }
+
+  if (startedAt !== null) {
+    return (
+      <div className="flex items-center gap-3 rounded-soft border border-line bg-surface-2 px-4 py-3.5">
+        <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />
+        <span className="flex-1 base-regular text-ink-2">
+          Ждём снимок с аппарата — отправьте тестовое исследование в архив
+        </span>
+        <Button variant="quiet" onClick={() => setStartedAt(null)}>
+          Отменить
+        </Button>
+      </div>
+    )
+  }
+
+  return (
+    <div className="flex flex-wrap items-center gap-3">
+      <Button onClick={() => setStartedAt(Date.now())}>Ждать снимок</Button>
+      {/* Demo mode: there is no densitometer on the other end, so the check has
+          to be given something to catch. */}
+      {USE_MOCKS ? (
+        <Button
+          variant="quiet"
+          onClick={() => {
+            setStartedAt(Date.now() - 1000)
+            store.arrive()
+            void queryClient.invalidateQueries({ queryKey: ['jobs'] })
+          }}
+        >
+          Эмулировать снимок с аппарата
+        </Button>
+      ) : null}
+      <span className="small-regular text-muted">
+        проверка приёма: полторы минуты на тестовое исследование с аппарата
+      </span>
+    </div>
+  )
+}
+
+const IntakeCard = () => {
+  const { cabinet, update } = useCabinet()
+
+  return (
+    <Card>
+      <CardHead>
+        <span className="h3-bold">Режим приёма</span>
+        <span className="flex-1" />
+        <span className="small-regular text-muted">настройка этого рабочего места</span>
+      </CardHead>
+
+      <CardBody className="grid grid-cols-2 gap-3 pt-0">
+        {OPTIONS.map((option) => {
+          const active = cabinet.intake === option.value
+          const Icon = option.icon
+          return (
+            <button
+              key={option.value}
+              type="button"
+              onClick={() => update({ intake: option.value })}
+              className={cn(
+                'cursor-pointer rounded-soft border-[1.5px] p-4 text-left transition-colors',
+                active
+                  ? 'border-brand bg-brand-050'
+                  : 'border-line-2 bg-surface hover:border-brand-400 hover:bg-brand-050',
+              )}
+            >
+              <span className="flex items-center gap-2.5">
+                <span
+                  className={cn(
+                    'flex-center h-9 w-9 flex-none rounded-xl',
+                    active ? 'bg-brand text-white' : 'bg-surface-3 text-muted',
+                  )}
+                >
+                  <Icon size={18} />
+                </span>
+                <span className="flex-1 base-semibold">{option.title}</span>
+                {active ? <Check size={18} className="text-brand" /> : null}
+              </span>
+              <span className="mt-2.5 block small-regular text-muted">{option.text}</span>
+            </button>
+          )
+        })}
+      </CardBody>
+
+      {cabinet.intake === 'device' ? (
+        <CardFoot className="bg-surface-2">
+          <IntakeCheck />
+        </CardFoot>
+      ) : null}
+    </Card>
+  )
+}
+
+export default IntakeCard
