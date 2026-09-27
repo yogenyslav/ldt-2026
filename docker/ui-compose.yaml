@@ -1,0 +1,10 @@
+name: dicom-ui
+
+services:
+  ui:
+    build:
+      context: ../ui
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    ports:
+      - "${UI_PORT:-8080}:80"
