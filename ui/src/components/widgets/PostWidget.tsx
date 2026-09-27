@@ -19,12 +19,18 @@ import { useCabinet } from '@/context/CabinetContext'
 import { useDecideJob, useLatestJobs } from '@/hooks/useJobs'
 import { useUploadScan } from '@/hooks/useUpload'
 import { brokenNames } from '@/lib/criteria'
-import { cn, timeOf } from '@/lib/utils'
+import { openSession } from '@/lib/station'
+import { cn, plural, timeOf } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 import type { Decision, IJobInfo, VerdictKind } from '@/types'
 
 /* Scope A — radiographer station.
-   A single screen: verdict, criteria with expandable explanations, actions.
+
+   The station works with one patient at a time. A study stays open until one of
+   its scans is accepted: a retake is another attempt within the same visit, not
+   a new case, so the earlier attempts stay on hand for comparison and the screen
+   does not fall back to an empty state between them. Attempts of other patients
+   never get into that comparison — that is the whole point of scoping it.
 
    How the scan gets here is decided once, in the settings of the room: either
    the densitometer sends it to the PACS itself and the screen picks it up, or
@@ -49,7 +55,7 @@ const ICON: Record<VerdictKind, React.ComponentType<{ size?: number; strokeWidth
 
 const isBusy = (job?: IJobInfo) => job?.status === 'pending' || job?.status === 'processing'
 
-/* Device mode: nothing to do but wait. */
+/* Device mode, no patient on the screen: nothing to do but wait. */
 const Waiting = () => (
   <div className="flex flex-col items-center gap-3.5 p-10 text-center text-scan-text">
     <span className="flex-center h-11.5 w-11.5 rounded-control border border-scan-line">
@@ -64,8 +70,7 @@ const Waiting = () => (
   </div>
 )
 
-/* Manual mode: the same dark viewport, with the one action it has in it. The
-   file can be dropped anywhere on the panel. */
+/* Manual mode: the same dark viewport, with the one action it has in it. */
 const Dropping = ({ busy, onFile }: { busy: boolean; onFile: (file: File) => void }) => (
   <div className="w-full max-w-[460px] px-6">
     <DropZone
@@ -96,23 +101,26 @@ const PostWidget = () => {
 
   const { data: jobs, isLoading } = useLatestJobs(cabinet.intake === 'device' || follow)
 
-  /* Scans are reviewed in arrival order: a patient must not be skipped.
-     Reviewed ones become earlier attempts of the shift and can be flipped
-     through in comparison mode. */
-  const { current, history } = useMemo(() => {
-    const byTime = [...(jobs ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
-    const fresh = byTime.filter((job) => !job.specialist_decision)
-    const done = [...byTime].reverse().filter((job) => job.specialist_decision)
-    return { current: fresh[0] as IJobInfo | undefined, history: done }
-  }, [jobs])
+  /* The open visit: the earliest one with no accepted scan yet. Its attempts
+     are what the screen shows and compares — see lib/station.ts. */
+  const { attempts, current, history, patient } = useMemo(
+    () => openSession(jobs ?? []),
+    [jobs],
+  )
 
   useEffect(() => {
     if (follow && !isBusy(current)) setFollow(false)
   }, [follow, current])
 
+  /* Nothing to decide on means the last attempt was rejected and the retake has
+     not arrived yet: the screen keeps that attempt visible, so the technologist
+     can see what to fix while repositioning the patient. */
+  const anchor = current ?? history[0]
+  const retaking = !current && !!anchor
+
   const previous = history.length ? history[Math.min(prevIndex, history.length - 1)] : undefined
-  const showPrev = compare && !!previous && focus === 'prev'
-  const shown = showPrev ? (previous as IJobInfo) : current
+  const showPrev = compare && !!previous && focus === 'prev' && previous.id !== anchor?.id
+  const shown = showPrev ? (previous as IJobInfo) : anchor
 
   if (isLoading) {
     return (
@@ -135,7 +143,8 @@ const PostWidget = () => {
     }
   }
 
-  if (!current || !shown) {
+  /* No open visit at all: the station is between patients. */
+  if (!anchor || !shown) {
     return (
       <div className="min-h-0 flex-1 p-5">
         <div className="flex-center h-full rounded-panel border border-scan-line bg-scan-bg">
@@ -166,7 +175,7 @@ const PostWidget = () => {
 
   /* A decision always belongs to the scan on the screen: while an earlier
      attempt is open, it is that attempt that gets accepted, not the new one. */
-  const apply = async (decision: Decision, job: IJobInfo = current) => {
+  const apply = async (decision: Decision, job: IJobInfo = anchor) => {
     await decide.mutateAsync({ jobIds: [job.id], decision })
     setCompare(false)
     setFocus('now')
@@ -177,19 +186,39 @@ const PostWidget = () => {
     })
   }
 
-  /* Looking at an earlier attempt does not take the decision away: if that
-     attempt turns out to be the good one, it is accepted right here. */
   const actions = showPrev ? (
+    /* Looking at an earlier attempt does not take the decision away: if that
+       attempt turns out to be the good one, it is accepted right here. */
     <>
-      <Button variant="ok" size="lg" onClick={() => apply('approved', shown)}>
+      <Button variant="ok" size="lg" onClick={() => void apply('approved', shown)}>
         <Check size={16} />
         Принять эту попытку
       </Button>
       <Button size="lg" onClick={() => setFocus('now')}>
         <ArrowRight size={16} />
-        Вернуться к новому
+        {retaking ? 'Вернуться к последней' : 'Вернуться к новому'}
       </Button>
     </>
+  ) : retaking ? (
+    /* Waiting for the retake of the same patient. */
+    cabinet.intake === 'device' ? (
+      <div className="col-span-2 flex items-center justify-center gap-3 py-3.5 small-regular text-muted">
+        <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />
+        Ожидание повторного снимка с аппарата
+      </div>
+    ) : (
+      <div className="col-span-2">
+        <DropZone
+          accept=".dcm,application/dicom"
+          title="Загрузите повторный снимок"
+          hint="того же пациента — попытка добавится к этому исследованию"
+          busy={upload.isPending}
+          busyLabel="Снимок загружается"
+          onFile={(file) => void send(file)}
+          className="gap-1.5 py-6"
+        />
+      </div>
+    )
   ) : busy ? (
     <div className="col-span-2 flex items-center justify-center gap-3 py-3.5 small-regular text-muted">
       <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />
@@ -197,33 +226,33 @@ const PostWidget = () => {
     </div>
   ) : level === 'ok' ? (
     <>
-      <Button variant="ok" size="lg" onClick={() => apply('approved')}>
+      <Button variant="ok" size="lg" onClick={() => void apply('approved')}>
         <Check size={16} />
         Пациент свободен
       </Button>
-      <Button size="lg" onClick={() => apply('rejected')}>
+      <Button size="lg" onClick={() => void apply('rejected')}>
         <RefreshCw size={16} />
         Переснять
       </Button>
     </>
   ) : level === 'warn' ? (
     <>
-      <Button variant="ok" size="lg" onClick={() => apply('approved')}>
+      <Button variant="ok" size="lg" onClick={() => void apply('approved')}>
         <Check size={16} />
         Принять
       </Button>
-      <Button size="lg" onClick={() => apply('rejected')}>
+      <Button size="lg" onClick={() => void apply('rejected')}>
         <RefreshCw size={16} />
         Переснять
       </Button>
     </>
   ) : (
     <>
-      <Button variant="bad" size="lg" onClick={() => apply('rejected')}>
+      <Button variant="bad" size="lg" onClick={() => void apply('rejected')}>
         <RefreshCw size={16} />
         Переснять
       </Button>
-      <Button size="lg" onClick={() => apply('force_approved')}>
+      <Button size="lg" onClick={() => void apply('force_approved')}>
         Всё равно принять
       </Button>
     </>
@@ -248,7 +277,7 @@ const PostWidget = () => {
         dark
         current={previous}
         items={history}
-        label={`Попытка ${prevIndex + 1} из ${history.length}`}
+        label={`Попытка ${history.length - prevIndex} из ${attempts.length}`}
         count="выбрать"
         onPick={(job) => {
           setPrevIndex(history.findIndex((item) => item.id === job.id))
@@ -274,7 +303,7 @@ const PostWidget = () => {
   return (
     <div className="grid min-h-0 flex-1 grid-cols-[minmax(420px,1fr)_minmax(480px,560px)] gap-5 p-5">
       <Viewer
-        job={current}
+        job={anchor}
         compareWith={compare && previous ? previous : undefined}
         focus={focus}
         onFocus={setFocus}
@@ -294,11 +323,22 @@ const PostWidget = () => {
           The station screen itself never scrolls. */}
       <div className="flex min-h-0 flex-col">
         <div className="my-auto flex max-h-full min-h-0 flex-col overflow-hidden rounded-panel border border-line bg-surface">
-          {showPrev ? (
-            <div className="shrink-0 bg-brand-050 px-[22px] py-2.5 small-regular font-medium text-brand-700">
-              Разбор предыдущей попытки, {timeOf(shown.created_at)}
-            </div>
-          ) : null}
+          {/* Who is on the table and which attempt this is: the station keeps
+              the visit open until one of its scans is accepted. */}
+          <div className="flex shrink-0 items-center gap-2.5 border-b border-line bg-surface-2 px-[22px] py-2.5 small-regular">
+            <span className="font-semibold">Пациент {patient}</span>
+            <span className="text-line-2">·</span>
+            <span className="text-muted">
+              {attempts.length} {plural(attempts.length, 'попытка', 'попытки', 'попыток')}
+            </span>
+            {showPrev ? (
+              <span className="ml-auto font-medium text-brand-700">
+                разбор попытки, {timeOf(shown.created_at)}
+              </span>
+            ) : retaking ? (
+              <span className="ml-auto font-medium text-ink-2">ждём повторный снимок</span>
+            ) : null}
+          </div>
 
           <div className={cn('flex shrink-0 items-center gap-4.5 border-b px-6 py-6', tone.box)}>
             {/* a rounded square on white instead of a ringed circle: the same
