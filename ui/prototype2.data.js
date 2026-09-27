@@ -1,11 +1,15 @@
 // Демо-данные прототипа. Собраны из настоящих результатов qc_prototype/examples:
 // геометрия разметки подлинная и совпадает со снимками в ui/assets.
 // В рабочей системе это ответ GET /job/info и GET /job/info/{job_id}.
+// study_id, patient_ref, study_date, device — поля, запрошенные у бекендера
+// (context/backend_requests.md); у него study_id уже лежит в таблице dicom_file.
 window.DEMO_JOBS = [
  {
   "id": "7c1f4a20",
   "dicom_id": "d41f8a63",
   "scan": "scan-spine.png",
+  "study_id": "1.2.643.5.1.13.2026.0912",
+  "patient_ref": "P-10428",
   "created_at": "2026-09-27T09:12:04",
   "status": "completed",
   "anatomical_region": "spine",
@@ -115,7 +119,292 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.0912",
+   "patient_ref": "P-10428",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
+  "specialist_decision": null,
+  "comment": "",
+  "specialist_name": ""
+ },
+ {
+  "id": "1e5b8c47",
+  "dicom_id": "f03d2a71",
+  "scan": "scan-hip-left.png",
+  "study_id": "1.2.643.5.1.13.2026.0912",
+  "patient_ref": "P-10428",
+  "created_at": "2026-09-27T09:12:11",
+  "status": "completed",
+  "anatomical_region": "hip_left",
+  "confidence": 0.8935806155204773,
+  "violations": [],
+  "duration_ms": 6461,
+  "metadata": {
+   "shape": [
+    291,
+    280
+   ],
+   "classification": {
+    "source": "vote",
+    "votes": {
+     "cnn": "hip",
+     "mask": "hip",
+     "width": "hip"
+    },
+    "agreement": 1.0,
+    "unanimous": true,
+    "n_peaks": 2,
+    "cnn_confidence": 0.7871612310409546
+   },
+   "criteria": {
+    "hip_margins": {
+     "name": "hip_margins",
+     "ok": 1,
+     "source": "math",
+     "value": null,
+     "unit": "cm",
+     "points": {
+      "apex": [
+       198.0,
+       73.0
+      ],
+      "lateral": [
+       230.0,
+       125.5
+      ],
+      "ischium": [
+       52.0,
+       187.0
+      ]
+     },
+     "regions": [],
+     "details": {
+      "top_cm": 7.665000000000001,
+      "bottom_cm": 10.815000000000001,
+      "side_cm": 2.94,
+      "implant": false
+     },
+     "note": ""
+    },
+    "hip_keypoints": {
+     "name": "hip_keypoints",
+     "ok": 1,
+     "source": "model",
+     "value": null,
+     "unit": "",
+     "points": {
+      "greater_trochanter_apex": [
+       209.15624246910545,
+       96.13392857142857
+      ],
+      "femoral_neck": [
+       155.89285152976805,
+       113.02232142857142
+      ],
+      "ischium": [
+       77.94642576488403,
+       157.19196428571428
+      ]
+     },
+     "regions": [],
+     "details": {
+      "confidence": {
+       "greater_trochanter_apex": 1.0,
+       "femoral_neck": 1.0,
+       "ischium": 0.9996742010116577
+      }
+     },
+     "note": ""
+    },
+    "lesser_trochanter": {
+     "name": "lesser_trochanter",
+     "ok": 1,
+     "source": "math",
+     "value": 2.64,
+     "unit": "mm",
+     "points": {},
+     "regions": [
+      [
+       [
+        139.0,
+        162.0
+       ],
+       [
+        138.0,
+        163.0
+       ],
+       [
+        138.0,
+        165.0
+       ],
+       [
+        136.0,
+        167.0
+       ],
+       [
+        136.0,
+        168.0
+       ],
+       [
+        134.0,
+        170.0
+       ],
+       [
+        134.0,
+        172.0
+       ],
+       [
+        133.0,
+        173.0
+       ],
+       [
+        133.0,
+        185.0
+       ],
+       [
+        134.0,
+        186.0
+       ],
+       [
+        134.0,
+        187.0
+       ],
+       [
+        135.0,
+        188.0
+       ],
+       [
+        135.0,
+        189.0
+       ],
+       [
+        147.0,
+        201.0
+       ],
+       [
+        147.0,
+        202.0
+       ],
+       [
+        148.0,
+        203.0
+       ],
+       [
+        154.0,
+        203.0
+       ],
+       [
+        154.0,
+        200.0
+       ],
+       [
+        153.0,
+        199.0
+       ],
+       [
+        153.0,
+        192.0
+       ],
+       [
+        152.0,
+        191.0
+       ],
+       [
+        152.0,
+        185.0
+       ],
+       [
+        151.0,
+        184.0
+       ],
+       [
+        151.0,
+        180.0
+       ],
+       [
+        150.0,
+        179.0
+       ],
+       [
+        150.0,
+        177.0
+       ],
+       [
+        149.0,
+        176.0
+       ],
+       [
+        149.0,
+        174.0
+       ],
+       [
+        148.0,
+        173.0
+       ],
+       [
+        148.0,
+        172.0
+       ],
+       [
+        147.0,
+        171.0
+       ],
+       [
+        147.0,
+        170.0
+       ],
+       [
+        145.0,
+        168.0
+       ],
+       [
+        145.0,
+        167.0
+       ],
+       [
+        143.0,
+        165.0
+       ],
+       [
+        143.0,
+        164.0
+       ],
+       [
+        142.0,
+        163.0
+       ],
+       [
+        143.0,
+        162.0
+       ]
+      ]
+     ],
+     "details": {
+      "status": "норма",
+      "implant": false
+     },
+     "note": ""
+    }
+   },
+   "verdict": 1,
+   "models": {
+    "region": "подключена",
+    "hip_keypoints": "подключена",
+    "pelvis_crest": "подключена",
+    "pelvis_presence": "подключена",
+    "foreign_seg": "подключена"
+   },
+   "settings": {
+    "trochanter_center_mm": 2.7,
+    "trochanter_tol_percent": 63.0,
+    "trochanter_yellow_percent": 30.0
+   },
+   "study_id": "1.2.643.5.1.13.2026.0912",
+   "patient_ref": "P-10428",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": null,
   "comment": "",
@@ -125,7 +414,9 @@ window.DEMO_JOBS = [
   "id": "8b2e9d55",
   "dicom_id": "a7c3e011",
   "scan": "scan-spine.png",
-  "created_at": "2026-09-27T09:31:47",
+  "study_id": "1.2.643.5.1.13.2026.0931",
+  "patient_ref": "P-10429",
+  "created_at": "2026-09-27T09:31:04",
   "status": "completed",
   "anatomical_region": "spine",
   "confidence": 0.9949420094490051,
@@ -1557,7 +1848,294 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.0931",
+   "patient_ref": "P-10429",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
+  "specialist_decision": null,
+  "comment": "",
+  "specialist_name": ""
+ },
+ {
+  "id": "4c9d2e63",
+  "dicom_id": "1b7e9f04",
+  "scan": "scan-hip-left.png",
+  "study_id": "1.2.643.5.1.13.2026.0931",
+  "patient_ref": "P-10429",
+  "created_at": "2026-09-27T09:31:11",
+  "status": "completed",
+  "anatomical_region": "hip_left",
+  "confidence": 0.8935806155204773,
+  "violations": [
+   "Неправильная ротация бедра (малый вертел)"
+  ],
+  "duration_ms": 6461,
+  "metadata": {
+   "shape": [
+    291,
+    280
+   ],
+   "classification": {
+    "source": "vote",
+    "votes": {
+     "cnn": "hip",
+     "mask": "hip",
+     "width": "hip"
+    },
+    "agreement": 1.0,
+    "unanimous": true,
+    "n_peaks": 2,
+    "cnn_confidence": 0.7871612310409546
+   },
+   "criteria": {
+    "hip_margins": {
+     "name": "hip_margins",
+     "ok": 1,
+     "source": "math",
+     "value": null,
+     "unit": "cm",
+     "points": {
+      "apex": [
+       198.0,
+       73.0
+      ],
+      "lateral": [
+       230.0,
+       125.5
+      ],
+      "ischium": [
+       52.0,
+       187.0
+      ]
+     },
+     "regions": [],
+     "details": {
+      "top_cm": 7.665000000000001,
+      "bottom_cm": 10.815000000000001,
+      "side_cm": 2.94,
+      "implant": false
+     },
+     "note": ""
+    },
+    "hip_keypoints": {
+     "name": "hip_keypoints",
+     "ok": 1,
+     "source": "model",
+     "value": null,
+     "unit": "",
+     "points": {
+      "greater_trochanter_apex": [
+       209.15624246910545,
+       96.13392857142857
+      ],
+      "femoral_neck": [
+       155.89285152976805,
+       113.02232142857142
+      ],
+      "ischium": [
+       77.94642576488403,
+       157.19196428571428
+      ]
+     },
+     "regions": [],
+     "details": {
+      "confidence": {
+       "greater_trochanter_apex": 1.0,
+       "femoral_neck": 1.0,
+       "ischium": 0.9996742010116577
+      }
+     },
+     "note": ""
+    },
+    "lesser_trochanter": {
+     "name": "lesser_trochanter",
+     "ok": 0,
+     "source": "math",
+     "value": 8.5479298771043,
+     "unit": "mm",
+     "points": {},
+     "regions": [
+      [
+       [
+        139.0,
+        162.0
+       ],
+       [
+        138.0,
+        163.0
+       ],
+       [
+        138.0,
+        165.0
+       ],
+       [
+        136.0,
+        167.0
+       ],
+       [
+        136.0,
+        168.0
+       ],
+       [
+        134.0,
+        170.0
+       ],
+       [
+        134.0,
+        172.0
+       ],
+       [
+        133.0,
+        173.0
+       ],
+       [
+        133.0,
+        185.0
+       ],
+       [
+        134.0,
+        186.0
+       ],
+       [
+        134.0,
+        187.0
+       ],
+       [
+        135.0,
+        188.0
+       ],
+       [
+        135.0,
+        189.0
+       ],
+       [
+        147.0,
+        201.0
+       ],
+       [
+        147.0,
+        202.0
+       ],
+       [
+        148.0,
+        203.0
+       ],
+       [
+        154.0,
+        203.0
+       ],
+       [
+        154.0,
+        200.0
+       ],
+       [
+        153.0,
+        199.0
+       ],
+       [
+        153.0,
+        192.0
+       ],
+       [
+        152.0,
+        191.0
+       ],
+       [
+        152.0,
+        185.0
+       ],
+       [
+        151.0,
+        184.0
+       ],
+       [
+        151.0,
+        180.0
+       ],
+       [
+        150.0,
+        179.0
+       ],
+       [
+        150.0,
+        177.0
+       ],
+       [
+        149.0,
+        176.0
+       ],
+       [
+        149.0,
+        174.0
+       ],
+       [
+        148.0,
+        173.0
+       ],
+       [
+        148.0,
+        172.0
+       ],
+       [
+        147.0,
+        171.0
+       ],
+       [
+        147.0,
+        170.0
+       ],
+       [
+        145.0,
+        168.0
+       ],
+       [
+        145.0,
+        167.0
+       ],
+       [
+        143.0,
+        165.0
+       ],
+       [
+        143.0,
+        164.0
+       ],
+       [
+        142.0,
+        163.0
+       ],
+       [
+        143.0,
+        162.0
+       ]
+      ]
+     ],
+     "details": {
+      "status": "плохой",
+      "implant": false
+     },
+     "note": ""
+    }
+   },
+   "verdict": 0,
+   "models": {
+    "region": "подключена",
+    "hip_keypoints": "подключена",
+    "pelvis_crest": "подключена",
+    "pelvis_presence": "подключена",
+    "foreign_seg": "подключена"
+   },
+   "settings": {
+    "trochanter_center_mm": 2.7,
+    "trochanter_tol_percent": 63.0,
+    "trochanter_yellow_percent": 30.0
+   },
+   "study_id": "1.2.643.5.1.13.2026.0931",
+   "patient_ref": "P-10429",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": null,
   "comment": "",
@@ -1567,7 +2145,9 @@ window.DEMO_JOBS = [
   "id": "2f7a1c08",
   "dicom_id": "b902f4de",
   "scan": "scan-spine.png",
-  "created_at": "2026-09-27T09:48:12",
+  "study_id": "1.2.643.5.1.13.2026.0948",
+  "patient_ref": "P-10431",
+  "created_at": "2026-09-27T09:48:04",
   "status": "completed",
   "anatomical_region": "spine",
   "confidence": 0.9949420094490051,
@@ -2999,797 +3579,11 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
-  },
-  "specialist_decision": null,
-  "comment": "",
-  "specialist_name": ""
- },
- {
-  "id": "5d0c7b31",
-  "dicom_id": "c15a7b22",
-  "scan": "scan-spine.png",
-  "created_at": "2026-09-27T10:02:55",
-  "status": "completed",
-  "anatomical_region": "spine",
-  "confidence": 0.9949420094490051,
-  "violations": [
-   "Ось позвоночника отклонена более чем на 5°"
-  ],
-  "duration_ms": 2391,
-  "metadata": {
-   "shape": [
-    317,
-    300
-   ],
-   "classification": {
-    "source": "vote",
-    "votes": {
-     "cnn": "spine",
-     "mask": "spine",
-     "width": "spine"
-    },
-    "agreement": 1.0,
-    "unanimous": true,
-    "n_peaks": 13,
-    "cnn_confidence": 0.9898840188980103
    },
-   "criteria": {
-    "spine_axis": {
-     "name": "spine_axis",
-     "ok": 0,
-     "source": "math",
-     "value": -8.4,
-     "unit": "deg",
-     "points": {
-      "top_left": [
-       126.0,
-       7.5
-      ],
-      "top_right": [
-       179.0,
-       7.5
-      ],
-      "bottom_left": [
-       100.0,
-       308.5
-      ],
-      "bottom_right": [
-       184.0,
-       308.5
-      ]
-     },
-     "regions": [],
-     "details": {},
-     "note": ""
-    },
-    "pelvis_crest": {
-     "name": "pelvis_crest",
-     "ok": 1,
-     "source": "vote",
-     "value": null,
-     "unit": "",
-     "points": {
-      "crest_left": [
-       45.285714439956514,
-       263.2232142857143
-      ],
-      "crest_right": [
-       280.20535809723094,
-       274.54464285714283
-      ]
-     },
-     "regions": [],
-     "details": {
-      "confidence": {
-       "left": 0.9999996423721313,
-       "right": 0.9999580383300781
-      },
-      "square": {
-       "width_px": 108.0,
-       "height_px": 106.0,
-       "left_ok": true,
-       "right_ok": true
-      }
-     },
-     "note": ""
-    },
-    "foreign_objects": {
-     "name": "foreign_objects",
-     "ok": 1,
-     "source": "model",
-     "value": null,
-     "unit": "",
-     "points": {},
-     "regions": [],
-     "details": {
-      "verdict": "чисто"
-     },
-     "note": ""
-    }
-   },
-   "verdict": 0,
-   "models": {
-    "region": "подключена",
-    "hip_keypoints": "подключена",
-    "pelvis_crest": "подключена",
-    "pelvis_presence": "подключена",
-    "foreign_seg": "подключена"
-   },
-   "settings": {
-    "trochanter_center_mm": 2.7,
-    "trochanter_tol_percent": 63.0,
-    "trochanter_yellow_percent": 30.0
-   }
-  },
-  "specialist_decision": null,
-  "comment": "",
-  "specialist_name": ""
- },
- {
-  "id": "9a3e6f14",
-  "dicom_id": "e8b1c390",
-  "scan": "scan-spine.png",
-  "created_at": "2026-09-27T10:20:31",
-  "status": "completed",
-  "anatomical_region": "spine",
-  "confidence": 0.9949420094490051,
-  "violations": [
-   "Верхние края подвздошных костей не в кадре"
-  ],
-  "duration_ms": 2391,
-  "metadata": {
-   "shape": [
-    317,
-    300
-   ],
-   "classification": {
-    "source": "vote",
-    "votes": {
-     "cnn": "spine",
-     "mask": "spine",
-     "width": "spine"
-    },
-    "agreement": 1.0,
-    "unanimous": true,
-    "n_peaks": 13,
-    "cnn_confidence": 0.9898840188980103
-   },
-   "criteria": {
-    "spine_axis": {
-     "name": "spine_axis",
-     "ok": 1,
-     "source": "math",
-     "value": -1.9978798564766747,
-     "unit": "deg",
-     "points": {
-      "top_left": [
-       126.0,
-       7.5
-      ],
-      "top_right": [
-       179.0,
-       7.5
-      ],
-      "bottom_left": [
-       100.0,
-       308.5
-      ],
-      "bottom_right": [
-       184.0,
-       308.5
-      ]
-     },
-     "regions": [],
-     "details": {},
-     "note": ""
-    },
-    "pelvis_crest": {
-     "name": "pelvis_crest",
-     "ok": 0,
-     "source": "vote",
-     "value": null,
-     "unit": "",
-     "points": {
-      "crest_left": [
-       45.285714439956514,
-       263.2232142857143
-      ]
-     },
-     "regions": [],
-     "details": {
-      "confidence": {
-       "left": 0.9999996423721313,
-       "right": 0.11
-      },
-      "square": {
-       "width_px": 108.0,
-       "height_px": 106.0,
-       "left_ok": true,
-       "right_ok": false
-      }
-     },
-     "note": ""
-    },
-    "foreign_objects": {
-     "name": "foreign_objects",
-     "ok": 1,
-     "source": "model",
-     "value": null,
-     "unit": "",
-     "points": {},
-     "regions": [],
-     "details": {
-      "verdict": "чисто"
-     },
-     "note": ""
-    }
-   },
-   "verdict": 0,
-   "models": {
-    "region": "подключена",
-    "hip_keypoints": "подключена",
-    "pelvis_crest": "подключена",
-    "pelvis_presence": "подключена",
-    "foreign_seg": "подключена"
-   },
-   "settings": {
-    "trochanter_center_mm": 2.7,
-    "trochanter_tol_percent": 63.0,
-    "trochanter_yellow_percent": 30.0
-   }
-  },
-  "specialist_decision": null,
-  "comment": "",
-  "specialist_name": ""
- },
- {
-  "id": "1e5b8c47",
-  "dicom_id": "f03d2a71",
-  "scan": "scan-hip-left.png",
-  "created_at": "2026-09-27T10:41:09",
-  "status": "completed",
-  "anatomical_region": "hip_left",
-  "confidence": 0.8935806155204773,
-  "violations": [],
-  "duration_ms": 6461,
-  "metadata": {
-   "shape": [
-    291,
-    280
-   ],
-   "classification": {
-    "source": "vote",
-    "votes": {
-     "cnn": "hip",
-     "mask": "hip",
-     "width": "hip"
-    },
-    "agreement": 1.0,
-    "unanimous": true,
-    "n_peaks": 2,
-    "cnn_confidence": 0.7871612310409546
-   },
-   "criteria": {
-    "hip_margins": {
-     "name": "hip_margins",
-     "ok": 1,
-     "source": "math",
-     "value": null,
-     "unit": "cm",
-     "points": {
-      "apex": [
-       198.0,
-       73.0
-      ],
-      "lateral": [
-       230.0,
-       125.5
-      ],
-      "ischium": [
-       52.0,
-       187.0
-      ]
-     },
-     "regions": [],
-     "details": {
-      "top_cm": 7.665000000000001,
-      "bottom_cm": 10.815000000000001,
-      "side_cm": 2.94,
-      "implant": false
-     },
-     "note": ""
-    },
-    "hip_keypoints": {
-     "name": "hip_keypoints",
-     "ok": 1,
-     "source": "model",
-     "value": null,
-     "unit": "",
-     "points": {
-      "greater_trochanter_apex": [
-       209.15624246910545,
-       96.13392857142857
-      ],
-      "femoral_neck": [
-       155.89285152976805,
-       113.02232142857142
-      ],
-      "ischium": [
-       77.94642576488403,
-       157.19196428571428
-      ]
-     },
-     "regions": [],
-     "details": {
-      "confidence": {
-       "greater_trochanter_apex": 1.0,
-       "femoral_neck": 1.0,
-       "ischium": 0.9996742010116577
-      }
-     },
-     "note": ""
-    },
-    "lesser_trochanter": {
-     "name": "lesser_trochanter",
-     "ok": 1,
-     "source": "math",
-     "value": 2.64,
-     "unit": "mm",
-     "points": {},
-     "regions": [
-      [
-       [
-        139.0,
-        162.0
-       ],
-       [
-        138.0,
-        163.0
-       ],
-       [
-        138.0,
-        165.0
-       ],
-       [
-        136.0,
-        167.0
-       ],
-       [
-        136.0,
-        168.0
-       ],
-       [
-        134.0,
-        170.0
-       ],
-       [
-        134.0,
-        172.0
-       ],
-       [
-        133.0,
-        173.0
-       ],
-       [
-        133.0,
-        185.0
-       ],
-       [
-        134.0,
-        186.0
-       ],
-       [
-        134.0,
-        187.0
-       ],
-       [
-        135.0,
-        188.0
-       ],
-       [
-        135.0,
-        189.0
-       ],
-       [
-        147.0,
-        201.0
-       ],
-       [
-        147.0,
-        202.0
-       ],
-       [
-        148.0,
-        203.0
-       ],
-       [
-        154.0,
-        203.0
-       ],
-       [
-        154.0,
-        200.0
-       ],
-       [
-        153.0,
-        199.0
-       ],
-       [
-        153.0,
-        192.0
-       ],
-       [
-        152.0,
-        191.0
-       ],
-       [
-        152.0,
-        185.0
-       ],
-       [
-        151.0,
-        184.0
-       ],
-       [
-        151.0,
-        180.0
-       ],
-       [
-        150.0,
-        179.0
-       ],
-       [
-        150.0,
-        177.0
-       ],
-       [
-        149.0,
-        176.0
-       ],
-       [
-        149.0,
-        174.0
-       ],
-       [
-        148.0,
-        173.0
-       ],
-       [
-        148.0,
-        172.0
-       ],
-       [
-        147.0,
-        171.0
-       ],
-       [
-        147.0,
-        170.0
-       ],
-       [
-        145.0,
-        168.0
-       ],
-       [
-        145.0,
-        167.0
-       ],
-       [
-        143.0,
-        165.0
-       ],
-       [
-        143.0,
-        164.0
-       ],
-       [
-        142.0,
-        163.0
-       ],
-       [
-        143.0,
-        162.0
-       ]
-      ]
-     ],
-     "details": {
-      "status": "норма",
-      "implant": false
-     },
-     "note": ""
-    }
-   },
-   "verdict": 1,
-   "models": {
-    "region": "подключена",
-    "hip_keypoints": "подключена",
-    "pelvis_crest": "подключена",
-    "pelvis_presence": "подключена",
-    "foreign_seg": "подключена"
-   },
-   "settings": {
-    "trochanter_center_mm": 2.7,
-    "trochanter_tol_percent": 63.0,
-    "trochanter_yellow_percent": 30.0
-   }
-  },
-  "specialist_decision": null,
-  "comment": "",
-  "specialist_name": ""
- },
- {
-  "id": "4c9d2e63",
-  "dicom_id": "1b7e9f04",
-  "scan": "scan-hip-left.png",
-  "created_at": "2026-09-27T11:03:22",
-  "status": "completed",
-  "anatomical_region": "hip_left",
-  "confidence": 0.8935806155204773,
-  "violations": [
-   "Неправильная ротация бедра (малый вертел)"
-  ],
-  "duration_ms": 6461,
-  "metadata": {
-   "shape": [
-    291,
-    280
-   ],
-   "classification": {
-    "source": "vote",
-    "votes": {
-     "cnn": "hip",
-     "mask": "hip",
-     "width": "hip"
-    },
-    "agreement": 1.0,
-    "unanimous": true,
-    "n_peaks": 2,
-    "cnn_confidence": 0.7871612310409546
-   },
-   "criteria": {
-    "hip_margins": {
-     "name": "hip_margins",
-     "ok": 1,
-     "source": "math",
-     "value": null,
-     "unit": "cm",
-     "points": {
-      "apex": [
-       198.0,
-       73.0
-      ],
-      "lateral": [
-       230.0,
-       125.5
-      ],
-      "ischium": [
-       52.0,
-       187.0
-      ]
-     },
-     "regions": [],
-     "details": {
-      "top_cm": 7.665000000000001,
-      "bottom_cm": 10.815000000000001,
-      "side_cm": 2.94,
-      "implant": false
-     },
-     "note": ""
-    },
-    "hip_keypoints": {
-     "name": "hip_keypoints",
-     "ok": 1,
-     "source": "model",
-     "value": null,
-     "unit": "",
-     "points": {
-      "greater_trochanter_apex": [
-       209.15624246910545,
-       96.13392857142857
-      ],
-      "femoral_neck": [
-       155.89285152976805,
-       113.02232142857142
-      ],
-      "ischium": [
-       77.94642576488403,
-       157.19196428571428
-      ]
-     },
-     "regions": [],
-     "details": {
-      "confidence": {
-       "greater_trochanter_apex": 1.0,
-       "femoral_neck": 1.0,
-       "ischium": 0.9996742010116577
-      }
-     },
-     "note": ""
-    },
-    "lesser_trochanter": {
-     "name": "lesser_trochanter",
-     "ok": 0,
-     "source": "math",
-     "value": 8.5479298771043,
-     "unit": "mm",
-     "points": {},
-     "regions": [
-      [
-       [
-        139.0,
-        162.0
-       ],
-       [
-        138.0,
-        163.0
-       ],
-       [
-        138.0,
-        165.0
-       ],
-       [
-        136.0,
-        167.0
-       ],
-       [
-        136.0,
-        168.0
-       ],
-       [
-        134.0,
-        170.0
-       ],
-       [
-        134.0,
-        172.0
-       ],
-       [
-        133.0,
-        173.0
-       ],
-       [
-        133.0,
-        185.0
-       ],
-       [
-        134.0,
-        186.0
-       ],
-       [
-        134.0,
-        187.0
-       ],
-       [
-        135.0,
-        188.0
-       ],
-       [
-        135.0,
-        189.0
-       ],
-       [
-        147.0,
-        201.0
-       ],
-       [
-        147.0,
-        202.0
-       ],
-       [
-        148.0,
-        203.0
-       ],
-       [
-        154.0,
-        203.0
-       ],
-       [
-        154.0,
-        200.0
-       ],
-       [
-        153.0,
-        199.0
-       ],
-       [
-        153.0,
-        192.0
-       ],
-       [
-        152.0,
-        191.0
-       ],
-       [
-        152.0,
-        185.0
-       ],
-       [
-        151.0,
-        184.0
-       ],
-       [
-        151.0,
-        180.0
-       ],
-       [
-        150.0,
-        179.0
-       ],
-       [
-        150.0,
-        177.0
-       ],
-       [
-        149.0,
-        176.0
-       ],
-       [
-        149.0,
-        174.0
-       ],
-       [
-        148.0,
-        173.0
-       ],
-       [
-        148.0,
-        172.0
-       ],
-       [
-        147.0,
-        171.0
-       ],
-       [
-        147.0,
-        170.0
-       ],
-       [
-        145.0,
-        168.0
-       ],
-       [
-        145.0,
-        167.0
-       ],
-       [
-        143.0,
-        165.0
-       ],
-       [
-        143.0,
-        164.0
-       ],
-       [
-        142.0,
-        163.0
-       ],
-       [
-        143.0,
-        162.0
-       ]
-      ]
-     ],
-     "details": {
-      "status": "плохой",
-      "implant": false
-     },
-     "note": ""
-    }
-   },
-   "verdict": 0,
-   "models": {
-    "region": "подключена",
-    "hip_keypoints": "подключена",
-    "pelvis_crest": "подключена",
-    "pelvis_presence": "подключена",
-    "foreign_seg": "подключена"
-   },
-   "settings": {
-    "trochanter_center_mm": 2.7,
-    "trochanter_tol_percent": 63.0,
-    "trochanter_yellow_percent": 30.0
-   }
+   "study_id": "1.2.643.5.1.13.2026.0948",
+   "patient_ref": "P-10431",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": null,
   "comment": "",
@@ -3799,7 +3593,9 @@ window.DEMO_JOBS = [
   "id": "6f2a0d19",
   "dicom_id": "3c8a15bb",
   "scan": "scan-hip-left.png",
-  "created_at": "2026-09-27T11:17:40",
+  "study_id": "1.2.643.5.1.13.2026.0948",
+  "patient_ref": "P-10431",
+  "created_at": "2026-09-27T09:48:11",
   "status": "completed",
   "anatomical_region": "hip_left",
   "confidence": 0.8935806155204773,
@@ -4064,7 +3860,138 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.0948",
+   "patient_ref": "P-10431",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
+  "specialist_decision": null,
+  "comment": "",
+  "specialist_name": ""
+ },
+ {
+  "id": "5d0c7b31",
+  "dicom_id": "c15a7b22",
+  "scan": "scan-spine.png",
+  "study_id": "1.2.643.5.1.13.2026.1002",
+  "patient_ref": "P-10433",
+  "created_at": "2026-09-27T10:02:04",
+  "status": "completed",
+  "anatomical_region": "spine",
+  "confidence": 0.9949420094490051,
+  "violations": [
+   "Ось позвоночника отклонена более чем на 5°"
+  ],
+  "duration_ms": 2391,
+  "metadata": {
+   "shape": [
+    317,
+    300
+   ],
+   "classification": {
+    "source": "vote",
+    "votes": {
+     "cnn": "spine",
+     "mask": "spine",
+     "width": "spine"
+    },
+    "agreement": 1.0,
+    "unanimous": true,
+    "n_peaks": 13,
+    "cnn_confidence": 0.9898840188980103
+   },
+   "criteria": {
+    "spine_axis": {
+     "name": "spine_axis",
+     "ok": 0,
+     "source": "math",
+     "value": -8.4,
+     "unit": "deg",
+     "points": {
+      "top_left": [
+       126.0,
+       7.5
+      ],
+      "top_right": [
+       179.0,
+       7.5
+      ],
+      "bottom_left": [
+       100.0,
+       308.5
+      ],
+      "bottom_right": [
+       184.0,
+       308.5
+      ]
+     },
+     "regions": [],
+     "details": {},
+     "note": ""
+    },
+    "pelvis_crest": {
+     "name": "pelvis_crest",
+     "ok": 1,
+     "source": "vote",
+     "value": null,
+     "unit": "",
+     "points": {
+      "crest_left": [
+       45.285714439956514,
+       263.2232142857143
+      ],
+      "crest_right": [
+       280.20535809723094,
+       274.54464285714283
+      ]
+     },
+     "regions": [],
+     "details": {
+      "confidence": {
+       "left": 0.9999996423721313,
+       "right": 0.9999580383300781
+      },
+      "square": {
+       "width_px": 108.0,
+       "height_px": 106.0,
+       "left_ok": true,
+       "right_ok": true
+      }
+     },
+     "note": ""
+    },
+    "foreign_objects": {
+     "name": "foreign_objects",
+     "ok": 1,
+     "source": "model",
+     "value": null,
+     "unit": "",
+     "points": {},
+     "regions": [],
+     "details": {
+      "verdict": "чисто"
+     },
+     "note": ""
+    }
+   },
+   "verdict": 0,
+   "models": {
+    "region": "подключена",
+    "hip_keypoints": "подключена",
+    "pelvis_crest": "подключена",
+    "pelvis_presence": "подключена",
+    "foreign_seg": "подключена"
+   },
+   "settings": {
+    "trochanter_center_mm": 2.7,
+    "trochanter_tol_percent": 63.0,
+    "trochanter_yellow_percent": 30.0
+   },
+   "study_id": "1.2.643.5.1.13.2026.1002",
+   "patient_ref": "P-10433",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": null,
   "comment": "",
@@ -4074,7 +4001,9 @@ window.DEMO_JOBS = [
   "id": "0b6c3f92",
   "dicom_id": "7d21e4a5",
   "scan": "scan-hip-left.png",
-  "created_at": "2026-09-27T11:34:58",
+  "study_id": "1.2.643.5.1.13.2026.1002",
+  "patient_ref": "P-10433",
+  "created_at": "2026-09-27T10:02:11",
   "status": "completed",
   "anatomical_region": "hip_left",
   "confidence": 0.8935806155204773,
@@ -4341,7 +4270,134 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.1002",
+   "patient_ref": "P-10433",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
+  "specialist_decision": null,
+  "comment": "",
+  "specialist_name": ""
+ },
+ {
+  "id": "9a3e6f14",
+  "dicom_id": "e8b1c390",
+  "scan": "scan-spine.png",
+  "study_id": "1.2.643.5.1.13.2026.1020",
+  "patient_ref": "P-10436",
+  "created_at": "2026-09-27T10:20:04",
+  "status": "completed",
+  "anatomical_region": "spine",
+  "confidence": 0.9949420094490051,
+  "violations": [
+   "Верхние края подвздошных костей не в кадре"
+  ],
+  "duration_ms": 2391,
+  "metadata": {
+   "shape": [
+    317,
+    300
+   ],
+   "classification": {
+    "source": "vote",
+    "votes": {
+     "cnn": "spine",
+     "mask": "spine",
+     "width": "spine"
+    },
+    "agreement": 1.0,
+    "unanimous": true,
+    "n_peaks": 13,
+    "cnn_confidence": 0.9898840188980103
+   },
+   "criteria": {
+    "spine_axis": {
+     "name": "spine_axis",
+     "ok": 1,
+     "source": "math",
+     "value": -1.9978798564766747,
+     "unit": "deg",
+     "points": {
+      "top_left": [
+       126.0,
+       7.5
+      ],
+      "top_right": [
+       179.0,
+       7.5
+      ],
+      "bottom_left": [
+       100.0,
+       308.5
+      ],
+      "bottom_right": [
+       184.0,
+       308.5
+      ]
+     },
+     "regions": [],
+     "details": {},
+     "note": ""
+    },
+    "pelvis_crest": {
+     "name": "pelvis_crest",
+     "ok": 0,
+     "source": "vote",
+     "value": null,
+     "unit": "",
+     "points": {
+      "crest_left": [
+       45.285714439956514,
+       263.2232142857143
+      ]
+     },
+     "regions": [],
+     "details": {
+      "confidence": {
+       "left": 0.9999996423721313,
+       "right": 0.11
+      },
+      "square": {
+       "width_px": 108.0,
+       "height_px": 106.0,
+       "left_ok": true,
+       "right_ok": false
+      }
+     },
+     "note": ""
+    },
+    "foreign_objects": {
+     "name": "foreign_objects",
+     "ok": 1,
+     "source": "model",
+     "value": null,
+     "unit": "",
+     "points": {},
+     "regions": [],
+     "details": {
+      "verdict": "чисто"
+     },
+     "note": ""
+    }
+   },
+   "verdict": 0,
+   "models": {
+    "region": "подключена",
+    "hip_keypoints": "подключена",
+    "pelvis_crest": "подключена",
+    "pelvis_presence": "подключена",
+    "foreign_seg": "подключена"
+   },
+   "settings": {
+    "trochanter_center_mm": 2.7,
+    "trochanter_tol_percent": 63.0,
+    "trochanter_yellow_percent": 30.0
+   },
+   "study_id": "1.2.643.5.1.13.2026.1020",
+   "patient_ref": "P-10436",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": null,
   "comment": "",
@@ -4351,7 +4407,9 @@ window.DEMO_JOBS = [
   "id": "3a8f5e07",
   "dicom_id": "9e4b6c18",
   "scan": "scan-hip-left.png",
-  "created_at": "2026-09-27T11:52:14",
+  "study_id": "1.2.643.5.1.13.2026.1020",
+  "patient_ref": "P-10436",
+  "created_at": "2026-09-27T10:20:11",
   "status": "completed",
   "anatomical_region": "hip_left",
   "confidence": 0.8935806155204773,
@@ -4451,7 +4509,11 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.1020",
+   "patient_ref": "P-10436",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": null,
   "comment": "",
@@ -4461,13 +4523,20 @@ window.DEMO_JOBS = [
   "id": "c704b1a8",
   "dicom_id": "5f9c02e7",
   "scan": "scan-hip-right.png",
-  "created_at": "2026-09-27T12:05:00",
+  "study_id": "1.2.643.5.1.13.2026.1205",
+  "patient_ref": "P-10440",
+  "created_at": "2026-09-27T12:05:04",
   "status": "processing",
   "anatomical_region": null,
   "confidence": null,
   "violations": [],
   "duration_ms": null,
-  "metadata": {},
+  "metadata": {
+   "study_id": "1.2.643.5.1.13.2026.1205",
+   "patient_ref": "P-10440",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
   "specialist_decision": null,
   "comment": "",
   "specialist_name": ""
@@ -4476,13 +4545,20 @@ window.DEMO_JOBS = [
   "id": "d918e2b5",
   "dicom_id": "6a0d73f1",
   "scan": "scan-hip-right.png",
-  "created_at": "2026-09-27T12:05:03",
+  "study_id": "1.2.643.5.1.13.2026.1205",
+  "patient_ref": "P-10440",
+  "created_at": "2026-09-27T12:05:11",
   "status": "pending",
   "anatomical_region": null,
   "confidence": null,
   "violations": [],
   "duration_ms": null,
-  "metadata": {},
+  "metadata": {
+   "study_id": "1.2.643.5.1.13.2026.1205",
+   "patient_ref": "P-10440",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
   "specialist_decision": null,
   "comment": "",
   "specialist_name": ""
@@ -4491,13 +4567,20 @@ window.DEMO_JOBS = [
   "id": "e26a7c93",
   "dicom_id": "84be1d02",
   "scan": "scan-hip-right.png",
-  "created_at": "2026-09-27T12:06:41",
+  "study_id": "1.2.643.5.1.13.2026.1205",
+  "patient_ref": "P-10440",
+  "created_at": "2026-09-27T12:05:18",
   "status": "failed",
   "anatomical_region": null,
   "confidence": null,
   "violations": [],
   "duration_ms": 412,
-  "metadata": {},
+  "metadata": {
+   "study_id": "1.2.643.5.1.13.2026.1205",
+   "patient_ref": "P-10440",
+   "study_date": "2026-09-27",
+   "device": "Lunar Prodigy Advance"
+  },
   "specialist_decision": null,
   "comment": "",
   "specialist_name": "",
@@ -4507,7 +4590,9 @@ window.DEMO_JOBS = [
   "id": "b537d0c1",
   "dicom_id": "2e6f8a94",
   "scan": "scan-spine.png",
-  "created_at": "2026-09-26T16:22:10",
+  "study_id": "1.2.643.5.1.13.2026.2610",
+  "patient_ref": "P-10390",
+  "created_at": "2026-09-26T15:10:04",
   "status": "completed",
   "anatomical_region": "spine",
   "confidence": 0.9949420094490051,
@@ -4616,7 +4701,11 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.2610",
+   "patient_ref": "P-10390",
+   "study_date": "2026-09-26",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": "approved",
   "comment": "",
@@ -4626,7 +4715,9 @@ window.DEMO_JOBS = [
   "id": "f1c49a26",
   "dicom_id": "0d5b3e77",
   "scan": "scan-hip-left.png",
-  "created_at": "2026-09-26T15:48:33",
+  "study_id": "1.2.643.5.1.13.2026.2610",
+  "patient_ref": "P-10390",
+  "created_at": "2026-09-26T15:10:11",
   "status": "completed",
   "anatomical_region": "hip_left",
   "confidence": 0.8935806155204773,
@@ -4893,7 +4984,11 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.2610",
+   "patient_ref": "P-10390",
+   "study_date": "2026-09-26",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": "rejected",
   "comment": "Ротация бедра вне нормы, исследование переснято.",
@@ -4903,7 +4998,9 @@ window.DEMO_JOBS = [
   "id": "a0e83b54",
   "dicom_id": "cc71f9d3",
   "scan": "scan-spine.png",
-  "created_at": "2026-09-26T15:10:02",
+  "study_id": "1.2.643.5.1.13.2026.2610",
+  "patient_ref": "P-10390",
+  "created_at": "2026-09-26T15:10:18",
   "status": "completed",
   "anatomical_region": "spine",
   "confidence": 0.9949420094490051,
@@ -6335,7 +6432,11 @@ window.DEMO_JOBS = [
     "trochanter_center_mm": 2.7,
     "trochanter_tol_percent": 63.0,
     "trochanter_yellow_percent": 30.0
-   }
+   },
+   "study_id": "1.2.643.5.1.13.2026.2610",
+   "patient_ref": "P-10390",
+   "study_date": "2026-09-26",
+   "device": "Lunar Prodigy Advance"
   },
   "specialist_decision": "force_approved",
   "comment": "Артефакт вне зоны интереса, на измерение не влияет.",

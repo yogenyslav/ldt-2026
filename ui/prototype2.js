@@ -64,8 +64,8 @@
     greater_trochanter_apex: { mark: 'В', name: 'Большой вертел' },
     femoral_neck: { mark: 'Ш', name: 'Шейка бедра' },
     ischium: { mark: 'С', name: 'Седалищная кость' },
-    crest_left: { mark: 'Г', name: 'Гребень слева' },
-    crest_right: { mark: 'Г', name: 'Гребень справа' }
+    crest_left: { mark: 'Г', name: 'Гребень подвздошной кости' },
+    crest_right: { mark: 'Г', name: 'Гребень подвздошной кости' }
   };
 
   var REGION = {
@@ -286,38 +286,67 @@
       out.push(g(levelOfCriterion(lt), body4));
     }
 
-    return '<svg class="viewer__svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="none">' + out.join('') + '</svg>';
+    return '<svg class="viewer__svg" viewBox="0 0 ' + W + ' ' + H + '" preserveAspectRatio="xMidYMid meet">' + out.join('') + '</svg>';
   }
 
   /* Окно снимка: изображение + разметка. Растягивание по вертикали —
      ответ на анизотропный пиксель ДРА (0,6 мм по X против 1,05 мм по Y). */
-  var viewState = { overlay: true, aspect: false };
+  var viewState = { overlay: true };
+
+  function stageHTML(job) {
+    var md = job.metadata || {};
+    var hasMarks = !!(md.criteria && Object.keys(md.criteria).length);
+    return '<div class="viewer__stage">' +
+      '<img class="viewer__img" src="assets/' + esc(job.scan) + '" alt="Снимок ДРА" />' +
+      (viewState.overlay && hasMarks ? svgOverlay(job) : '') +
+    '</div>';
+  }
 
   function viewerHTML(job, opts) {
     opts = opts || {};
     if (!job || !job.scan) {
       return '<div class="viewer__empty">' + icon('i-image', 'ico--l') + '<div>Снимок недоступен</div></div>';
     }
-    var md = job.metadata || {};
-    var H = md.shape ? md.shape[0] : 300, W = md.shape ? md.shape[1] : 300;
-    /* пиксель ДРА неквадратный: 0,6 мм по X против 1,05 мм по Y.
-       В режиме «Пропорции» растягиваем и снимок, и разметку одинаково,
-       поэтому совмещение не нарушается. */
-    var ar = viewState.aspect ? (W * 0.6) / (H * 1.05) : W / H;
-    var hasMarks = !!(md.criteria && Object.keys(md.criteria).length);
+    var hasMarks = !!((job.metadata || {}).criteria && Object.keys(job.metadata.criteria).length);
+    var prev = opts.prev;
+    var area;
 
-    return '' +
-      '<div class="viewer__area">' +
-        '<div class="viewer__stage" style="aspect-ratio:' + ar.toFixed(4) + ';max-width:' + (opts.max || 560) + 'px">' +
-          '<img class="viewer__img" src="assets/' + esc(job.scan) + '" alt="Снимок ДРА" />' +
-          (viewState.overlay && hasMarks ? svgOverlay(job) : '') +
+    if (prev) {
+      /* сравнение: слева перелистываются предыдущие попытки, справа — новый снимок */
+      var pv = verdictOf(prev.job).k;
+      var onPrev = opts.focus === 'prev';
+      area = '<div class="viewer__area viewer__area--split">' +
+        '<div class="shot' + (onPrev ? ' shot--on' : '') + '" data-focus="prev">' +
+          '<div class="shot__head">' +
+            '<button class="shot__nav" type="button" data-hist="prev"' + (prev.idx === 0 ? ' disabled' : '') + '>' +
+              icon('i-chevron-left', 'ico--s') + '</button>' +
+            pickerHTML('hist', prev.job, prev.items, {
+              dark: true,
+              label: 'Попытка ' + (prev.idx + 1) + ' из ' + prev.total,
+              count: 'выбрать'
+            }) +
+            '<button class="shot__nav" type="button" data-hist="next"' +
+              (prev.idx === prev.total - 1 ? ' disabled' : '') + '>' + icon('i-chevron-right', 'ico--s') + '</button>' +
+          '</div>' +
+          stageHTML(prev.job) +
         '</div>' +
-      '</div>' +
+        '<div class="shot' + (onPrev ? '' : ' shot--on') + '" data-focus="now">' +
+          '<div class="shot__head"><span class="shot__title">Новый снимок</span></div>' +
+          stageHTML(job) +
+        '</div>' +
+      '</div>';
+    } else {
+      area = '<div class="viewer__area">' + stageHTML(job) + '</div>';
+    }
+
+    return area +
       '<div class="viewer__tools">' +
+        markerKeyHTML(job) +
+        '<span class="spacer"></span>' +
+        (opts.canCompare ? '<button class="tool" type="button" data-view="compare" aria-pressed="' + !!prev + '">' +
+          icon('i-layers', 'ico--s') + 'Сравнить с предыдущим</button>' : '') +
         (hasMarks ? '<button class="tool" type="button" data-view="overlay" aria-pressed="' + viewState.overlay + '">' +
           icon('i-eye', 'ico--s') + 'Разметка</button>' : '') +
-        '<button class="tool" type="button" data-view="aspect" aria-pressed="' + viewState.aspect + '">' +
-          icon('i-ruler', 'ico--s') + 'Пропорции</button>' +
       '</div>';
   }
 
@@ -325,94 +354,249 @@
      Легенда разметки: расшифровка маркеров и значения критериев
      ---------------------------------------------------------- */
 
-  function legendHTML(job) {
-    var md = job.metadata || {};
-    var c = md.criteria || {};
-    var keys = Object.keys(c);
-    if (!keys.length) return '';
+  /* Значение критерия человеческим языком: строка должна читаться
+     сама по себе, без пояснения под ней. */
+  function criterionValue(n, cr) {
+    var d = cr.details || {};
 
-    var rows = keys.map(function (n) {
+    if (n === 'spine_axis') {
+      return cr.value === null || cr.value === undefined ? 'не измерена' : nm(cr.value, 1) + '°';
+    }
+    if (n === 'pelvis_crest') {
+      var sq = d.square || {};
+      if (sq.left_ok && sq.right_ok) return 'обе стороны в кадре';
+      if (sq.left_ok) return 'правый вне кадра';
+      if (sq.right_ok) return 'левый вне кадра';
+      return 'обе стороны вне кадра';
+    }
+    if (n === 'foreign_objects') {
+      if (d.verdict === 'ПРЕДМЕТ') return 'найдена дужка';
+      if (d.verdict === 'проверить') return 'возможна застёжка';
+      return 'не обнаружены';
+    }
+    if (n === 'hip_margins') {
+      var f = function (v) { return v == null ? '—' : nm(v, 1); };
+      return 'верх ' + f(d.top_cm) + ', бок ' + f(d.side_cm) + ', низ ' + f(d.bottom_cm) + ' см';
+    }
+    if (n === 'hip_keypoints') {
+      return Object.keys(cr.points || {}).length === 3 ? 'все три найдены' : 'не найдены';
+    }
+    if (n === 'lesser_trochanter') {
+      if (d.status === 'не измерен' || !cr.value) return 'не измерена';
+      return nm(cr.value, 1) + ' мм';
+    }
+    return '—';
+  }
+
+  /* Строки таблицы критериев. Отступы бедра разворачиваем в три строки:
+     у каждого своя норма, и число рядом с нормой читается без пояснений. */
+  function criteriaRows(job) {
+    var c = (job.metadata || {}).criteria || {};
+    var rows = [];
+
+    function margin(key, name, side, val, min) {
+      var ok = val != null && val >= min;
+      var detail;
+      if (val == null) {
+        detail = 'Седалищная кость не найдена, поэтому отступ снизу измерить не удалось. ' +
+          'Повторите снимок так, чтобы кость целиком попала в кадр.';
+      } else if (ok) {
+        detail = 'От кости до края кадра ' + side + ' ' + nm(val, 1) +
+          ' см при норме от ' + nm(min, 0) + ' см. Запас достаточный.';
+      } else {
+        detail = 'От кости до края кадра ' + side + ' всего ' + nm(val, 1) +
+          ' см, норма — от ' + nm(min, 0) + ' см. Сместите зону сканирования так, ' +
+          'чтобы кость не подходила к краю кадра, и повторите снимок.';
+      }
+      rows.push({
+        key: key, name: name, level: ok ? 'ok' : 'bad', detail: detail,
+        value: val == null ? 'не измерен' : nm(val, 1) + ' см',
+        norm: 'от ' + nm(min, 0) + ' см'
+      });
+    }
+
+    Object.keys(c).forEach(function (n) {
       var cr = c[n], dict = CRITERIA[n] || { name: n }, lv = levelOfCriterion(cr);
-      var sym = { ok: '✓', warn: '!', bad: '✕' }[lv] || '–';
-      var value = '—', note = '';
 
-      if (n === 'spine_axis' && cr.value !== null && cr.value !== undefined) {
-        value = nm(cr.value, 1) + '°';
-      } else if (n === 'hip_margins') {
+      if (n === 'hip_margins') {
         var d = cr.details || {};
-        value = [d.top_cm, d.side_cm, d.bottom_cm].map(function (v) { return v == null ? '—' : nm(v, 1); }).join(' · ');
-        note = 'сверху · сбоку · снизу, см';
-      } else if (n === 'lesser_trochanter') {
-        value = cr.value ? nm(cr.value, 1) + ' мм' : '—';
-        note = (cr.details || {}).status || '';
-      } else if (n === 'pelvis_crest') {
-        var sq = (cr.details || {}).square || {};
-        value = (sq.left_ok ? 'есть' : 'нет') + ' · ' + (sq.right_ok ? 'есть' : 'нет');
-        note = 'слева · справа';
-      } else if (n === 'foreign_objects') {
-        value = (cr.details || {}).verdict || '—';
-      } else if (n === 'hip_keypoints') {
-        var pts = Object.keys(cr.points || {});
-        value = pts.length + ' из 3';
-        note = pts.map(function (p) { return POINT_MARK[p] ? POINT_MARK[p].mark + ' — ' + POINT_MARK[p].name.toLowerCase() : p; }).join(', ');
+        margin('margin_top', 'Отступ сверху', 'сверху', d.top_cm, 3);
+        margin('margin_side', 'Отступ сбоку', 'сбоку', d.side_cm, 2);
+        margin('margin_bottom', 'Отступ снизу', 'снизу', d.bottom_cm, 3);
+        return;
       }
 
-      if (cr.note) note = cr.note;
+      var norm = {
+        spine_axis: 'до 5°',
+        pelvis_crest: 'обе',
+        foreign_objects: 'нет',
+        hip_keypoints: '3 точки',
+        lesser_trochanter: '1,0–4,4 мм'
+      }[n] || '';
 
-      return '' +
-        '<div class="legend__item">' +
-          '<span class="legend__mark' + (lv ? ' legend__mark--' + lv : '') + '">' + sym + '</span>' +
-          '<span><span class="legend__name">' + esc(dict.name) + '</span>' +
-            (note ? '<span class="legend__note">' + esc(note) + '</span>' : '') +
-          '</span>' +
-          '<span class="legend__value">' + esc(value) + '</span>' +
-        '</div>';
-    }).join('');
+      rows.push({
+        key: n, name: dict.name, level: lv,
+        value: criterionValue(n, cr), norm: norm,
+        detail: criterionDetail(n, cr, lv)
+      });
+    });
 
     return rows;
   }
 
-  /* ----------------------------------------------------------
-     Замечания с рекомендацией — сердце экрана лаборанта
-     ---------------------------------------------------------- */
+  /* Пояснение к критерию — связный текст, который читается целиком:
+     что измерено, как это соотносится с нормой и что делать. */
+  function criterionDetail(n, cr, lv) {
+    var d = cr.details || {};
+    if (cr.note && lv !== 'ok') {
+      return cr.note.charAt(0).toUpperCase() + cr.note.slice(1) + '.';
+    }
 
-  function issuesOf(job) {
-    var c = (job.metadata || {}).criteria || {};
-    var list = [];
-
-    Object.keys(c).forEach(function (n) {
-      var cr = c[n], lv = levelOfCriterion(cr), dict = CRITERIA[n] || { name: n, fix: '' };
-      if (lv !== 'bad' && lv !== 'warn') return;
-
-      var value = '';
-      if (n === 'spine_axis') value = 'Отклонение ' + nm(cr.value, 1) + '° при допуске 5°';
-      if (n === 'lesser_trochanter') value = 'Расстояние до бугра ' + nm(cr.value, 1) + ' мм, норма 1,0–4,4 мм';
-      if (n === 'foreign_objects') value = (cr.details || {}).verdict === 'проверить'
-        ? 'Признак слабый: возможна застёжка' : 'Найдена дужка';
-      if (n === 'hip_margins') {
-        var d = cr.details || {}, bad = [];
-        if (d.top_cm != null && d.top_cm < 3) bad.push('сверху ' + nm(d.top_cm, 1) + ' см при норме 3');
-        if (d.bottom_cm == null) bad.push('снизу: седалищная кость не найдена');
-        else if (d.bottom_cm < 3) bad.push('снизу ' + nm(d.bottom_cm, 1) + ' см при норме 3');
-        if (d.side_cm != null && d.side_cm < 2) bad.push('сбоку ' + nm(d.side_cm, 1) + ' см при норме 2');
-        value = bad.join('; ');
+    if (n === 'spine_axis') {
+      if (cr.value == null) return 'Столб кости не найден, угол оси измерить не удалось.';
+      if (lv === 'ok') {
+        return 'Ось отклонена на ' + nm(Math.abs(cr.value), 1) +
+          '° при допуске 5°. Укладка в норме.';
       }
-      if (n === 'pelvis_crest') {
-        var sq = (cr.details || {}).square || {};
-        value = !sq.left_ok && !sq.right_ok ? 'Оба гребня вне кадра'
-          : (!sq.left_ok ? 'Гребень слева вне кадра' : 'Гребень справа вне кадра');
+      return 'Ось отклонена на ' + nm(Math.abs(cr.value), 1) + '° при допуске 5°. ' +
+        'Выровняйте пациента по центральной линии стола и повторите укладку.';
+    }
+
+    if (n === 'pelvis_crest') {
+      var sq = d.square || {};
+      if (sq.left_ok && sq.right_ok) {
+        return 'Верхние края подвздошных костей видны с обеих сторон снимка.';
       }
-      if (cr.note) value = cr.note;
+      var side = !sq.left_ok && !sq.right_ok ? 'Оба гребня'
+        : (sq.left_ok ? 'Гребень справа' : 'Гребень слева');
+      return side + ' не попал в кадр. Сместите зону сканирования ниже, ' +
+        'чтобы верхние края подвздошных костей были видны, и повторите снимок.';
+    }
 
-      list.push({ level: lv, title: dict.name, fix: dict.fix, value: value });
-    });
+    if (n === 'foreign_objects') {
+      if (d.verdict === 'ПРЕДМЕТ') {
+        return 'На снимке найдена дужка бюстгальтера — она искажает измерение плотности. ' +
+          'Попросите пациента снять бельё с металлическими элементами и переснимите.';
+      }
+      if (d.verdict === 'проверить') {
+        return 'Найден предмет, похожий на застёжку. Признак слабый, поэтому посмотрите ' +
+          'на снимок сами: если предмет попадает в зону измерения, переснимите.';
+      }
+      return 'Посторонних предметов и артефактов на снимке не найдено.';
+    }
 
-    /* не больше трёх замечаний: на посту читают за секунды */
-    list.sort(function (a, b) { return (a.level === 'bad' ? 0 : 1) - (b.level === 'bad' ? 0 : 1); });
-    return list.slice(0, 3);
+    if (n === 'hip_keypoints') {
+      if (lv === 'ok') {
+        return 'Найдены все три опорные точки: большой вертел, шейка бедра и седалищная кость. ' +
+          'На снимке они отмечены буквами В, Ш и С.';
+      }
+      return 'Модель не нашла опорные точки бедра, поэтому ротацию измерить не удалось. ' +
+        'Уложите конечность прямо, без наклона и перекрытия тканями, и повторите снимок.';
+    }
+
+    if (n === 'lesser_trochanter') {
+      if (d.status === 'не измерен' || !cr.value) {
+        return 'Ротацию не измеряли: не найдены опорные точки бедра.';
+      }
+      if (d.status === 'проверить') {
+        return 'Расстояние до малого вертела ' + nm(cr.value, 1) +
+          ' мм — чуть за пределами нормы от 1,0 до 4,4 мм. Посмотрите на снимок сами: ' +
+          'если бугор хорошо заметен, разверните стопу внутрь и переснимите.';
+      }
+      if (lv === 'ok') {
+        return 'Расстояние до малого вертела ' + nm(cr.value, 1) +
+          ' мм при норме от 1,0 до 4,4 мм. Стопа развёрнута правильно.';
+      }
+      return 'Расстояние до малого вертела ' + nm(cr.value, 1) +
+        ' мм при норме от 1,0 до 4,4 мм — бедро развёрнуто наружу. ' +
+        'Разверните стопу внутрь до упора в фиксаторе и переснимите.';
+    }
+
+    return '';
   }
 
-  /* ============================================================
+  /* Раскрытые строки таблицы критериев. По умолчанию все закрыты. */
+  var openCrit = {};
+
+  function criteriaHTML(job) {
+    var rows = criteriaRows(job);
+    if (!rows.length) return '';
+
+    return '<div class="crits">' +
+      '<div class="crits__head">' +
+        '<span></span><span>Критерий</span><span>Значение</span><span>Норма</span><span></span>' +
+      '</div>' +
+      rows.map(function (r) {
+        var sym = { ok: '✓', warn: '!', bad: '✕' }[r.level] || '–';
+        var open = !!openCrit[r.key];
+        return '<div class="crit' + (open ? ' is-open' : '') + '" data-crit="' + r.key + '">' +
+            '<span class="crit__state' + (r.level ? ' crit__state--' + r.level : '') + '">' + sym + '</span>' +
+            '<span class="crit__name">' + esc(r.name) + '</span>' +
+            '<span class="crit__value num">' + esc(r.value) + '</span>' +
+            '<span class="crit__norm num">' + esc(r.norm) + '</span>' +
+            '<svg class="ico crit__go"><use href="#i-chevron-right"/></svg>' +
+          '</div>' +
+          (open && r.detail ? '<p class="crit__detail">' + esc(r.detail) + '</p>' : '');
+      }).join('') +
+    '</div>';
+  }
+
+  /* ----------------------------------------------------------
+     Выпадающий выбор. Снимков в исследовании и попыток пересъёмки
+     может быть сколько угодно, поэтому список, а не ряд кнопок.
+     ---------------------------------------------------------- */
+
+  var openPicker = null;
+
+  function zoneLabel(j) {
+    return j.anatomical_region ? REGION_SHORT[j.anatomical_region] : STATUS[j.status];
+  }
+
+  function pickerHTML(id, current, items, opts) {
+    opts = opts || {};
+    var open = openPicker === id;
+    var cd = VERDICT_LIST[verdictOf(current).k];
+
+    var body = items.map(function (j) {
+      var d = VERDICT_LIST[verdictOf(j).k];
+      return '<button class="picker__item' + (j.id === current.id ? ' is-on' : '') +
+          '" type="button" data-open="' + j.id + '">' +
+          '<span class="state state--' + (d.c || 'none') + '">' + icon(d.i, 'ico--s') + '</span>' +
+          '<span class="picker__item-text">' + esc(zoneLabel(j)) +
+            '<span class="picker__item-sub">' + timeOf(j.created_at) + ', ' + esc(d.t.toLowerCase()) + '</span>' +
+          '</span>' +
+        '</button>';
+    }).join('');
+
+    return '<div class="picker' + (opts.dark ? ' picker--dark' : '') + (open ? ' is-open' : '') + '">' +
+      '<button class="picker__btn" type="button" data-picker-toggle="' + id + '">' +
+        '<span class="state state--' + (cd.c || 'none') + '">' + icon(cd.i, 'ico--s') + '</span>' +
+        '<span class="picker__label">' + esc(opts.label || zoneLabel(current)) + '</span>' +
+        '<span class="picker__count">' + esc(opts.count || '') + '</span>' +
+        icon('i-chevron-down', 'ico--s picker__chevron') +
+      '</button>' +
+      (open ? '<div class="picker__menu">' + body + '</div>' : '') +
+    '</div>';
+  }
+
+  /* Ключ маркеров — легенда к снимку, как у графика. */
+  function markerKeyHTML(job) {
+    var c = (job.metadata || {}).criteria || {};
+    var used = [];
+    ['hip_keypoints', 'pelvis_crest'].forEach(function (n) {
+      Object.keys((c[n] || {}).points || {}).forEach(function (pn) {
+        var m = POINT_MARK[pn];
+        if (m && used.every(function (u) { return u.mark !== m.mark; })) used.push(m);
+      });
+    });
+    if (!used.length) return '';
+    return '<div class="key">' + used.map(function (m) {
+      return '<span class="key__item"><i class="key__mark">' + m.mark + '</i>' +
+        esc(m.name.toLowerCase()) + '</span>';
+    }).join('') + '</div>';
+  }
+
+    /* ============================================================
      КОНТУР А — пост рентгенолаборанта
      ============================================================ */
 
@@ -426,7 +610,8 @@
     { id: 'e26a7c93', label: 'Ошибка обработки' }
   ];
 
-  var post = { idx: -1, phase: 'idle', total: 24, redo: 3, last: '' };
+  var post = { idx: -1, phase: 'idle', total: 24, redo: 3, last: '',
+               history: [], histIdx: 0, compare: false, archived: true, focus: 'now' };
 
   function jobById(id) {
     for (var i = 0; i < JOBS.length; i++) if (JOBS[i].id === id) return JOBS[i];
@@ -458,65 +643,80 @@
     var job = jobById(POST_SCENARIOS[post.idx].id);
     var v = verdictOf(job), vd = VERDICT_POST[v.k];
 
-    viewer.innerHTML = viewerHTML(job, { max: 520 });
+    var prev = null;
+    if (post.compare && post.history.length) {
+      post.histIdx = Math.min(post.histIdx, post.history.length - 1);
+      prev = {
+        job: jobById(post.history[post.histIdx]),
+        idx: post.histIdx,
+        total: post.history.length,
+        items: post.history.map(jobById)
+      };
+    }
+    if (!prev) post.focus = 'now';
 
+    viewer.innerHTML = viewerHTML(job, {
+      max: 520, prev: prev, focus: post.focus, canCompare: post.history.length > 0
+    });
+
+    /* справа разбирается тот снимок, который выбран в окне */
+    var shown = post.focus === 'prev' && prev ? prev.job : job;
+    if (shown !== job) {
+      v = verdictOf(shown);
+      vd = VERDICT_POST[v.k];
+      job = shown;
+    }
+
+    /* подзаголовок вердикта коротко называет, что именно не так —
+       подробности лежат в раскрывающихся строках таблицы */
     var sub;
-    if (v.k === 'failed') sub = 'Снимок не удалось обработать';
-    else sub = REGION[job.anatomical_region] || 'Область не определена';
+    if (v.k === 'failed') {
+      sub = 'Снимок не удалось обработать';
+    } else {
+      var region = REGION[job.anatomical_region] || 'Область не определена';
+      var broken = criteriaRows(job).filter(function (r) { return r.level === 'bad' || r.level === 'warn'; });
+      sub = broken.length
+        ? region + ' — ' + broken.map(function (r) { return r.name.toLowerCase(); }).join(', ')
+        : region + ' — замечаний нет';
+    }
 
-    var html = '<div class="verdict' + (vd.c ? ' verdict--' + vd.c : '') + '">' +
-      '<div class="verdict__icon">' + icon(vd.i) + '</div>' +
-      '<div class="verdict__text">' +
-        '<div class="verdict__big">' + vd.t + '</div>' +
-        '<div class="verdict__sub">' + esc(sub) + '</div>' +
-      '</div></div>';
+    var html = '<div class="panel">' +
+      (post.focus === 'prev' && prev
+        ? '<div class="panel__tag">Разбор предыдущей попытки, ' + timeOf(job.created_at) + '</div>'
+        : '') +
+      '<div class="verdict' + (vd.c ? ' verdict--' + vd.c : '') + '">' +
+        '<div class="verdict__icon">' + icon(vd.i) + '</div>' +
+        '<div class="verdict__text">' +
+          '<div class="verdict__big">' + vd.t + '</div>' +
+          '<div class="verdict__sub">' + esc(sub) + '</div>' +
+        '</div>' +
+      '</div>';
 
     if (v.k === 'failed') {
-      html += '<div class="issue issue--bad">' +
-        '<span class="issue__num">!</span><div>' +
-        '<div class="issue__title">Обработка не завершена</div>' +
-        '<div class="issue__fix">Переснимите исследование. Если ошибка повторится — сообщите в центр обработки.</div>' +
-        '<div class="issue__value">' + esc(job.error || '') + '</div></div></div>';
-    } else {
-      var issues = issuesOf(job);
-      if (issues.length) {
-        html += '<div class="issues">' + issues.map(function (it, i) {
-          return '<div class="issue issue--' + it.level + '">' +
-            '<span class="issue__num">' + (i + 1) + '</span><div>' +
-            '<div class="issue__title">' + esc(it.title) + '</div>' +
-            '<div class="issue__fix">' + esc(it.fix) + '</div>' +
-            (it.value ? '<div class="issue__value">' + esc(it.value) + '</div>' : '') +
-            '</div></div>';
-        }).join('') + '</div>';
-      } else {
-        html += '<div class="issue"><span class="issue__num">' + icon('i-check', 'ico--s') + '</span><div>' +
-          '<div class="issue__title">Замечаний нет</div>' +
-          '<div class="issue__fix">Укладка соответствует требованиям. Пациента можно отпускать.</div></div></div>';
-      }
+      html += '<div class="panel__body">' +
+        '<p class="note">Переснимите исследование. Если ошибка повторится, сообщите в центр обработки.</p>' +
+        '<p class="note note--tech">' + esc(job.error || '') + '</p></div>';
+    } else if ((job.metadata || {}).criteria) {
+      html += criteriaHTML(job);
     }
 
     /* действия: рекомендация системы не запрещает принять снимок */
     var acts;
     if (v.k === 'ok') {
-      acts = '<button class="btn btn--ok btn--l acts__wide" data-decide="approved">' + icon('i-check') + 'Пациент свободен</button>' +
-        '<button class="btn acts__wide" data-decide="rejected">' + icon('i-refresh') + 'Всё же переснять</button>';
+      acts = '<button class="btn btn--ok btn--l" data-decide="approved">' + icon('i-check') + 'Пациент свободен</button>' +
+        '<button class="btn btn--l" data-decide="rejected">' + icon('i-refresh') + 'Переснять</button>';
     } else if (v.k === 'warn') {
       acts = '<button class="btn btn--ok btn--l" data-decide="approved">' + icon('i-check') + 'Принять</button>' +
         '<button class="btn btn--l" data-decide="rejected">' + icon('i-refresh') + 'Переснять</button>';
     } else {
-      acts = '<button class="btn btn--bad btn--l acts__wide" data-decide="rejected">' + icon('i-refresh') + 'Переснять сейчас</button>' +
-        '<button class="btn acts__wide" data-decide="force_approved">Всё равно принять</button>';
+      acts = '<button class="btn btn--bad btn--l" data-decide="rejected">' + icon('i-refresh') + 'Переснять</button>' +
+        '<button class="btn btn--l" data-decide="force_approved">Всё равно принять</button>';
     }
-    html += '<div class="acts">' + acts + '</div>';
-
-    /* что ещё проверено — чтобы лаборант видел полный список, а не только замечания */
-    if ((job.metadata || {}).criteria) {
-      html += '<div class="card"><div class="card__head">' +
-        '<span class="card__title">Что проверено</span>' +
-        '<span class="spacer"></span>' +
-        '<span class="card__sub">' + Object.keys(job.metadata.criteria).length + ' критерия</span></div>' +
-        '<div class="card__body" style="padding:6px">' + legendHTML(job) + '</div></div>';
+    if (post.focus === 'prev' && prev) {
+      acts = '<button class="btn btn--l acts__wide" data-focus="now">' +
+        icon('i-arrow-right') + 'Вернуться к новому снимку</button>';
     }
+    html += '<div class="panel__foot"><div class="acts">' + acts + '</div></div></div>';
 
     side.innerHTML = html;
   }
@@ -532,8 +732,21 @@
       '<button class="demobar__btn" type="button" data-post-next>Пришёл новый снимок →</button>';
   }
 
+  /* Снимок уходит в историю попыток: слева его можно будет перелистать. */
+  function postArchive() {
+    if (post.archived || post.idx < 0) return;
+    post.history.push(POST_SCENARIOS[post.idx].id);
+    if (post.history.length > 6) post.history.shift();
+    post.histIdx = post.history.length - 1;
+    post.archived = true;
+  }
+
   function postShow(i) {
+    openCrit = {};
+    post.focus = 'now';
+    postArchive();
     post.idx = (i + POST_SCENARIOS.length) % POST_SCENARIOS.length;
+    post.archived = false;
     post.phase = 'loading';
     renderPost();
     postDemobar();
@@ -576,57 +789,94 @@
       icon(d.i, 'ico--s') + esc(d.t) + '</span>';
   }
 
+  /* Группировка по исследованию: одно посещение пациента, в котором
+     снимают несколько зон. Поле study_id запрошено у бекендера —
+     у него оно уже лежит в таблице dicom_file. */
+  function studies(list) {
+    var order = [], map = {};
+    (list || JOBS).forEach(function (j) {
+      var k = j.study_id || j.id;
+      if (!map[k]) {
+        map[k] = { study_id: k, patient_ref: j.patient_ref, created_at: j.created_at, jobs: [] };
+        order.push(map[k]);
+      }
+      map[k].jobs.push(j);
+      if (j.created_at < map[k].created_at) map[k].created_at = j.created_at;
+    });
+    return order;
+  }
+
+  function studyOf(sid) {
+    var all = studies();
+    for (var i = 0; i < all.length; i++) if (all[i].study_id === sid) return all[i];
+    return null;
+  }
+
+  var RANK = { failed: 0, bad: 1, warn: 2, wait: 3, none: 4, ok: 5 };
+
+  /* Вердикт посещения — худший из его снимков. */
+  function studyVerdict(group) {
+    var worst = 'ok';
+    group.jobs.forEach(function (j) {
+      var k = verdictOf(j).k;
+      if (RANK[k] < RANK[worst]) worst = k;
+    });
+    return worst;
+  }
+
   /* --- очередь --- */
+  /* Строка посещения оформлена как выбор роли на экране входа:
+     своя подложка, синяя рамка и синяя стрелка при наведении. */
   function viewQueue() {
     var list = visibleJobs();
-    var shown = list.slice(0, pageLimit);
+    var groups = studies(list);
+    var shown = groups.slice(0, pageLimit);
     var sel = Object.keys(picked).filter(function (k) { return picked[k]; });
 
-    var rows = shown.map(function (j) {
-      var v = verdictOf(j).k;
-      var viol = j.violations && j.violations.length
-        ? esc(j.violations.slice(0, 2).join('; ')) + (j.violations.length > 2
-          ? ' <span class="table__more">и ещё ' + (j.violations.length - 2) + '</span>' : '')
-        : '<span class="table__more">—</span>';
-      return '<tr data-open="' + j.id + '"' + (picked[j.id] ? ' class="is-picked"' : '') + '>' +
-        '<td class="table__pick"><input type="checkbox" data-pick="' + j.id + '"' + (picked[j.id] ? ' checked' : '') + ' /></td>' +
-        '<td class="table__num">' + whenOf(j.created_at) + '</td>' +
-        '<td class="table__main">' + esc(REGION_SHORT[j.anatomical_region] || '—') + '</td>' +
-        '<td>' + badge(v) + '</td>' +
-        '<td class="table__viol">' + viol + '</td>' +
-        '<td>' + (j.specialist_decision
-          ? '<span class="badge badge--ghost">' + esc(DECISION[j.specialist_decision]) + '</span>'
-          : '<span class="table__more">не разобрано</span>') + '</td>' +
-        '<td class="table__id">' + esc(j.id) + '</td>' +
-        '<td>' + icon('i-chevron-right', 'ico--s') + '</td>' +
-      '</tr>';
+    var rows = shown.map(function (g) {
+      var v = studyVerdict(g);
+      var decided = g.jobs.filter(function (j) { return j.specialist_decision; }).length;
+      var decision = decided === g.jobs.length ? 'разобрано'
+        : (decided ? decided + ' из ' + g.jobs.length : 'не разобрано');
+
+      return '<div class="row' + (picked[g.study_id] ? ' is-picked' : '') + '" data-open="' + g.jobs[0].id + '">' +
+        '<label class="row__pick" data-stop><input type="checkbox" data-pick="' + g.study_id + '"' +
+          (picked[g.study_id] ? ' checked' : '') + ' /></label>' +
+        '<div class="row__when num">' + whenOf(g.created_at) + '</div>' +
+        '<div class="row__who">' + esc(g.patient_ref || '—') +
+          '<span class="row__sub">' + g.jobs.length + ' ' + plural(g.jobs.length, 'снимок', 'снимка', 'снимков') + '</span>' +
+        '</div>' +
+        '<div class="row__zones">' + g.jobs.slice(0, 3).map(zoneChip).join('') +
+          (g.jobs.length > 3 ? '<span class="zone zone--none">ещё ' + (g.jobs.length - 3) + '</span>' : '') +
+        '</div>' +
+        '<div class="row__verdict">' + badge(v) + '</div>' +
+        '<div class="row__decision">' + esc(decision) + '</div>' +
+        '<svg class="ico row__go"><use href="#i-chevron-right"/></svg>' +
+      '</div>';
     }).join('');
 
     return '' +
       '<div class="work__head"><h1 class="work__title">Очередь исследований</h1>' +
-      '<span class="work__sub">' + list.length + ' из ' + JOBS.length + '</span></div>' +
+      '<span class="work__sub">' + groups.length + ' ' + plural(groups.length, 'посещение', 'посещения', 'посещений') +
+      ', ' + list.length + ' ' + plural(list.length, 'снимок', 'снимка', 'снимков') + '</span></div>' +
 
       '<div class="filters">' +
-        '<span class="filters__label">Область</span>' +
         '<select class="filters__select" data-filter="region">' +
-          opt('', 'любая', filters.region) + opt('spine', 'позвоночник', filters.region) +
-          opt('hip_left', 'левое бедро', filters.region) + opt('hip_right', 'правое бедро', filters.region) +
+          opt('', 'Все области', filters.region) + opt('spine', 'Позвоночник', filters.region) +
+          opt('hip_left', 'Левое бедро', filters.region) + opt('hip_right', 'Правое бедро', filters.region) +
         '</select>' +
-        '<span class="filters__label">Вердикт</span>' +
         '<select class="filters__select" data-filter="verdict">' +
-          opt('', 'любой', filters.verdict) + opt('ok', 'корректно', filters.verdict) +
-          opt('warn', 'нужен взгляд', filters.verdict) + opt('bad', 'переснять', filters.verdict) +
-          opt('wait', 'в обработке', filters.verdict) + opt('failed', 'ошибка', filters.verdict) +
+          opt('', 'Любой вердикт', filters.verdict) + opt('ok', 'Корректно', filters.verdict) +
+          opt('warn', 'Нужен взгляд специалиста', filters.verdict) + opt('bad', 'Переснять', filters.verdict) +
+          opt('wait', 'В обработке', filters.verdict) + opt('failed', 'Ошибка', filters.verdict) +
         '</select>' +
-        '<span class="filters__label">Решение</span>' +
         '<select class="filters__select" data-filter="decision">' +
-          opt('', 'любое', filters.decision) + opt('_none', 'не разобрано', filters.decision) +
-          opt('approved', 'принято', filters.decision) + opt('rejected', 'отклонено', filters.decision) +
-          opt('force_approved', 'принято вопреки', filters.decision) +
+          opt('', 'Любое решение', filters.decision) + opt('_none', 'Не разобрано', filters.decision) +
+          opt('approved', 'Принято', filters.decision) + opt('rejected', 'Отклонено', filters.decision) +
+          opt('force_approved', 'Принято вопреки', filters.decision) +
         '</select>' +
-        '<span class="filters__search">' + icon('i-search', 'ico--s') +
-          '<input type="text" placeholder="номер задачи" data-filter="q" value="' + esc(filters.q) + '" /></span>' +
-        '<span class="filters__note">фильтры применяются к загруженной странице</span>' +
+        '<span class="filters__search">' + icon('i-search') +
+          '<input type="text" placeholder="пациент или номер задачи" data-filter="q" value="' + esc(filters.q) + '" /></span>' +
       '</div>' +
 
       (sel.length ? '<div class="bulk">' +
@@ -638,21 +888,36 @@
         '<button class="btn btn--quiet" data-bulk-clear>Снять выделение</button>' +
       '</div>' : '') +
 
-      '<div class="card"><table class="table"><thead><tr>' +
-        '<th class="table__pick"></th><th>Поступило</th><th>Область</th><th>Вердикт</th>' +
-        '<th>Нарушения</th><th>Решение</th><th>Задача</th><th></th>' +
-      '</tr></thead><tbody>' + (rows || '<tr><td colspan="8"><div class="empty">' +
-        '<div class="empty__icon">' + icon('i-search', 'ico--l') + '</div>' +
-        '<div class="empty__title">Ничего не найдено</div>' +
-        '<div class="empty__text">Измените фильтры или загрузите следующую страницу.</div></div></td></tr>') +
-      '</tbody></table></div>' +
+      '<div class="rows__head">' +
+        '<span></span><span>Поступило</span><span>Пациент</span>' +
+        '<span>Зоны исследования</span><span>Вердикт</span><span>Решение</span><span></span>' +
+      '</div>' +
+
+      (rows ? '<div class="rows">' + rows + '</div>'
+        : '<div class="card"><div class="empty">' +
+          '<div class="empty__icon">' + icon('i-search', 'ico--l') + '</div>' +
+          '<div class="empty__title">Ничего не найдено</div>' +
+          '<div class="empty__text">Измените фильтры или загрузите следующую страницу.</div></div></div>') +
 
       '<div class="listfoot">' +
-        '<span>Показано ' + shown.length + ' из ' + list.length + '</span>' +
-        (shown.length < list.length ? '<button class="btn" data-more>Показать ещё</button>' : '') +
-        '<span class="spacer"></span>' +
-        '<span>Постраничная выборка: <span class="num">offset</span> / <span class="num">limit</span></span>' +
+        '<span>Показано ' + shown.length + ' из ' + groups.length + '</span>' +
+        (shown.length < groups.length ? '<button class="btn" data-more>Показать ещё</button>' : '') +
       '</div>';
+  }
+
+  /* Чип зоны: пока снимок не обработан, вместо области показываем состояние. */
+  function zoneChip(j) {
+    var k = verdictOf(j).k, d = VERDICT_LIST[k];
+    var text = j.anatomical_region ? REGION_SHORT[j.anatomical_region] : STATUS[j.status];
+    return '<span class="zone zone--' + (d.c || 'none') + '" data-open="' + j.id + '">' +
+      icon(d.i, 'ico--s') + esc(text) + '</span>';
+  }
+
+  function plural(n, one, few, many) {
+    var m10 = n % 10, m100 = n % 100;
+    if (m10 === 1 && m100 !== 11) return one;
+    if (m10 >= 2 && m10 <= 4 && (m100 < 12 || m100 > 14)) return few;
+    return many;
   }
 
   function opt(v, t, cur) {
@@ -684,6 +949,7 @@
         '<span class="work__sub">задача <span class="num">' + esc(job.id) + '</span></span>' +
       '</div>' + stepsHTML(steps, now);
 
+    html += zoneTabsHTML(job);
     html += '<div class="study">';
 
     /* левая колонка — снимок */
@@ -700,21 +966,16 @@
     html += '<div style="display:flex;flex-direction:column;gap:14px">';
 
     html += '<div class="meta">' +
-      cell('Область', REGION[job.anatomical_region] || '—') +
+      cell('Пациент', job.patient_ref || '—') +
       cell('Поступило', whenOf(job.created_at)) +
+      cell('Область', REGION[job.anatomical_region] || '—') +
       cell('Состояние', STATUS[job.status]) +
       cell('Направившая организация', 'Поликлиника № 218') +
-      cell('Снимок', job.dicom_id, true) +
-      cell('Задача', job.id, true) +
+      cell('Аппарат', (job.metadata || {}).device || '—') +
     '</div>';
 
     if (md.criteria && Object.keys(md.criteria).length) {
-      html += '<div class="card">' +
-        '<div class="card__head"><span class="card__title">Критерии укладки</span>' +
-        '<span class="spacer"></span><span class="card__sub">' + esc(vl.t) + '</span></div>' +
-        '<div class="card__body" style="padding:8px">' + legendHTML(job) + '</div>' +
-        quietLine(job) +
-      '</div>';
+      html += '<div class="crits-wrap">' + criteriaHTML(job) + quietLine(job) + '</div>';
     }
 
     html += '<div class="card"><div class="card__head"><span class="card__title">Решение специалиста</span></div>' +
@@ -722,6 +983,17 @@
 
     html += '</div></div>';
     return html;
+  }
+
+  /* Зоны одного посещения: переключение между снимками пациента. */
+  function zoneTabsHTML(job) {
+    var group = studyOf(job.study_id);
+    if (!group || group.jobs.length < 2) return '';
+    var n = group.jobs.indexOf(job) + 1;
+    return '<div class="picker-row">' +
+      '<span class="picker-row__key">Снимок исследования</span>' +
+      pickerHTML('zones', job, group.jobs, { count: n + ' из ' + group.jobs.length }) +
+    '</div>';
   }
 
   function cell(k, v, mono) {
@@ -734,12 +1006,10 @@
   function quietLine(job) {
     var md = job.metadata || {};
     var cl = md.classification || {};
-    var parts = [];
-    if (job.confidence != null) parts.push('уверенность в определении области <b>' + nm(job.confidence * 100, 0) + '%</b>');
-    if (cl.agreement != null) parts.push('согласие методов <b>' + nm(cl.agreement * 100, 0) + '%</b>');
-    if (job.duration_ms) parts.push('обработка <b>' + nm(job.duration_ms / 1000, 1) + ' с</b>');
-    if (!parts.length) return '';
-    return '<div class="quiet">' + icon('i-help', 'ico--s') + '<span class="quiet__val">' + parts.join(' · ') + '</span></div>';
+    if (job.confidence == null) return '';
+    return '<div class="quiet">Область определена с уверенностью <b>' +
+      nm(job.confidence * 100, 0) + '%</b>, обработка заняла <b>' +
+      nm(job.duration_ms / 1000, 1) + ' с</b></div>';
   }
 
   function decideHTML(job) {
@@ -761,8 +1031,8 @@
       '<label class="field"><span class="field__label">Комментарий (необязательно)</span>' +
         '<textarea class="field__textarea" id="decide-comment" placeholder="Например: артефакт вне зоны интереса"></textarea></label>' +
       '<div class="acts">' +
-        '<button class="btn btn--ok" data-decide="approved">' + icon('i-check') + 'Принять</button>' +
-        '<button class="btn btn--bad" data-decide="rejected">' + icon('i-x') + 'Отклонить</button>' +
+        '<button class="btn btn--ok btn--l" data-decide="approved">' + icon('i-check') + 'Принять</button>' +
+        '<button class="btn btn--bad btn--l" data-decide="rejected">' + icon('i-x') + 'Отклонить</button>' +
         '<button class="btn acts__wide" data-decide="force_approved">Принять вопреки рекомендации</button>' +
       '</div></div>';
   }
@@ -790,9 +1060,7 @@
           '<div class="drop__icon">' + icon('i-upload', 'ico--l') + '</div>' +
           '<div class="drop__title">Перетащите .zip с DICOM-файлами</div>' +
           '<div class="drop__hint">или нажмите, чтобы выбрать архив. Каждый файл станет отдельной задачей.</div>' +
-        '</div>' +
-        '<p class="foot">Архив уходит одним запросом, в ответ приходит список задач. ' +
-        'Состояние каждой отслеживается опросом до готовности.</p>';
+        '</div>';
     }
 
     var done = batch.jobs.filter(function (j) { return j.status === 'completed'; });
@@ -854,10 +1122,7 @@
           '<td class="table__num">' + r.count + '</td>' +
           '<td class="table__id">' + esc(r.url) + '</td>' +
           '<td><button class="btn" data-download="' + r.id + '">' + icon('i-download') + 'Скачать</button></td></tr>';
-      }).join('') + '</tbody></table></div>' +
-
-      '<p class="foot">Отчёт формируется по выбранным задачам и выгружается файлом .csv по ссылке из ответа. ' +
-      'Форматы .xlsx и архив с дополнительными сериями появятся, когда их поддержит бекенд.</p>';
+      }).join('') + '</tbody></table></div>';
   }
 
   /* --- служебный экран --- */
@@ -943,9 +1208,6 @@
         '<div class="empty__icon">' + icon(s.icon, 'ico--l') + '</div>' +
         '<div class="empty__title">Раздел в разработке</div>' +
         '<div class="empty__text">' + esc(s.text) + '</div>' +
-        '<ul class="empty__list">' + s.need.map(function (n) {
-          return '<li>' + icon('i-minus', 'ico--s') + esc(n) + '</li>';
-        }).join('') + '</ul>' +
       '</div></div>';
   }
 
@@ -971,6 +1233,11 @@
       else b.removeAttribute('aria-current');
     });
     $('#nav-queue-count').textContent = JOBS.filter(function (j) { return !j.specialist_decision; }).length;
+  }
+
+  function rerender() {
+    if ($('#screen-post').classList.contains('is-on')) renderPost();
+    else renderWork();
   }
 
   function go(r, id) {
@@ -1021,6 +1288,9 @@
     if (role === 'laborant') {
       post.idx = -1;
       post.phase = 'idle';
+      post.history = [];
+      post.compare = false;
+      post.archived = true;
       renderPost();
       postDemobar();
     } else {
@@ -1045,12 +1315,67 @@
     if ((t = e.target.closest('[data-role]'))) { enter(t.getAttribute('data-role')); return; }
     if (e.target.closest('[data-logout]')) { logout(); return; }
 
+    /* выпадающий список */
+    if ((t = e.target.closest('[data-picker-toggle]'))) {
+      var pid2 = t.getAttribute('data-picker-toggle');
+      openPicker = openPicker === pid2 ? null : pid2;
+      if (pid2 === 'hist') post.focus = 'prev';
+      rerender();
+      return;
+    }
+    if (openPicker && !e.target.closest('.picker__menu')) {
+      openPicker = null;
+      rerender();
+      return;
+    }
+    /* на посту выбор из списка переключает попытку, а не открывает карточку */
+    if (openPicker === 'hist' && (t = e.target.closest('.picker__menu [data-open]'))) {
+      var hid = t.getAttribute('data-open');
+      var at = post.history.indexOf(hid);
+      if (at >= 0) post.histIdx = at;
+      openPicker = null;
+      post.focus = 'prev';
+      renderPost();
+      return;
+    }
+    if (e.target.closest('.picker__menu [data-open]')) openPicker = null;
+
     /* навигация */
     if ((t = e.target.closest('[data-go]'))) { go(t.getAttribute('data-go')); return; }
 
+    /* строка критерия раскрывается по клику */
+    if ((t = e.target.closest('[data-crit]'))) {
+      var ck = t.getAttribute('data-crit');
+      openCrit[ck] = !openCrit[ck];
+      if ($('#screen-post').classList.contains('is-on')) renderPost();
+      else renderWork();
+      return;
+    }
+
     /* окно снимка */
+    if ((t = e.target.closest('[data-hist]'))) {
+      post.histIdx += t.getAttribute('data-hist') === 'prev' ? -1 : 1;
+      post.histIdx = Math.max(0, Math.min(post.histIdx, post.history.length - 1));
+      post.focus = 'prev';
+      renderPost();
+      return;
+    }
+
+    /* клик по снимку делает его активным: справа показывается его разбор */
+    if ((t = e.target.closest('[data-focus]'))) {
+      post.focus = t.getAttribute('data-focus');
+      renderPost();
+      return;
+    }
+
     if ((t = e.target.closest('[data-view]'))) {
       var key = t.getAttribute('data-view');
+      if (key === 'compare') {
+        post.compare = !post.compare;
+        post.focus = 'now';
+        renderPost();
+        return;
+      }
       viewState[key] = !viewState[key];
       if ($('#screen-post').classList.contains('is-on')) renderPost();
       else renderWork();
@@ -1073,6 +1398,7 @@
         $('#post-total').textContent = post.total;
         $('#post-redo').textContent = post.redo;
         $('#post-last').textContent = post.last;
+        postArchive();
         post.phase = 'idle';
         renderPost();
         toast(DECISION[dec], dec === 'rejected' ? 'i-refresh' : 'i-check');
@@ -1104,21 +1430,27 @@
       e.stopPropagation();
       return;
     }
+    if (e.target.closest('[data-stop]')) { return; }
     if ((t = e.target.closest('[data-bulk]'))) {
       var d2 = t.getAttribute('data-bulk'), n = 0;
       Object.keys(picked).forEach(function (k) {
         if (!picked[k]) return;
-        var jb = jobById(k);
-        if (jb && jb.status === 'completed') { jb.specialist_decision = d2; jb.specialist_name = 'Соколова М. И.'; n++; }
+        var g = studyOf(k);
+        (g ? g.jobs : []).forEach(function (jb) {
+          if (jb.status === 'completed') { jb.specialist_decision = d2; jb.specialist_name = 'Соколова М. И.'; n++; }
+        });
       });
       picked = {};
       renderWork();
-      toast('Решение принято по ' + n + ' задачам');
+      toast('Решение принято по ' + n + ' снимкам');
       return;
     }
     if (e.target.closest('[data-bulk-clear]')) { picked = {}; renderWork(); return; }
     if (e.target.closest('[data-report-selected]')) {
-      var cnt = Object.keys(picked).filter(function (k) { return picked[k]; }).length;
+      var cnt = 0;
+      Object.keys(picked).forEach(function (k) {
+        if (picked[k]) { var g = studyOf(k); cnt += g ? g.jobs.length : 0; }
+      });
       picked = {};
       renderWork();
       showReport(cnt);

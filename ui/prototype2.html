@@ -6,7 +6,7 @@
 <title>Контроль качества ДРА — прототип 2</title>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
 <link rel="stylesheet" href="prototype2.css" />
 </head>
 <body>
@@ -34,6 +34,7 @@
     <symbol id="i-alert-circle" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></symbol>
     <symbol id="i-help" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/></symbol>
     <symbol id="i-chevron-right" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></symbol>
+    <symbol id="i-chevron-down" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></symbol>
     <symbol id="i-chevron-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></symbol>
     <symbol id="i-upload" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></symbol>
     <symbol id="i-download" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></symbol>
@@ -58,52 +59,53 @@
      Экран входа. Контур определяется ролью, а не переключателем.
      ============================================================ -->
 <section class="login is-on" id="screen-login">
-  <div class="login__box">
+  <aside class="login__aside">
     <div class="login__brand">
-      <img class="login__mark" src="assets/logo-cdt-mark.png" alt="" />
-      <div>
-        <div class="login__name">Контроль качества ДРА</div>
-        <div class="login__owner">Центр диагностики и телемедицины</div>
-      </div>
+      <img class="login__logo" src="assets/logo-cdt-mark.png" alt="" />
+      <span class="login__owner">Центр диагностики и телемедицины</span>
     </div>
+    <div>
+      <h1 class="login__claim">Контроль качества<br />исследований ДРА</h1>
+      <p class="login__lead">Сервис проверяет укладку сразу после сканирования и показывает,
+        что исправить, пока пациент ещё в кабинете.</p>
+    </div>
+    <div class="login__note">Прототип. Данные синтетические.</div>
+  </aside>
 
-    <form class="card login__form" id="login-form">
+  <div class="login__main">
+    <form class="login__form" id="login-form">
+      <h2 class="login__head">Вход в систему</h2>
+
       <label class="field">
         <span class="field__label">Логин</span>
-        <input class="field__input" id="login-user" type="text" autocomplete="username" value="" placeholder="фамилия.и.о" />
+        <input class="field__input" id="login-user" type="text" autocomplete="username" placeholder="фамилия.и.о" />
       </label>
       <label class="field">
         <span class="field__label">Пароль</span>
         <input class="field__input" id="login-pass" type="password" autocomplete="current-password" value="••••••••" />
       </label>
-      <button class="btn btn--primary btn--l btn--block" type="submit">
-        <svg class="ico"><use href="#i-lock"/></svg>
-        Войти
-      </button>
 
-      <div class="login__hint">
-        <div class="login__hint-title">Учётные записи демонстрации</div>
+      <button class="btn btn--primary btn--l btn--block" type="submit">Войти</button>
+
+      <div class="login__accs">
         <button class="login__acc" type="button" data-role="laborant">
-          <svg class="ico" style="color:var(--muted)"><use href="#i-activity"/></svg>
-          <span>
+          <span class="login__acc-ico"><svg class="ico"><use href="#i-activity"/></svg></span>
+          <span class="login__acc-text">
             <b>Иванова А. П.</b>
-            <span class="login__acc-role">рентгенолаборант · поликлиника № 218 → пост</span>
+            <span class="login__acc-role">рентгенолаборант, поликлиника № 218</span>
           </span>
+          <svg class="ico login__acc-go"><use href="#i-arrow-right"/></svg>
         </button>
         <button class="login__acc" type="button" data-role="doctor">
-          <svg class="ico" style="color:var(--muted)"><use href="#i-list"/></svg>
-          <span>
+          <span class="login__acc-ico"><svg class="ico"><use href="#i-list"/></svg></span>
+          <span class="login__acc-text">
             <b>Соколова М. И.</b>
-            <span class="login__acc-role">врач-рентгенолог · ЦДиТ → центр обработки</span>
+            <span class="login__acc-role">врач-рентгенолог, центр обработки</span>
           </span>
+          <svg class="ico login__acc-go"><use href="#i-arrow-right"/></svg>
         </button>
       </div>
     </form>
-
-    <p class="login__foot">
-      Прототип интерфейса к ТЗ «Сервис ИИ по оценке качества исследований плотности костей человека».<br />
-      Данные синтетические, решения системы носят рекомендательный характер.
-    </p>
   </div>
 </section>
 
@@ -174,13 +176,15 @@
 <div class="app" id="screen-center">
   <header class="topbar">
     <div class="topbar__org">
-      <img class="topbar__logo" src="assets/logo-cdt-full.png" alt="Центр диагностики и телемедицины" />
+      <img class="topbar__logo" src="assets/logo-cdt-mark.png" alt="" />
+      <div>
+        <div class="topbar__name">Контроль качества ДРА</div>
+        <div class="topbar__place">Центр диагностики и телемедицины</div>
+      </div>
     </div>
 
     <div class="topbar__meta">
-      <span>Контроль качества ДРА</span>
-      <span class="topbar__sep">·</span>
-      <span>региональный центр обработки</span>
+      <span>Региональный центр обработки</span>
     </div>
 
     <span class="spacer"></span>
