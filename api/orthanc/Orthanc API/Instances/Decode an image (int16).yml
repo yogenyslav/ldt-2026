@@ -25,7 +25,7 @@ http:
       description: Returns an unsupported.png placeholder image if unable to provide the image instead of returning a 415 HTTP error (value is true if option is present)
       disabled: true
     - name: id
-      value: ""
+      value: ef13351a-a5b3ad36-d6255256-6c6059f7-4e0814eb
       type: path
       description: Orthanc identifier of the DICOM instance of interest
   auth: inherit

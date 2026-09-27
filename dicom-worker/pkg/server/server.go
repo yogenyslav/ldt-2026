@@ -2,13 +2,13 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
 	"syscall"
 
 	"github.com/grpc-ecosystem/go-grpc-middleware/v2/interceptors/logging"
-	"github.com/yogenyslav/errs"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/observability"
 	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
@@ -49,7 +49,7 @@ func New(obs *observability.Observability) (*Server, error) {
 func (s *Server) Serve() error {
 	port, ok := os.LookupEnv("DICOM_WORKER_PORT")
 	if !ok {
-		return errs.Wrap(ErrServicePortNotSet, "service port is required to start server")
+		return fmt.Errorf("service port is required for server: %v", ErrServicePortNotSet)
 	}
 
 	defer s.srv.GracefulStop()
@@ -67,19 +67,19 @@ func (s *Server) Serve() error {
 		s.obs.Logger().Info().Msg("received stop signal, shutting down server")
 		return nil
 	case err := <-errCh:
-		return errs.Wrap(err, "gRPC server error")
+		return fmt.Errorf("gRPC server error: %w", err)
 	}
 }
 
 func (s *Server) listenGrpc(port string, errCh chan error) {
 	lis, err := net.Listen("tcp", net.JoinHostPort("", port))
 	if err != nil {
-		errCh <- errs.Wrap(err, "create net listener")
+		errCh <- fmt.Errorf("failed to listen on %s: %v", port, err)
 		return
 	}
 
 	if err = s.srv.Serve(lis); err != nil {
-		errCh <- errs.Wrap(err, "serve gRPC server")
+		errCh <- fmt.Errorf("failed to serve gRPC server: %v", err)
 		return
 	}
 }

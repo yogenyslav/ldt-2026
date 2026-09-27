@@ -3,11 +3,11 @@ package observability
 import (
 	"context"
 	"errors"
+	"fmt"
 	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/rs/zerolog"
-	"github.com/yogenyslav/errs"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/observability/metrics"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/observability/tracing"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
@@ -43,7 +43,7 @@ type Observability struct {
 func New() (*Observability, error) {
 	appName, ok := os.LookupEnv("APP_NAME")
 	if !ok {
-		return nil, errs.Wrap(ErrAppNameNotSet, "app name is required for observability")
+		return nil, fmt.Errorf("app name is required for observability: %v", ErrAppNameNotSet)
 	}
 
 	m, err := metrics.New(appName)
@@ -81,7 +81,7 @@ func (o *Observability) Logger() *zerolog.Logger {
 // Shutdown корректно завершает работу клиентов метрик и трассировки.
 func (o *Observability) Shutdown(ctx context.Context) error {
 	if err := o.tracing.Shutdown(ctx); err != nil {
-		return errs.Wrap(err, "shutdown tracing client")
+		return fmt.Errorf("shutdown tracing client: %v", err)
 	}
 	return nil
 }

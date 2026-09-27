@@ -8,7 +8,7 @@
             "post": {
                 "description": "Загрузить DICOM файл на сервер.",
                 "consumes": [
-                    "multipart/form-data"
+                    "application/dicom"
                 ],
                 "produces": [
                     "application/json"
@@ -19,18 +19,20 @@
                 "summary": "Загрузить DICOM файл",
                 "parameters": [
                     {
-                        "type": "file",
                         "description": "DICOM файл для загрузки.",
                         "name": "file",
-                        "in": "formData",
-                        "required": true
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
                     }
                 ],
                 "responses": {
                     "201": {
                         "description": "Файл успешно загружен.",
                         "schema": {
-                            "$ref": "#/definitions/dicom_upload.DicomUploadOut"
+                            "$ref": "#/definitions/upload.UploadOut"
                         }
                     },
                     "400": {
@@ -74,7 +76,7 @@
                     "201": {
                         "description": "Файлы успешно загружены.",
                         "schema": {
-                            "$ref": "#/definitions/dicom_upload_batch.DicomUploadBatchOut"
+                            "$ref": "#/definitions/upload_batch.UploadBatchOut"
                         }
                     },
                     "400": {
@@ -124,7 +126,7 @@
                     "200": {
                         "description": "DICOM изображение успешно получено.",
                         "schema": {
-                            "$ref": "#/definitions/dicom_get_image.DicomGetImageOut"
+                            "$ref": "#/definitions/get_image.GetImageOut"
                         }
                     },
                     "400": {
@@ -185,17 +187,11 @@
                     "200": {
                         "description": "Информация о задачах успешно получена.",
                         "schema": {
-                            "$ref": "#/definitions/job_info_get_by_ids.JobInfoGetPaginatedOut"
+                            "$ref": "#/definitions/get_paginated.GetInfoPaginatedOut"
                         }
                     },
                     "400": {
                         "description": "Некорректный запрос.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "403": {
-                        "description": "Доступ запрещен.",
                         "schema": {
                             "type": "string"
                         }
@@ -235,7 +231,7 @@
                     "200": {
                         "description": "Информация о задаче успешно получена.",
                         "schema": {
-                            "$ref": "#/definitions/job_info_get_by_id.JobInfoGetByIDOut"
+                            "$ref": "#/definitions/internal_api_job_get_by_id.GetByIDOut"
                         }
                     },
                     "400": {
@@ -285,7 +281,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/job_result_decision.JobResultDecisionIn"
+                            "$ref": "#/definitions/result_decision.ResultDecisionIn"
                         }
                     }
                 ],
@@ -302,8 +298,132 @@
                             "type": "string"
                         }
                     },
+                    "404": {
+                        "description": "Задачи не найдены.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/organization/{org_id}": {
+            "get": {
+                "description": "Получить организацию по ID.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organization"
+                ],
+                "summary": "Получить организацию по ID.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID организации",
+                        "name": "org_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Организация успешно получена.",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_organization_get_by_id.GetByIDOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "403": {
                         "description": "Доступ запрещен.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Организация не найдена.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/organization/{org_id}/users": {
+            "get": {
+                "description": "Получить пользователей организации с пагинацией.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organization"
+                ],
+                "summary": "Получить пользователей с пагинацией.",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID организации",
+                        "name": "org_id",
+                        "in": "path",
+                        "required": true
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Offset для пагинации (по умолчанию 0)",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "integer",
+                        "description": "Limit для пагинации (по умолчанию 10)",
+                        "name": "limit",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Пользователи успешно получены.",
+                        "schema": {
+                            "$ref": "#/definitions/get_users_paginated.GetUsersPaginatedOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Организация не найдена.",
                         "schema": {
                             "type": "string"
                         }
@@ -350,17 +470,11 @@
                     "200": {
                         "description": "Отчеты по результатам обработки DICOM-файлов успешно получены.",
                         "schema": {
-                            "$ref": "#/definitions/report_get_by_id.ReportGetPaginatedOut"
+                            "$ref": "#/definitions/get_paginated.GetPaginatedOut"
                         }
                     },
                     "400": {
                         "description": "Некорректный запрос.",
-                        "schema": {
-                            "type": "string"
-                        }
-                    },
-                    "403": {
-                        "description": "Доступ запрещен.",
                         "schema": {
                             "type": "string"
                         }
@@ -394,7 +508,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/report_generate.ReportGenerateIn"
+                            "$ref": "#/definitions/generate.GenerateIn"
                         }
                     }
                 ],
@@ -402,7 +516,7 @@
                     "200": {
                         "description": "Отчет по результатам обработки DICOM-файлов успешно сгенерирован.",
                         "schema": {
-                            "$ref": "#/definitions/report_generate.ReportGenerateOut"
+                            "$ref": "#/definitions/generate.GenerateOut"
                         }
                     },
                     "400": {
@@ -452,7 +566,7 @@
                     "200": {
                         "description": "Отчет по результатам обработки DICOM-файлов успешно получены.",
                         "schema": {
-                            "$ref": "#/definitions/report_get_by_id.ReportGetByIDOut"
+                            "$ref": "#/definitions/internal_api_report_get_by_id.GetByIDOut"
                         }
                     },
                     "400": {
@@ -502,7 +616,7 @@
                         "in": "body",
                         "required": true,
                         "schema": {
-                            "$ref": "#/definitions/user_login.UserLoginIn"
+                            "$ref": "#/definitions/login.LoginIn"
                         }
                     }
                 ],
@@ -510,7 +624,7 @@
                     "200": {
                         "description": "Пользователь успешно аутентифицирован.",
                         "schema": {
-                            "$ref": "#/definitions/user_login.UserLoginOut"
+                            "$ref": "#/definitions/login.LoginOut"
                         }
                     },
                     "400": {
@@ -560,7 +674,7 @@
                     "200": {
                         "description": "Информация о пользователе успешно получена.",
                         "schema": {
-                            "$ref": "#/definitions/user_info_get_by_id.UserGetInfoOut"
+                            "$ref": "#/definitions/internal_api_user_get_by_id.GetByIDOut"
                         }
                     },
                     "400": {
@@ -592,8 +706,28 @@
         }
     },
     "definitions": {
-        "dicom_get_image.DicomGetImageOut": {
-            "description": "Если Raw=false, то возвращается base64 изображения. Если Raw=true, то возвращаются байты изображения.",
+        "generate.GenerateIn": {
+            "type": "object",
+            "properties": {
+                "job_ids": {
+                    "description": "Список ID задач на обработку DICOM-файлов, для которых необходимо сгенерировать отчет.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "generate.GenerateOut": {
+            "type": "object",
+            "properties": {
+                "report_id": {
+                    "description": "ID сгенерированного отчета по результатам обработки DICOM-файлов.",
+                    "type": "integer"
+                }
+            }
+        },
+        "get_image.GetImageOut": {
             "type": "object",
             "properties": {
                 "image_data": {
@@ -609,77 +743,54 @@
                 }
             }
         },
-        "dicom_upload.DicomUploadOut": {
+        "get_paginated.GetInfoPaginatedOut": {
             "type": "object",
             "properties": {
-                "dicom_id": {
-                    "type": "string"
-                },
-                "job_id": {
-                    "description": "ID задачи на сервере для обработки DICOM файла.",
-                    "type": "string"
-                }
-            }
-        },
-        "dicom_upload_batch.DicomData": {
-            "type": "object",
-            "properties": {
-                "dicom_id": {
-                    "type": "string"
-                },
-                "job_id": {
-                    "description": "ID задачи на сервере для обработки DICOM файла.",
-                    "type": "string"
-                }
-            }
-        },
-        "dicom_upload_batch.DicomUploadBatchOut": {
-            "type": "object",
-            "properties": {
-                "data": {
-                    "description": "Список данных о DICOM файлах и задачах на сервере.",
+                "jobs": {
+                    "description": "Список информации о задачах на обработку DICOM-файлов.",
                     "type": "array",
                     "items": {
-                        "$ref": "#/definitions/dicom_upload_batch.DicomData"
+                        "$ref": "#/definitions/model.JobInfo"
                     }
                 }
             }
         },
-        "internal_api_report_get_by_id.Report": {
+        "get_paginated.GetPaginatedOut": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "description": "Дата и время создания отчета по результатам обработки DICOM-файлов.",
-                    "type": "string"
-                },
-                "download_url": {
-                    "description": "URL для скачивания отчета по результатам обработки DICOM-файлов.",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "ID отчета по результатам обработки DICOM-файлов.",
-                    "type": "integer"
+                "reports": {
+                    "description": "Список отчетов по результатам обработки DICOM-файлов.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Report"
+                    }
                 }
             }
         },
-        "internal_api_report_get_paginated.Report": {
+        "get_users_paginated.GetUsersPaginatedOut": {
             "type": "object",
             "properties": {
-                "created_at": {
-                    "description": "Дата и время создания отчета по результатам обработки DICOM-файлов.",
-                    "type": "string"
-                },
-                "download_url": {
-                    "description": "URL для скачивания отчета по результатам обработки DICOM-файлов.",
-                    "type": "string"
-                },
-                "id": {
-                    "description": "ID отчета по результатам обработки DICOM-файлов.",
-                    "type": "integer"
+                "users": {
+                    "description": "Список пользователей организации.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/get_users_paginated.OrganizationUser"
+                    }
                 }
             }
         },
-        "job_info_get_by_id.JobInfoGetByIDOut": {
+        "get_users_paginated.OrganizationUser": {
+            "type": "object",
+            "properties": {
+                "full_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                }
+            }
+        },
+        "internal_api_job_get_by_id.GetByIDOut": {
             "type": "object",
             "properties": {
                 "job": {
@@ -692,62 +803,90 @@
                 }
             }
         },
-        "job_info_get_by_ids.JobInfoGetPaginatedOut": {
+        "internal_api_organization_get_by_id.GetByIDOut": {
             "type": "object",
             "properties": {
-                "jobs": {
-                    "description": "Список информации о задачах на обработку DICOM-файлов.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/model.JobInfo"
-                    }
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
-        "job_result_decision.Decision": {
-            "type": "string",
-            "enum": [
-                "approved",
-                "rejected",
-                "force_approved"
-            ],
-            "x-enum-comments": {
-                "DecisionApprove": "Результат задачи принят специалистом.",
-                "DecisionForceApproved": "Результат задачи принят специалистом, несмотря на рекомендацию системы.",
-                "DecisionReject": "Результат задачи отклонен специалистом."
-            },
-            "x-enum-descriptions": [
-                "Результат задачи принят специалистом.",
-                "Результат задачи отклонен специалистом.",
-                "Результат задачи принят специалистом, несмотря на рекомендацию системы."
-            ],
-            "x-enum-varnames": [
-                "DecisionApprove",
-                "DecisionReject",
-                "DecisionForceApproved"
-            ]
-        },
-        "job_result_decision.JobResultDecisionIn": {
+        "internal_api_report_get_by_id.GetByIDOut": {
             "type": "object",
             "properties": {
-                "comment": {
-                    "description": "Комментарий к решению по результатам обработки DICOM-файлов (необязательный).",
-                    "type": "string"
-                },
-                "decision": {
-                    "description": "Решение по результатам обработки DICOM-файлов (\"approved\", \"reject\", \"force_approved\").",
+                "report": {
+                    "description": "Содержит отчет по результатам обработки DICOM-файлов.",
                     "allOf": [
                         {
-                            "$ref": "#/definitions/job_result_decision.Decision"
+                            "$ref": "#/definitions/model.Report"
+                        }
+                    ]
+                }
+            }
+        },
+        "internal_api_user_get_by_id.GetByIDOut": {
+            "type": "object",
+            "properties": {
+                "full_name": {
+                    "description": "Имя пользователя.",
+                    "type": "string"
+                },
+                "id": {
+                    "description": "ID пользователя.",
+                    "type": "integer"
+                },
+                "organization_id": {
+                    "description": "Список ID организаций, к которым принадлежит пользователь.",
+                    "type": "integer"
+                },
+                "role": {
+                    "description": "Роль пользователя (specialist, admin).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.UserRole"
+                        }
+                    ]
+                }
+            }
+        },
+        "login.LoginIn": {
+            "type": "object",
+            "properties": {
+                "email": {
+                    "description": "Email пользователя для входа в систему.",
+                    "type": "string"
+                },
+                "password": {
+                    "description": "Пароль пользователя для входа в систему.",
+                    "type": "string"
+                }
+            }
+        },
+        "login.LoginOut": {
+            "type": "object",
+            "properties": {
+                "organization_id": {
+                    "description": "ID организации, к которой принадлежит пользователь.",
+                    "type": "integer"
+                },
+                "role": {
+                    "description": "Роль пользователя (specialist, admin).",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.UserRole"
                         }
                     ]
                 },
-                "job_ids": {
-                    "description": "Список ID задач на обработку DICOM-файлов, для которых необходимо принять решение по результатам.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
+                "token": {
+                    "description": "JWT-токен, который будет использоваться для аутентификации последующих запросов.",
+                    "type": "string"
+                },
+                "user_id": {
+                    "description": "ID пользователя.",
+                    "type": "integer"
                 }
             }
         },
@@ -868,81 +1007,24 @@
                 "JobStatusFailed"
             ]
         },
-        "report_generate.ReportGenerateIn": {
+        "model.Report": {
             "type": "object",
             "properties": {
-                "job_ids": {
-                    "description": "Список ID задач на обработку DICOM-файлов, для которых необходимо сгенерировать отчет.",
-                    "type": "array",
-                    "items": {
-                        "type": "string"
-                    }
-                }
-            }
-        },
-        "report_generate.ReportGenerateOut": {
-            "type": "object",
-            "properties": {
-                "report_id": {
-                    "description": "ID сгенерированного отчета по результатам обработки DICOM-файлов.",
-                    "type": "integer"
-                }
-            }
-        },
-        "report_get_by_id.ReportGetByIDOut": {
-            "type": "object",
-            "properties": {
-                "report": {
-                    "description": "Содержит отчет по результатам обработки DICOM-файлов.",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/internal_api_report_get_by_id.Report"
-                        }
-                    ]
-                }
-            }
-        },
-        "report_get_by_id.ReportGetPaginatedOut": {
-            "type": "object",
-            "properties": {
-                "reports": {
-                    "description": "Список отчетов по результатам обработки DICOM-файлов.",
-                    "type": "array",
-                    "items": {
-                        "$ref": "#/definitions/internal_api_report_get_paginated.Report"
-                    }
-                }
-            }
-        },
-        "user_info_get_by_id.UserGetInfoOut": {
-            "type": "object",
-            "properties": {
-                "full_name": {
-                    "description": "Имя пользователя.",
+                "created_at": {
+                    "description": "Дата и время создания отчета по результатам обработки DICOM-файлов.",
+                    "type": "string"
+                },
+                "download_url": {
+                    "description": "URL для скачивания отчета по результатам обработки DICOM-файлов.",
                     "type": "string"
                 },
                 "id": {
-                    "description": "ID пользователя.",
+                    "description": "ID отчета по результатам обработки DICOM-файлов.",
                     "type": "integer"
-                },
-                "organisation_ids": {
-                    "description": "Список ID организаций, к которым принадлежит пользователь.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
-                },
-                "role": {
-                    "description": "Роль пользователя (specialist, admin).",
-                    "allOf": [
-                        {
-                            "$ref": "#/definitions/user_info_get_by_id.UserRole"
-                        }
-                    ]
                 }
             }
         },
-        "user_info_get_by_id.UserRole": {
+        "model.UserRole": {
             "type": "string",
             "enum": [
                 "specialist",
@@ -961,25 +1043,63 @@
                 "UserRoleAdmin"
             ]
         },
-        "user_login.UserLoginIn": {
+        "result_decision.ResultDecisionIn": {
             "type": "object",
             "properties": {
-                "password": {
-                    "description": "Пароль пользователя для входа в систему.",
+                "comment": {
+                    "description": "Комментарий к решению по результатам обработки DICOM-файлов (необязательный).",
                     "type": "string"
                 },
-                "username": {
-                    "description": "Имя пользователя для входа в систему.",
+                "decision": {
+                    "description": "Решение по результатам обработки DICOM-файлов (\"approved\", \"reject\", \"force_approved\").",
+                    "allOf": [
+                        {
+                            "$ref": "#/definitions/model.Decision"
+                        }
+                    ]
+                },
+                "job_ids": {
+                    "description": "Список ID задач на обработку DICOM-файлов, для которых необходимо принять решение по результатам.",
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "upload.UploadOut": {
+            "type": "object",
+            "properties": {
+                "dicom_id": {
+                    "type": "string"
+                },
+                "job_id": {
+                    "description": "ID задачи на сервере для обработки DICOM файла.",
                     "type": "string"
                 }
             }
         },
-        "user_login.UserLoginOut": {
+        "upload_batch.DicomData": {
             "type": "object",
             "properties": {
-                "token": {
-                    "description": "JWT-токен, который будет использоваться для аутентификации последующих запросов.",
+                "dicom_id": {
                     "type": "string"
+                },
+                "job_id": {
+                    "description": "ID задачи на сервере для обработки DICOM файла.",
+                    "type": "string"
+                }
+            }
+        },
+        "upload_batch.UploadBatchOut": {
+            "type": "object",
+            "properties": {
+                "data": {
+                    "description": "Список данных о DICOM файлах и задачах на сервере.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/upload_batch.DicomData"
+                    }
                 }
             }
         }

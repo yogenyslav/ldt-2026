@@ -15,7 +15,7 @@ http:
       disabled: true
   params:
     - name: id
-      value: 08a01ace-56807640-0aa0f8b2-ce6858dd-24ffa23b
+      value: d2eb3ed6-2717bed6-3149ee32-53e690c3-0e3fcb0d
       type: path
       description: Orthanc identifier of the instance of interest
     - name: name

@@ -3,13 +3,13 @@ package database
 import (
 	"context"
 	"database/sql"
+	"fmt"
 
 	"github.com/georgysavva/scany/v2/pgxscan"
 	"github.com/ilyakaznacheev/cleanenv"
 	"github.com/jackc/pgx/v5"
 	"github.com/jackc/pgx/v5/pgconn"
 	"github.com/jackc/pgx/v5/pgxpool"
-	"github.com/yogenyslav/errs"
 )
 
 // Postgres клиент PostgreSQL.
@@ -21,7 +21,7 @@ type Postgres struct {
 func NewPostgres(ctx context.Context) (*Postgres, error) {
 	var cfg Config
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
-		return nil, errs.Wrap(err, "parse postgres config from env")
+		return nil, fmt.Errorf("parse postgres config from env: %w", err)
 	}
 
 	if cfg.Driver == "" {

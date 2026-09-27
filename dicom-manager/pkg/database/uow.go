@@ -2,8 +2,7 @@ package database
 
 import (
 	"context"
-
-	"github.com/yogenyslav/errs"
+	"fmt"
 )
 
 // UnitOfWork враппер для атомарных операций с транзакциями в БД.
@@ -27,17 +26,17 @@ func NewUnitOfWork(db DB) *unitOfWork {
 func (uow *unitOfWork) WithTx(ctx context.Context, level TxLevel, fn func(ctx context.Context) error) error {
 	tx, err := uow.db.beginTx(ctx, level)
 	if err != nil {
-		return errs.Wrap(err, "begin transaction")
+		return fmt.Errorf("begin transaction: %w", err)
 	}
 
 	defer func() {
 		if e := recover(); e != nil {
-			uow.db.rollbackTx(tx) //nolint:errcheck // nothing we can do
+			_ = uow.db.rollbackTx(tx) //nolint:errcheck // nothing we can do
 			panic(e)
 		}
 
 		if err != nil {
-			uow.db.rollbackTx(tx) //nolint:errcheck // nothing we can do
+			_ = uow.db.rollbackTx(tx) //nolint:errcheck // nothing we can do
 		} else {
 			err = uow.db.commitTx(tx)
 		}

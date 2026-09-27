@@ -21,7 +21,7 @@ services:
       - DB_HOST=${DICOM_MANAGER_DB_HOST}
       - DB_PORT=${DICOM_MANAGER_DB_PORT}
     ports:
-      - "11000"
+      - "127.0.0.1:10000:${DICOM_MANAGER_PORT:-10000}"
     networks:
       - dicom-network
 
@@ -63,7 +63,7 @@ services:
       - POSTGRES_PASSWORD=${DICOM_MANAGER_DB_PASSWORD}
       - POSTGRES_DB=${DICOM_MANAGER_DB_NAME}
     ports:
-      - "5432"
+      - "127.0.0.1:5432:5432"
     networks:
       - dicom-network
 

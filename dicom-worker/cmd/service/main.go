@@ -2,12 +2,10 @@ package main
 
 import (
 	"context"
+	"fmt"
 	"log"
 
 	"github.com/pressly/goose/v3"
-	"github.com/yogenyslav/errs"
-	"github.com/yogenyslav/ldt-2026/dicom-worker/internal/dicomer"
-	dicom_worker "github.com/yogenyslav/ldt-2026/dicom-worker/internal/generated/dicom-worker"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/migrations"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/database"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/observability"
@@ -22,11 +20,10 @@ func main() {
 
 func run() error {
 	ctx := context.Background()
-	errs.WithTrimSourcePref(true)
 
 	obs, err := observability.New()
 	if err != nil {
-		return errs.Wrap(err, "init observability")
+		return fmt.Errorf("init observability: %w", err)
 	}
 
 	defer func() {
@@ -35,13 +32,13 @@ func run() error {
 
 	db, err := database.NewPostgres(ctx)
 	if err != nil {
-		return errs.Wrap(err, "connect to database")
+		return fmt.Errorf("init postgres: %w", err)
 	}
 	defer db.Close()
 
 	dbConn, err := db.SQLDB()
 	if err != nil {
-		return errs.Wrap(err, "get sql db")
+		return fmt.Errorf("get sql db connection: %w", err)
 	}
 	defer func() {
 		_ = dbConn.Close() //nolint:errcheck // nothing we can do
@@ -49,22 +46,20 @@ func run() error {
 
 	goose.SetBaseFS(migrations.GetMigrationsFS())
 	if err = goose.SetDialect("postgres"); err != nil {
-		return errs.Wrap(err, "set goose dialect")
+		return fmt.Errorf("set goose dialect: %w", err)
 	}
 	err = goose.Up(dbConn, ".")
 	if err != nil {
-		return errs.Wrap(err, "apply migrations")
+		return fmt.Errorf("goose up: %w", err)
 	}
 
 	srv, err := server.New(obs)
 	if err != nil {
-		return errs.Wrap(err, "init server")
+		return fmt.Errorf("init server: %w", err)
 	}
 
-	dicom_worker.RegisterDicomWorkerServiceServer(srv.GRPCServer(), &dicomer.Worker{})
-
 	if err = srv.Serve(); err != nil {
-		return errs.Wrap(err, "serve server")
+		return fmt.Errorf("serve: %w", err)
 	}
 
 	return nil

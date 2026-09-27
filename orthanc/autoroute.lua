@@ -1,11 +1,11 @@
-local DICOM_WORKER_URL = "http://dicom-manager:10000/dicom"
+local DICOM_MANAGER_URL = "http://dicom-manager:10000/dicom/upload"
 local HTTP_TIMEOUT_SECONDS = 5
 
 function Initialize()
     SetHttpTimeout(HTTP_TIMEOUT_SECONDS)
 
     print("[autoroute] Initialized")
-    print("[autoroute] Target: " .. DICOM_WORKER_URL)
+    print("[autoroute] Target: " .. DICOM_MANAGER_URL)
 end
 
 function OnStoredInstance(instanceId, tags, metadata, origin)
@@ -23,7 +23,7 @@ function OnStoredInstance(instanceId, tags, metadata, origin)
     }
 
     local success, result = pcall(function()
-        return HttpPost(DICOM_WORKER_URL, dicom, headers)
+        return HttpPost(DICOM_MANAGER_URL, dicom, headers)
     end)
 
     if success then

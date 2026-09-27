@@ -3,11 +3,11 @@ package tracing
 import (
 	"context"
 	"errors"
+	"fmt"
 	"net"
 	"strconv"
 
 	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/yogenyslav/errs"
 	"go.opentelemetry.io/otel"
 	"go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp"
 	"go.opentelemetry.io/otel/propagation"
@@ -46,17 +46,17 @@ type Tracing struct {
 func New(appName string) (*Tracing, error) {
 	var cfg config
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
-		return nil, errs.Wrap(err, "parse tracing config from env")
+		return nil, fmt.Errorf("parse tracing config from env: %w", err)
 	}
 
 	exporter, err := newExporter(context.Background(), cfg.URL())
 	if err != nil {
-		return nil, errs.Wrap(err, "create tracing exporter")
+		return nil, fmt.Errorf("create tracing exporter: %w", err)
 	}
 
 	provider, err := newTraceProvider(exporter, appName)
 	if err != nil {
-		return nil, errs.Wrap(err, "create tracing provider")
+		return nil, fmt.Errorf("create tracing provider: %w", err)
 	}
 
 	otel.SetTextMapPropagator(
@@ -83,10 +83,10 @@ func (t *Tracing) Provider() *sdktrace.TracerProvider {
 // Shutdown корректно завершает работу экспортера и провайдера трассировки.
 func (t *Tracing) Shutdown(ctx context.Context) error {
 	if err := t.provider.Shutdown(ctx); err != nil {
-		return errs.Wrap(err, "shutdown tracing provider")
+		return fmt.Errorf("shutdown tracing provider: %w", err)
 	}
 	if err := t.exporter.Shutdown(ctx); err != nil {
-		return errs.Wrap(err, "shutdown tracing exporter")
+		return fmt.Errorf("shutdown tracing exporter: %w", err)
 	}
 	return nil
 }
