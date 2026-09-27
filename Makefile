@@ -1,7 +1,3 @@
-.PHONY: run-all
-run-all: run-nats run-orthanc run-storage
-	@echo "starting all services"
-
 .PHONY: swag
 swag:
 	@echo "generating swagger docs"
@@ -39,10 +35,6 @@ proto:
 generate-orthanc:
 	@echo "generating orthanc client"
 	@oapi-codegen -config dicom-manager/orthanc-generator.yaml api/orthanc/orthanc.yaml
-
-.PHONY: run-all
-run-all: run-nats run-orthanc run-storage run-observability run-worker run-manager
-	@echo "starting all services"
 
 .PHONY: run-nats
 run-nats:
