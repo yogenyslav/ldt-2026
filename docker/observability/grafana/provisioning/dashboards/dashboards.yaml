@@ -1,0 +1,12 @@
+apiVersion: 1
+
+providers:
+  - name: dicom
+    orgId: 1
+    folder: DICOM
+    type: file
+    disableDeletion: false
+    editable: false
+    updateIntervalSeconds: 10
+    options:
+      path: /var/lib/grafana/dashboards

@@ -22,7 +22,7 @@ datasources:
       nodeGraph:
         enabled: true
       serviceMap:
-        datasourceUid: 'Mimir'
+        datasourceUid: mimir
       tracesToLogs:
         datasourceUid: loki
         filterByTraceID: false
