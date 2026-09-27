@@ -27,7 +27,7 @@ var (
 // config конфиг для настройки трассировки.
 type config struct {
 	Host string `env:"TRACING_HOST"`
-	Port int    `env:"TRACING_PORT"`
+	Port int    `env:"TRACING_GRPC_PORT"`
 }
 
 // URL возвращает URL для подключения к OTLP экспортеру.

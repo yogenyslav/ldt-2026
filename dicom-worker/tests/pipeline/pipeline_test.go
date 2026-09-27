@@ -15,9 +15,6 @@ import (
 	"time"
 
 	"github.com/google/uuid"
-	"github.com/jackc/pgx/v5"
-	"github.com/nats-io/nats.go"
-	"github.com/pressly/goose/v3"
 	"github.com/rs/zerolog"
 	pb "github.com/yogenyslav/ldt-2026/dicom-worker/internal/generated/dicom-worker"
 	"github.com/yogenyslav/ldt-2026/dicom-worker/internal/rpc/worker"
@@ -120,7 +117,7 @@ func TestPipeline(t *testing.T) {
 		}
 		cmd.Env = append(
 			cmd.Env, "DATABASE_URI="+process.dsn, "APP_NAME=pipeline_"+process.name, "METRICS_ADDR=127.0.0.1:0",
-			"TRACING_HOST=localhost", "TRACING_PORT=4318",
+			"TRACING_HOST=localhost", "TRACING_HTTP_PORT=4318",
 		)
 		logFile, err := os.CreateTemp(t.TempDir(), process.name+"-*.log")
 		if err != nil {
@@ -176,11 +173,13 @@ func TestPipeline(t *testing.T) {
 	}
 	defer bus.Close()
 	// Используем те же права и постоянного подписчика, что и Python-анализатор.
-	_, err = bus.JetStream().AddConsumer(messaging.StreamName, &nats.ConsumerConfig{
-		Durable: "analyzer-requests", FilterSubject: events.AnalysisRequested,
-		AckPolicy: nats.AckExplicitPolicy, DeliverPolicy: nats.DeliverAllPolicy,
-		AckWait: time.Minute, MaxAckPending: 100,
-	})
+	_, err = bus.JetStream().AddConsumer(
+		messaging.StreamName, &nats.ConsumerConfig{
+			Durable: "analyzer-requests", FilterSubject: events.AnalysisRequested,
+			AckPolicy: nats.AckExplicitPolicy, DeliverPolicy: nats.DeliverAllPolicy,
+			AckWait: time.Minute, MaxAckPending: 100,
+		},
+	)
 	if err != nil {
 		t.Fatal(err)
 	}
