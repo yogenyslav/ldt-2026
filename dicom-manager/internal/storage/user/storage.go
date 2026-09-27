@@ -29,7 +29,7 @@ func (s *Storage) FindByEmail(ctx context.Context, email string) (User, error) {
 
 func (s *Storage) findUserByColumn(ctx context.Context, columnName string, value any) (User, error) {
 	query, args, err := sq.Select("id", "organization_id", "full_name", "email", "password_hash", "role").
-		From("user").
+		From(`"user"`).
 		Where(sq.Eq{columnName: value}).
 		PlaceholderFormat(sq.Dollar).
 		ToSql()
