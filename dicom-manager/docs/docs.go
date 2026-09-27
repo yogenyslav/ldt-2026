@@ -78,7 +78,7 @@ const docTemplate = `{
                     {
                         "type": "file",
                         "description": ".zip архив с DICOM файлами для загрузки.",
-                        "name": "files",
+                        "name": "file",
                         "in": "formData",
                         "required": true
                     }
@@ -234,7 +234,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "ID задачи на обработку DICOM-файла",
                         "name": "job_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -569,7 +569,7 @@ const docTemplate = `{
                         "type": "string",
                         "description": "ID отчета по результатам обработки DICOM-файлов",
                         "name": "report_id",
-                        "in": "query",
+                        "in": "path",
                         "required": true
                     }
                 ],
@@ -746,11 +746,9 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "image_data_raw": {
-                    "description": "Если Raw=true, то возвращаются байты изображения.",
-                    "type": "array",
-                    "items": {
-                        "type": "integer"
-                    }
+                    "description": "Если Raw=true, байты изображения сериализуются в JSON как base64.",
+                    "type": "string",
+                    "format": "byte"
                 }
             }
         },
@@ -850,7 +848,7 @@ const docTemplate = `{
                     "type": "integer"
                 },
                 "organization_id": {
-                    "description": "Список ID организаций, к которым принадлежит пользователь.",
+                    "description": "ID организации, к которой принадлежит пользователь.",
                     "type": "integer"
                 },
                 "role": {
@@ -949,6 +947,10 @@ const docTemplate = `{
                 "duration_ms": {
                     "description": "Время обработки задачи в миллисекундах.",
                     "type": "integer"
+                },
+                "error": {
+                    "description": "Описание ошибки обработки.",
+                    "type": "string"
                 },
                 "id": {
                     "description": "ID задачи на обработку.",
@@ -1062,7 +1064,7 @@ const docTemplate = `{
                     "type": "string"
                 },
                 "decision": {
-                    "description": "Решение по результатам обработки DICOM-файлов (\"approved\", \"reject\", \"force_approved\").",
+                    "description": "Решение по результатам обработки DICOM-файлов (\"approved\", \"rejected\", \"force_approved\").",
                     "allOf": [
                         {
                             "$ref": "#/definitions/model.Decision"

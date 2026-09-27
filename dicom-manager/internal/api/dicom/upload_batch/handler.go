@@ -5,6 +5,7 @@ import (
 	"bytes"
 	"context"
 	"io"
+	"mime"
 	"strings"
 	"uuid"
 
@@ -46,7 +47,7 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, us usecase) *
 //	@Tags			dicom
 //	@Accept			multipart/form-data
 //	@Produce		json
-//	@Param			files	formData	file			true	".zip архив с DICOM файлами для загрузки."
+//	@Param			file	formData	file			true	".zip архив с DICOM файлами для загрузки."
 //	@Success		201		{object}	UploadBatchOut	"Файлы успешно загружены."
 //	@Failure		400		string		"Некорректный запрос."
 //	@Failure		500		string		"Внутренняя ошибка сервера."
@@ -57,7 +58,10 @@ func (h *Handler) UploadBatch(c fiber.Ctx) error {
 		size int64
 	)
 
-	contentType := c.Get("Content-Type")
+	contentType, _, err := mime.ParseMediaType(c.Get("Content-Type"))
+	if err != nil {
+		return fiber.NewError(fiber.StatusBadRequest, "invalid content type")
+	}
 	switch contentType {
 	case contentTypeMultipartFormData:
 		file, err := c.FormFile("file")
@@ -68,7 +72,7 @@ func (h *Handler) UploadBatch(c fiber.Ctx) error {
 		}
 
 		size = file.Size
-		if !strings.HasSuffix(file.Filename, ".zip") {
+		if !strings.HasSuffix(strings.ToLower(file.Filename), ".zip") {
 			h.log.Warn().Str("file_name", file.Filename).Msg("file is not a .zip archive")
 			return fiber.NewError(fiber.StatusBadRequest, "file must be a .zip archive")
 		}
@@ -146,7 +150,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 	}
 
 	for _, file := range zipReader.File {
-		if !strings.HasSuffix(file.Name, ".dcm") {
+		if !strings.HasSuffix(strings.ToLower(file.Name), ".dcm") {
 			h.log.Warn().Str("file_name", file.Name).Msg("skipping non-DICOM file in zip")
 			continue
 		}

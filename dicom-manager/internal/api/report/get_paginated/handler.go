@@ -48,7 +48,7 @@ func (h *Handler) GetPaginated(c fiber.Ctx) error {
 	offset := fiber.Query[uint64](c, "offset", 0)
 	limit := fiber.Query[uint64](c, "limit", 10)
 
-	tokenClaims := c.Locals("token_claim")
+	tokenClaims := c.Locals("tokenClaims")
 	if tokenClaims == nil {
 		h.metrics.Counter("handler.report.get_paginated.token_claim_nil").Inc()
 		h.log.Warn().Msg("token_claim is nil")
@@ -79,7 +79,7 @@ func (h *Handler) GetPaginated(c fiber.Ctx) error {
 }
 
 func convertToOut(reports []get_paginated.ReportData) GetPaginatedOut {
-	var out GetPaginatedOut
+	out := GetPaginatedOut{Reports: make([]model.Report, 0, len(reports))}
 	for _, report := range reports {
 		out.Reports = append(
 			out.Reports, model.Report{

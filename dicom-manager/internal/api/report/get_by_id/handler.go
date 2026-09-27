@@ -41,7 +41,7 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 //	@Tags			report
 //	@Accept			json
 //	@Produce		json
-//	@Param			report_id	query		string		true	"ID отчета по результатам обработки DICOM-файлов"
+//	@Param			report_id	path		string		true	"ID отчета по результатам обработки DICOM-файлов"
 //	@Success		200			{object}	GetByIDOut	"Отчет по результатам обработки DICOM-файлов успешно получены."
 //	@Failure		400			string		"Некорректный запрос."
 //	@Failure		403			string		"Доступ запрещен."
@@ -61,7 +61,7 @@ func (h *Handler) GetByID(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid report_id format")
 	}
 
-	tokenClaims := c.Locals("token_claim")
+	tokenClaims := c.Locals("tokenClaims")
 	if tokenClaims == nil {
 		h.metrics.Counter("handler.report.get_by_id.token_claim_nil").Inc()
 		h.log.Warn().Msg("token_claim is nil")

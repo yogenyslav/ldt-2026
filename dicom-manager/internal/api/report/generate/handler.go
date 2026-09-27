@@ -55,7 +55,7 @@ func (h *Handler) Generate(c fiber.Ctx) error {
 		return err
 	}
 
-	tokenClaims := c.Locals("token_claim")
+	tokenClaims := c.Locals("tokenClaims")
 	if tokenClaims == nil {
 		h.metrics.Counter("handler.job.result_decision.token_claim_nil").Inc()
 		h.log.Warn().Msg("token_claim is nil")

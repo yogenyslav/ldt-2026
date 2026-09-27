@@ -23,7 +23,7 @@ const SigninForm = () => {
 
   const form = useForm<z.infer<typeof SigninValidationSchema>>({
     resolver: zodResolver(SigninValidationSchema),
-    defaultValues: { username: '', password: '' },
+    defaultValues: { email: '', password: '' },
   })
 
   async function onSubmit(values: z.infer<typeof SigninValidationSchema>) {
@@ -47,15 +47,16 @@ const SigninForm = () => {
       <h2 className="mb-7 text-[32px] font-bold tracking-[-0.03em]">Вход в систему</h2>
 
       <div className="mb-3.5">
-        <Label htmlFor="username">Логин</Label>
+        <Label htmlFor="email">Email</Label>
         <Input
-          id="username"
-          autoComplete="username"
-          placeholder="фамилия.и.о"
-          {...form.register('username')}
+          id="email"
+          autoComplete="email"
+          type="email"
+          placeholder="name@example.com"
+          {...form.register('email')}
         />
-        {form.formState.errors.username ? (
-          <p className="mt-1.5 small-regular text-bad">{form.formState.errors.username.message}</p>
+        {form.formState.errors.email ? (
+          <p className="mt-1.5 small-regular text-bad">{form.formState.errors.email.message}</p>
         ) : null}
       </div>
 

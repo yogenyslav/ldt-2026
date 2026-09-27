@@ -101,8 +101,8 @@ func (uc *Usecase) ParseToken(_ context.Context, token string) (jwt.TokenClaims,
 	if claims, ok := parsedToken.Claims.(jwtv5.MapClaims); ok && parsedToken.Valid {
 		var tokenClaims jwt.TokenClaims
 
-		if sub, ok := claims["sub"].(int64); ok {
-			tokenClaims.UserID = sub
+		if sub, ok := claims["sub"].(float64); ok {
+			tokenClaims.UserID = int64(sub)
 		}
 		if role, ok := claims["role"].(string); ok {
 			tokenClaims.Role = role
