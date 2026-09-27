@@ -1,0 +1,328 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   Design tokens, carried over from ui/prototype/prototype2.css.
+
+   Principles:
+   · colour carries meaning only — verdict and action; everything else neutral
+   · status is readable by shape (an icon), not by colour alone
+   · flat: surfaces are separated by a hairline border, never by a shadow
+   · one selection rule everywhere — a 1.5px contour plus a faint fill
+   · the scan is a dark window in a light frame, like a PACS viewer
+
+   Settled in prototype/panels.html, which keeps the alternatives switchable.
+   ============================================================ */
+
+@theme {
+  /* Deep blue-violet of the diagnostics centre. Pulled away from the bright
+     blue of the city health apps on purpose: the dark end reads navy, the mid
+     tone is kept at 224° so that buttons do not drift into violet on white. */
+  --color-brand-900: #0b1440;
+  --color-brand-800: #14215c;
+  --color-brand-700: #16306f;
+  --color-brand: #1e3f93;
+  --color-brand-400: #9aa9ce;
+  --color-brand-100: #d2dcf1;
+  --color-brand-050: #eef2fa;
+
+  /* Fill under the pointer: half the strength of brand-050 and translucent, so
+     it lies on white surfaces and on muted ones alike. */
+  --color-hover: color-mix(in srgb, var(--color-brand) 5%, transparent);
+
+  /* neutrals */
+  --color-bg: #f1f3f7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f6f7fa;
+  --color-surface-3: #eceef4;
+  --color-line: #e7e9f0;
+  --color-line-2: #d3d7e2;
+  --color-ink: #14161f;
+  --color-ink-2: #4a5068;
+  --color-muted: #7b8196;
+
+  /* verdict statuses */
+  --color-ok: #0f7a54;
+  --color-ok-bg: #e4f5ec;
+  --color-ok-line: #a5d9c1;
+  --color-warn: #8f5d00;
+  --color-warn-bg: #fdf2dc;
+  --color-warn-line: #e8c57e;
+  --color-bad: #a8241d;
+  --color-bad-bg: #fbe9e7;
+  --color-bad-line: #efaaa3;
+  --color-dead: #5a6b7f;
+  --color-dead-bg: #edf1f5;
+  --color-dead-line: #c9d4e0;
+
+  /* scan viewport */
+  --color-scan-bg: #0a1119;
+  --color-scan-line: #1d2c3c;
+  --color-scan-edge: #33506d;
+  --color-scan-text: #8fa6bc;
+  --color-scan-text-on: #d6e6f3;
+
+  /* overlay on top of the scan */
+  --color-mark-ok: #4fd69c;
+  --color-mark-warn: #ffc93d;
+  --color-mark-bad: #ff6a5c;
+  --color-mark-dead: #8fa6bc;
+
+  --font-sans: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
+
+  --radius-panel: 16px;
+  --radius-control: 12px;
+  --radius-soft: 10px;
+
+  /* The only elevation left in the interface: a menu floats above the page and
+     has to say so. Everything else is flat. */
+  --shadow-menu: 0 1px 2px rgba(20, 22, 31, 0.06), 0 12px 28px -14px rgba(20, 22, 31, 0.45);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* ============================================================
+   Typography: size and weight come from a dedicated class,
+   layout and spacing from plain Tailwind utilities.
+   ============================================================ */
+
+@utility h1-bold {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+@utility h2-bold {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+@utility h3-bold {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+@utility base-semibold {
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+@utility base-regular {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+@utility small-regular {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ============================================================
+   Scan overlay. Strokes are not scaled together with the image,
+   so they keep the same weight at any size.
+   ============================================================ */
+
+@utility mk-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-thin {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-area {
+  fill: currentColor;
+  fill-opacity: 0.32;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-label {
+  fill: currentColor;
+  font-variant-numeric: tabular-nums;
+  font-size: 9px;
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: rgba(4, 9, 15, 0.9);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+}
+
+@utility mk-marker {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgba(4, 9, 15, 0.9);
+  stroke-width: 2.8px;
+  stroke-linejoin: round;
+}
+
+/* ============================================================
+   Selection and hover. One rule for rows, chips and fields:
+   a 1.5px contour in the accent plus a faint fill. Hover is the
+   same contour with the fill at half strength.
+   ============================================================ */
+
+@layer components {
+  /* Corner mark instead of a pastel tile under an icon: it names the card
+     without painting a whole strip. */
+  .mark-top {
+    position: relative;
+  }
+
+  .mark-top::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 34px;
+    height: 3px;
+    background: var(--color-brand);
+  }
+
+  .hl-row {
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .hl-row:hover {
+    background: var(--color-hover);
+    box-shadow: inset 0 0 0 1.5px var(--color-brand-400);
+  }
+
+  .hl-row.is-on {
+    background: var(--color-brand-050);
+    box-shadow: inset 0 0 0 1.5px var(--color-brand);
+  }
+
+  /* ---- criteria table ----
+     A row and its explanation are one block, coloured by the state of the
+     criterion itself: hovering must not paint it blue first and then recolour
+     it on expand. The state supplies three values, the rules below use them. */
+
+  .crit-ok {
+    --state: var(--color-ok);
+    --tint: var(--color-ok-bg);
+    --edge: var(--color-ok-line);
+  }
+
+  .crit-warn {
+    --state: var(--color-warn);
+    --tint: var(--color-warn-bg);
+    --edge: var(--color-warn-line);
+  }
+
+  .crit-bad {
+    --state: var(--color-bad);
+    --tint: var(--color-bad-bg);
+    --edge: var(--color-bad-line);
+  }
+
+  .crit-dead {
+    --state: var(--color-dead);
+    --tint: var(--color-dead-bg);
+    --edge: var(--color-dead-line);
+  }
+
+  .crit-item {
+    border-radius: 12px;
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .crit-row {
+    border-radius: 12px;
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .crit-row:hover {
+    background: color-mix(in srgb, var(--state) 6%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--state) 40%, #fff);
+  }
+
+  .crit-item.is-open {
+    background: var(--tint);
+    box-shadow: inset 0 0 0 1.5px var(--edge);
+  }
+
+  /* already filled — hovering an open row must not flicker on top of it */
+  .crit-item.is-open .crit-row:hover {
+    background: transparent;
+    box-shadow: none;
+  }
+}

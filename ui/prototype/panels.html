@@ -1,0 +1,658 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<title>Лаборатория стиля: плашки настроек</title>
+<style>
+/* ============================================================
+   Прототип для выбора оформления. Сверху переключатели, снизу
+   живой предпросмотр экрана настроек кабинета.
+
+   Два независимых выбора:
+   · оттенок  — уводит от синевы ЕМИАС;
+   · приём    — чем выделен заголовок карточки, это второй слой
+                отличия: у ЕМИАС заголовок никак не выделен,
+                а опознаётся всё по бледно-голубым плиткам иконок.
+   ============================================================ */
+
+:root{
+  --bg:#f1f3f7; --surface:#fff; --surface-2:#f6f7fa; --surface-3:#eceef4;
+  --line:#e7e9f0; --line-2:#d3d7e2; --ink:#14161f; --ink-2:#4a5068; --muted:#7b8196;
+  --ok:#0f7a54; --ok-bg:#e4f5ec; --warn:#8f5d00; --warn-bg:#fdf2dc; --bad:#a8241d; --bad-bg:#fbe9e7;
+  --dead:#5a6b7f;
+  --scan-bg:#0a1119; --scan-line:#1d2c3c; --scan-edge:#33506d; --scan-text:#8fa6bc; --scan-text-on:#d6e6f3;
+
+  /* оттенок по умолчанию — выбранный сине-фиолетовый */
+  --accent:#1e3f93; --accent-strong:#16306f; --accent-050:#eef2fa; --accent-100:#d2dcf1; --accent-900:#0b1440;
+
+  /* заливка при наведении: вдвое прозрачнее подложки 050, поэтому полупрозрачная,
+     а не сплошная — ложится и на белое, и на приглушённое */
+  --hover-fill: color-mix(in srgb, var(--accent) 5%, transparent);
+}
+
+/* ---------- оттенки ----------
+   У сине-фиолетового средний тон уведён в тёмно-синий: на белом фоне
+   светлый тон того же угла читается заметно фиолетовее, чем в шапке. */
+.hue-indigo{ --accent:#4b3fd4; --accent-strong:#3a2fb0; --accent-050:#f1efff; --accent-100:#ddd8ff; --accent-900:#171141 }
+.hue-navy  { --accent:#1e3f93; --accent-strong:#16306f; --accent-050:#eef2fa; --accent-100:#d2dcf1; --accent-900:#0b1440 }
+.hue-plum  { --accent:#6b3f9e; --accent-strong:#54317c; --accent-050:#f7f0fc; --accent-100:#e7d8f5; --accent-900:#2b1247 }
+.hue-teal  { --accent:#0f6d78; --accent-strong:#0a555e; --accent-050:#ecf7f8; --accent-100:#c9e7ea; --accent-900:#062a2f }
+/* для сравнения: ярко-синий ЕМИАС и наш прежний акцент — один и тот же угол */
+.hue-emias { --accent:#0b63e5; --accent-strong:#0a4fb4; --accent-050:#eff5ff; --accent-100:#d6e6ff; --accent-900:#07182e }
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:15px/1.45 'Golos Text','Segoe UI',system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
+.wrap{max-width:1180px;margin:0 auto;padding:36px 28px 80px}
+.lead{max-width:780px;margin:10px 0 0;color:var(--ink-2);font-size:15.5px;line-height:1.55}
+
+/* ---------- переключатели ---------- */
+.bar{display:flex;flex-wrap:wrap;gap:26px;margin:26px 0 30px;padding:18px 20px;
+  border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.bar section{display:flex;align-items:center;gap:10px}
+.bar h4{margin:0;color:var(--muted);font-size:13px;font-weight:500;letter-spacing:.01em}
+.pick{display:inline-flex;align-items:center;gap:8px;height:36px;padding:0 14px;border-radius:11px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink-2);
+  font:inherit;font-size:14px;font-weight:500;cursor:pointer}
+.pick i{width:12px;height:12px;border-radius:4px;display:block}
+.pick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-050);color:var(--accent-strong)}
+.sw-indigo{background:#4b3fd4} .sw-navy{background:#1e3f93} .sw-plum{background:#6b3f9e} .sw-teal{background:#0f6d78} .sw-emias{background:#0b63e5}
+
+/* ---------- сетка экрана ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
+
+/* ---------- карточка ---------- */
+.panel{display:flex;flex-direction:column;overflow:hidden;
+  border:1px solid var(--line);border-radius:16px;background:var(--surface)}
+.head{display:flex;align-items:center;gap:12px;padding:16px 20px 13px}
+.head .ico{display:flex;align-items:center;justify-content:center;width:36px;height:36px;flex:none;
+  border-radius:10px;background:var(--accent-050);color:var(--accent)}
+.head h3{flex:1;font-size:17px}
+.head .note{color:var(--muted);font-size:13.5px}
+.body{flex:1;padding:0 20px 20px}
+.foot{display:flex;align-items:center;gap:12px;padding:13px 20px;border-top:1px solid var(--line);
+  background:var(--surface-2);color:var(--muted);font-size:14px}
+
+/* ---------- приём 1: ровная карточка (как вариант А, но в новом цвете) ---------- */
+
+/* ---------- приём 2: заголовок на ленте ---------- */
+.t-strip .head{background:var(--accent-050);border-bottom:1px solid var(--accent-100);padding:14px 20px}
+.t-strip .head .ico{background:transparent;border:1.5px solid var(--accent);border-radius:9px}
+.t-strip .body{padding-top:18px}
+
+/* ---------- приём 3: тёмная шапка карточки ---------- */
+.t-dark .head{background:var(--accent-900);padding:15px 20px}
+.t-dark .head h3{color:#fff}
+.t-dark .head .note{color:rgba(255,255,255,.55)}
+.t-dark .head .ico{background:rgba(255,255,255,.12);color:#fff}
+.t-dark .body{padding-top:18px}
+
+/* ---------- приём 4: угловая метка вместо плитки ---------- */
+.t-mark .head{padding:18px 20px 12px}
+.t-mark .head .ico{width:26px;height:26px;background:transparent;color:var(--accent);border-radius:0}
+.t-mark .head h3{font-size:17.5px;letter-spacing:-.025em}
+.t-mark .panel,.t-mark.panel{position:relative}
+.t-mark .panel::after{content:'';position:absolute;top:0;left:0;width:34px;height:3px;background:var(--accent)}
+
+/* ---------- содержимое ---------- */
+.opts{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.opt{padding:14px;border-radius:12px;border:1.5px solid var(--line-2);background:var(--surface);text-align:left;
+  font:inherit;color:inherit;cursor:pointer}
+.opt.on{border-color:var(--accent);background:var(--accent-050)}
+.opt .t{display:flex;align-items:center;gap:10px;font-weight:600;font-size:15.5px}
+.opt .t i{display:flex;align-items:center;justify-content:center;width:32px;height:32px;flex:none;
+  border-radius:9px;background:var(--surface-3);color:var(--muted)}
+.opt.on .t i{background:var(--accent);color:#fff}
+.opt p{margin:9px 0 0;color:var(--muted);font-size:14px;line-height:1.45}
+
+.tiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:10px}
+.tile{padding:11px 13px;border-radius:11px;border:1px solid var(--line);background:var(--surface)}
+.tile span{display:block;color:var(--muted);font-size:13px}
+.tile b{display:block;margin-top:4px;font-size:24px;letter-spacing:-.02em;font-variant-numeric:tabular-nums}
+.tile.ok b{color:var(--ok)} .tile.bad b{color:var(--bad)} .tile.warn b{color:var(--warn)}
+.rows{margin-top:16px}
+.rows .cap{margin-bottom:6px;font-weight:600;font-size:15.5px}
+.rows .r{display:flex;align-items:center;gap:12px;padding:9px 0;border-top:1px solid var(--line)}
+.rows .r span{flex:1}
+.rows .r b{color:var(--muted);font-weight:400;font-size:14px;font-variant-numeric:tabular-nums}
+
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);
+  border:1px solid var(--line);border-radius:11px;overflow:hidden}
+.fields div{background:var(--surface);padding:11px 14px}
+.fields span{display:block;color:var(--muted);font-size:13px}
+.fields b{display:block;margin-top:2px;font-weight:600;font-size:15.5px}
+.fields b.empty{color:var(--muted);font-weight:400}
+
+.btn{display:inline-flex;align-items:center;gap:8px;height:38px;padding:0 16px;border-radius:11px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--ink);
+  font:inherit;font-weight:600;font-size:15px;cursor:pointer}
+.btn.pri{border-color:var(--accent);background:var(--accent);color:#fff}
+.chips{display:flex;gap:8px;margin-bottom:12px}
+.chip{height:34px;padding:0 14px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface);
+  color:var(--ink-2);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;cursor:pointer}
+.chip{border-width:1.5px}
+.chip.on{border-color:var(--accent);background:var(--accent-050);color:var(--accent-strong);font-weight:600}
+.area{border-radius:11px;border:1px solid var(--line-2);background:var(--surface);
+  padding:11px 14px;color:var(--muted);font-size:15px;min-height:70px}
+.entry{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
+.entry .k{flex:none;align-self:flex-start;padding:2px 10px;border-radius:999px;background:var(--bad-bg);
+  color:var(--bad);font-size:12.5px;font-weight:600}
+.entry .txt{flex:1;font-size:15px}
+.entry .txt em{display:block;margin-top:3px;color:var(--muted);font-size:14px;font-style:normal}
+
+/* ---------- шапка поста, чтобы видеть оттенок целиком ---------- */
+.topbar{display:flex;align-items:center;gap:16px;height:64px;padding:0 22px;margin-bottom:18px;
+  border-radius:14px;color:#fff;
+  background:radial-gradient(620px 300px at 6% 0%, color-mix(in srgb, var(--accent) 55%, transparent) 0%, transparent 62%), var(--accent-900)}
+.topbar .brand{display:flex;align-items:center;gap:12px;padding-right:18px;border-right:1px solid rgba(255,255,255,.16)}
+.topbar .brand b{display:block;font-size:14px}
+.topbar .brand span{display:block;color:rgba(255,255,255,.6);font-size:12.5px}
+.topbar .meta{color:rgba(255,255,255,.65);font-size:14px}
+.topbar .right{margin-left:auto;display:flex;align-items:center;gap:10px;color:rgba(255,255,255,.8);font-size:14px}
+
+/* ---------- тёмный экран приёма ---------- */
+.sep{margin:44px 0 20px;padding-top:26px;border-top:1px solid var(--line-2)}
+.sep h2{font-size:23px;letter-spacing:-.025em}
+.sep p{margin:8px 0 0;color:var(--muted);font-size:14px;max-width:760px}
+.dark{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+.stage{display:flex;align-items:center;justify-content:center;min-height:290px;padding:24px;
+  border:1px solid var(--scan-line);border-radius:12px;background:var(--scan-bg)}
+.wait{text-align:center;color:var(--scan-text)}
+.wait .ico{display:flex;align-items:center;justify-content:center;width:46px;height:46px;margin:0 auto 14px;
+  border-radius:14px;border:1px solid var(--scan-line)}
+.wait h3{color:var(--scan-text-on);font-size:17px;font-weight:600}
+.wait p{margin:8px 0 0;font-size:14px;line-height:1.5}
+.drop{width:100%;max-width:430px;padding:28px 26px;text-align:center;border-radius:16px;
+  border:1.5px dashed var(--scan-edge);background:rgba(255,255,255,.02);color:var(--scan-text)}
+.drop.solid{border-style:solid;border-color:var(--scan-line);background:#0f1822}
+.drop .ico{display:flex;align-items:center;justify-content:center;width:52px;height:52px;margin:0 auto 14px;
+  border-radius:16px;background:color-mix(in srgb, var(--accent) 24%, transparent);color:#fff}
+.drop h3{color:var(--scan-text-on);font-size:19px}
+.drop p{margin:8px 0 18px;font-size:14px;line-height:1.5}
+.drop .btn{height:44px;padding:0 22px;border-radius:12px;border-color:var(--accent);background:var(--accent);color:#fff}
+/* ============================================================
+   Панель разбора снимка: главный экран лаборанта.
+   Единственная плашка с подъёмом над фоном — но тень мягкая,
+   без объёма прошлой версии.
+   ============================================================ */
+.reviewer{max-width:560px}
+.review{display:flex;flex-direction:column;overflow:hidden;border-radius:16px;background:var(--surface);
+  border:1px solid var(--line)}
+.verdict{display:flex;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid transparent}
+.verdict .mark{display:flex;align-items:center;justify-content:center;width:56px;height:56px;flex:none;border-radius:18px}
+.verdict h3{font-size:26px;letter-spacing:-.03em;line-height:1.1}
+.verdict p{margin:5px 0 0;font-size:14px}
+
+/* мягкая шапка: тонированный фон, цветной заголовок */
+.v-soft .verdict.ok  {background:var(--ok-bg);border-bottom-color:#a5d9c1}
+.v-soft .verdict.warn{background:var(--warn-bg);border-bottom-color:#e8c57e}
+.v-soft .verdict.bad {background:var(--bad-bg);border-bottom-color:#efaaa3}
+.v-soft .verdict.ok h3{color:var(--ok)} .v-soft .verdict.warn h3{color:var(--warn)} .v-soft .verdict.bad h3{color:var(--bad)}
+.v-soft .verdict p{color:var(--ink-2)}
+.v-soft .verdict .mark{background:#fff}
+.v-soft .verdict.ok .mark{color:var(--ok)} .v-soft .verdict.warn .mark{color:var(--warn)} .v-soft .verdict.bad .mark{color:var(--bad)}
+
+/* заливка: цветная шапка, белый текст */
+.v-solid .verdict.ok{background:var(--ok)} .v-solid .verdict.warn{background:#a96d00} .v-solid .verdict.bad{background:var(--bad)}
+.v-solid .verdict h3{color:#fff}
+.v-solid .verdict p{color:rgba(255,255,255,.78)}
+.v-solid .verdict .mark{background:rgba(255,255,255,.18);color:#fff}
+
+.crit{flex:1;padding:0 12px 10px}
+/* колонки заголовка и строк совпадают: критерий · значение · норма */
+.crit .caps,.crit .row{display:grid;grid-template-columns:30px 1fr 124px 88px 18px;gap:13px;align-items:center}
+.crit .caps{padding:14px 12px 8px;color:var(--muted);font-size:13.5px}
+.crit .caps .r{text-align:right}
+
+/* Строка и её пояснение — один блок: скруглён, как всё остальное,
+   разделителей нет, ритм задаёт отступ между блоками. */
+.crit .item{border-radius:12px;transition:background .15s,box-shadow .15s}
+.crit .item + .item{margin-top:3px}
+.crit .row{padding:11px 12px;border-radius:12px;cursor:pointer;transition:background .15s,box-shadow .15s}
+.crit .row:hover{background:var(--hover-fill);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, #fff)}
+.crit .st{display:flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;
+  border-radius:9px;font-weight:700;font-size:14px}
+.st.ok{background:var(--ok-bg);color:var(--ok)} .st.warn{background:var(--warn-bg);color:var(--warn)}
+.st.bad{background:var(--bad-bg);color:var(--bad)} .st.dead{background:#edf1f5;color:#5a6b7f}
+.crit .nm{font-weight:600;font-size:15.5px}
+.crit .val{text-align:right;font-weight:600;font-size:15.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
+.crit .norm{text-align:right;font-size:13.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.crit .arr{color:var(--line-2);transition:transform .2s,color .15s}
+.crit .row:hover .arr{color:var(--accent)}
+.crit .item.open .arr{color:var(--accent);transform:rotate(90deg)}
+.crit .exp{display:none;margin:0;padding:0 12px 13px 55px;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+.crit .item.open .exp{display:block}
+
+/* состояние критерия — источник цвета для варианта «по состоянию» */
+.item.s-bad { --state:var(--bad);  --tint:var(--bad-bg);  --edge:#efaaa3 }
+.item.s-warn{ --state:var(--warn); --tint:var(--warn-bg); --edge:#e8c57e }
+.item.s-ok  { --state:var(--ok);   --tint:var(--ok-bg);   --edge:#a5d9c1 }
+.item.s-dead{ --state:var(--dead); --tint:#edf1f5;        --edge:#c9d4e0 }
+
+/* --- вариант 1: единый блок акцентом --- */
+.c-one .item.open{background:var(--accent-050);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.c-one .item.open .row{background:transparent;box-shadow:none}
+.c-one .item.open .exp{color:var(--ink)}
+
+/* --- вариант 2: цвет блока от состояния критерия ---
+   Наведение здесь тоже красится состоянием: иначе строка сначала синеет,
+   а при раскрытии перекрашивается, и цвет скачет. Формула та же, что у
+   акцентного наведения, только цвет берётся от критерия. */
+.c-state .row:hover{background:color-mix(in srgb, var(--state) 6%, transparent);
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--state) 40%, #fff)}
+.c-state .row:hover .arr{color:var(--state)}
+.c-state .item.open{background:var(--tint);box-shadow:inset 0 0 0 1.5px var(--edge)}
+.c-state .item.open .row{background:transparent;box-shadow:none}
+.c-state .item.open .row:hover{background:transparent;box-shadow:none}
+.c-state .item.open .arr{color:var(--state)}
+.c-state .item.open .exp{color:var(--ink)}
+
+/* --- вариант 3: отдельные карточки с цветной гранью --- */
+.c-card .item{position:relative;overflow:hidden;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line)}
+.c-card .item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--edge)}
+.c-card .row{padding-left:16px}
+.c-card .item + .item{margin-top:6px}
+.c-card .item.open{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.c-card .item.open .exp{color:var(--ink)}
+
+.acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
+.btn.lg{height:52px;border-radius:13px;font-size:16px;justify-content:center}
+.btn.ok{border-color:var(--ok);background:var(--ok);color:#fff}
+.btn.bad{border-color:var(--bad);background:var(--bad);color:#fff}
+
+/* ============================================================
+   Микро-тулкит: мелкие элементы в том же оттенке и приёме,
+   чтобы переносить в код одним махом.
+
+   Выделение везде одно и то же — как у карточек «Приём с аппарата»:
+   контур 1,5 пикселя акцентом и сплошная подложка 050.
+   Наведение — тот же контур, но заливка вдвое прозрачнее.
+   ============================================================ */
+.kit{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
+.kit .box{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:15px 17px}
+.kit h4{margin:0 0 12px;color:var(--muted);font-size:13px;font-weight:500}
+.kit .line{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.badge{display:inline-flex;align-items:center;gap:7px;height:30px;padding:0 12px;border-radius:999px;
+  font-size:14px;font-weight:600}
+.badge.ok{background:var(--ok-bg);color:var(--ok)} .badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.bad{background:var(--bad-bg);color:var(--bad)} .badge.dead{background:#edf1f5;color:#5a6b7f}
+.zone{display:inline-flex;align-items:center;gap:8px;height:30px;padding:0 12px;border-radius:999px;
+  background:var(--surface-3);color:var(--ink-2);font-size:13.5px;font-weight:500}
+.zone i{width:8px;height:8px;border-radius:50%;display:block}
+.input{display:flex;align-items:center;height:44px;padding:0 14px;border-radius:12px;
+  border:1px solid var(--line-2);background:var(--surface);color:var(--muted);font-size:15px}
+.input{border-width:1.5px}
+.input.on{border-color:var(--accent);background:var(--accent-050);color:var(--ink)}
+.steps{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
+.step{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
+.step i{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
+  background:var(--surface-3);font-size:12px;font-weight:700;font-style:normal}
+.step.on{color:var(--ink)} .step.on i{background:var(--accent);color:#fff}
+.step .rule{width:24px;height:1px;background:var(--line-2)}
+.kit .box.wide{grid-column:1/-1}
+.qrow{display:grid;grid-template-columns:78px 1fr 168px 120px;gap:14px;align-items:center;
+  padding:12px 14px;border-radius:10px;border-top:1px solid var(--line);font-size:14.5px;
+  cursor:pointer;transition:background .15s}
+.qrow:first-of-type{border-top:0}
+.qrow:hover{background:var(--hover-fill);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, #fff)}
+.qrow.sel{background:var(--accent-050);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.qrow .pt{font-weight:600}
+.qrow .tm{color:var(--ink-2);font-variant-numeric:tabular-nums}
+.toast{display:inline-flex;align-items:center;gap:10px;padding:11px 15px;border-radius:12px;
+  background:var(--ink);color:#fff;font-size:14.5px}
+.toast.bad{background:var(--bad)}
+.empty{display:flex;flex-direction:column;align-items:center;gap:8px;padding:26px 10px;text-align:center}
+.empty i{display:flex;align-items:center;justify-content:center;width:46px;height:46px;border-radius:50%;
+  background:var(--surface-3);color:var(--muted);font-style:normal}
+.empty b{font-size:17px} .empty span{color:var(--muted);font-size:14px}
+svg{display:block}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<h1 style="font-size:30px;letter-spacing:-.03em">Лаборатория стиля</h1>
+<p class="lead"><b>Зафиналено:</b> сине-фиолетовый, угловая метка, мягкий вердикт, критерии — цвет
+по состоянию, пунктир у загрузки. Так страница и открывается, переключатели оставлены для сверки.
+Последний оттенок в ряду — ярко-синий ЕМИАС, он же наш прежний акцент: видно, от чего ушли.</p>
+
+<div class="bar">
+  <section>
+    <h4>Оттенок</h4>
+    <button class="pick" data-hue="hue-indigo" aria-pressed="false"><i class="sw-indigo"></i>Индиго</button>
+    <button class="pick" data-hue="hue-navy" aria-pressed="true"><i class="sw-navy"></i>Сине-фиолетовый</button>
+    <button class="pick" data-hue="hue-plum" aria-pressed="false"><i class="sw-plum"></i>Сливовый</button>
+    <button class="pick" data-hue="hue-teal" aria-pressed="false"><i class="sw-teal"></i>Хвойный</button>
+    <button class="pick" data-hue="hue-emias" aria-pressed="false"><i class="sw-emias"></i>ЕМИАС, для сравнения</button>
+  </section>
+  <section>
+    <h4>Приём</h4>
+    <button class="pick" data-t="t-plain" aria-pressed="false">Ровная</button>
+    <button class="pick" data-t="t-strip" aria-pressed="false">Лента заголовка</button>
+    <button class="pick" data-t="t-dark" aria-pressed="false">Тёмная шапка</button>
+    <button class="pick" data-t="t-mark" aria-pressed="true">Угловая метка</button>
+  </section>
+  <section>
+    <h4>Вердикт</h4>
+    <button class="pick" data-v="v-soft" aria-pressed="true">Мягкий</button>
+    <button class="pick" data-v="v-solid" aria-pressed="false">Заливка</button>
+  </section>
+  <section>
+    <h4>Критерии</h4>
+    <button class="pick" data-c="c-one" aria-pressed="false">Единый блок</button>
+    <button class="pick" data-c="c-state" aria-pressed="true">Цвет по состоянию</button>
+    <button class="pick" data-c="c-card" aria-pressed="false">Карточки</button>
+  </section>
+</div>
+
+<div id="stage" class="hue-navy t-mark v-soft c-state">
+
+  <div class="topbar">
+    <span class="brand">
+      <b>Городская поликлиника № 218</b>
+      <span>Кабинет 3 · денситометрия</span>
+    </span>
+    <span class="meta">GE Lunar Prodigy Advance · enCORE 18.41.005</span>
+    <span class="right">приём с аппарата · последний снимок 11:14 · 11:26</span>
+  </div>
+
+  <div class="grid">
+    <!-- режим приёма -->
+    <section class="panel">
+      <div class="head">
+        <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14M19.07 4.93a10 10 0 0 1 0 14.14M7.76 16.24a6 6 0 0 1 0-8.48M16.24 7.76a6 6 0 0 1 0 8.48"/></svg></span>
+        <h3>Режим приёма</h3>
+        <span class="note">это рабочее место</span>
+      </div>
+      <div class="body">
+        <div class="opts">
+          <button class="opt on">
+            <span class="t"><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="2"/><path d="M4.93 19.07a10 10 0 0 1 0-14.14M19.07 4.93a10 10 0 0 1 0 14.14"/></svg></i>Приём с аппарата</span>
+            <p>Денситометр сам отправляет исследование, экран подхватывает его через несколько секунд.</p>
+          </button>
+          <button class="opt">
+            <span class="t"><i><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></i>Загрузка по кнопке</span>
+            <p>Лаборант выбирает файл исследования сам.</p>
+          </button>
+        </div>
+      </div>
+      <div class="foot"><button class="btn">Ждать снимок</button><span>проверка приёма при пусконаладке</span></div>
+    </section>
+
+    <!-- статистика -->
+    <section class="panel">
+      <div class="head">
+        <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 20v-4M12 20V10M18 20V4"/></svg></span>
+        <h3>Статистика кабинета</h3>
+        <span class="note">за сегодня</span>
+      </div>
+      <div class="body">
+        <div class="tiles">
+          <div class="tile"><span>Снимков</span><b>14</b></div>
+          <div class="tile ok"><span>Корректных</span><b>11</b></div>
+          <div class="tile warn"><span>Нужен взгляд</span><b>1</b></div>
+          <div class="tile bad"><span>К пересъёмке</span><b>2</b></div>
+        </div>
+        <div class="rows">
+          <div class="cap" style="margin-top:14px">Чаще всего мешает</div>
+          <div class="r"><span>Гребни подвздошных костей</span><b>7 снимков</b></div>
+          <div class="r"><span>Ось позвоночника</span><b>3 снимка</b></div>
+          <div class="r"><span>Ротация бедра</span><b>1 снимок</b></div>
+        </div>
+      </div>
+    </section>
+
+    <!-- кабинет -->
+    <section class="panel">
+      <div class="head">
+        <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg></span>
+        <h3>Кабинет и специалист</h3>
+        <span class="note">Иванова А. П.</span>
+      </div>
+      <div class="body">
+        <div class="fields">
+          <div><span>Организация</span><b>Городская поликлиника № 218</b></div>
+          <div><span>Кабинет</span><b class="empty">не указан</b></div>
+          <div><span>Аппарат</span><b>GE Lunar Prodigy Advance</b></div>
+          <div><span>Программа</span><b>enCORE 18.41.005</b></div>
+        </div>
+      </div>
+      <div class="foot"><button class="btn">Изменить</button><span>смена: рентгенолаборант</span></div>
+    </section>
+
+    <!-- журнал -->
+    <section class="panel">
+      <div class="head">
+        <span class="ico"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="8" y="2" width="8" height="4" rx="1"/><path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/></svg></span>
+        <h3>Журнал сбоев и пожеланий</h3>
+        <span class="note">записи кабинета</span>
+      </div>
+      <div class="body">
+        <div class="chips"><button class="chip on">Сбой</button><button class="chip">Пожелание</button></div>
+        <div class="area">Например: аппарат перестал отправлять снимки после обеда</div>
+        <div class="entry">
+          <span class="k">Сбой</span>
+          <span class="txt">Снимок не дошёл до архива, пришлось загружать вручную
+            <em>сегодня, 11:20 · снимок: Позвоночник, 11:14</em></span>
+        </div>
+      </div>
+      <div class="foot"><button class="btn">Скопировать</button><button class="btn">Скачать файлом</button></div>
+    </section>
+  </div>
+
+  <!-- тёмный экран приёма -->
+  <div class="sep">
+    <h2>Экран приёма</h2>
+    <p>Слева — ожидание снимка с аппарата. Справа — режим загрузки в той же подаче.
+       Ниже тот же блок со сплошной рамкой вместо пунктира: пунктир говорит «сюда можно
+       перетащить», сплошная — «это панель». Оттенок кнопки меняется вместе с выбранным.</p>
+  </div>
+
+  <div class="dark">
+    <div class="stage">
+      <div class="wait">
+        <span class="ico"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2"/><path d="M7 12h10"/></svg></span>
+        <h3>Ожидание снимка с аппарата</h3>
+        <p>Экран обновится сам через 2–3 секунды после сканирования.<br>Загружать ничего не нужно.</p>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="drop">
+        <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>
+        <h3>Загрузите снимок</h3>
+        <p>Перетащите файл исследования в это окно<br>или выберите его на диске.</p>
+        <button class="btn">Выбрать файл</button>
+      </div>
+    </div>
+    <div class="stage">
+      <div class="drop solid">
+        <span class="ico"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><path d="M17 8l-5-5-5 5"/><path d="M12 3v12"/></svg></span>
+        <h3>Загрузите снимок</h3>
+        <p>Сплошная рамка вместо пунктира,<br>строже и спокойнее.</p>
+        <button class="btn">Выбрать файл</button>
+      </div>
+    </div>
+    <div class="stage" style="color:var(--scan-text);font-size:14px;text-align:center">
+      Тёмное окно само по себе уже не похоже на ЕМИАС:<br>там всё светлое, карточное, без рабочей области.
+    </div>
+  </div>
+
+  <!-- ===================== разбор снимка ===================== -->
+  <div class="sep">
+    <h2>Разбор снимка у лаборанта</h2>
+    <p>Вердикт, критерии с пояснением и решение. Плоская, как и всё остальное: подъёма над фоном
+       больше нигде нет. Строки кликабельны — нажмите, чтобы раскрыть пояснение. Наверху два
+       переключателя про эту плашку: «Вердикт» меняет шапку, «Критерии» — как выглядит раскрытая
+       строка.</p>
+  </div>
+
+  <div class="reviewer">
+    <div class="review">
+      <div class="verdict bad">
+        <span class="mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></span>
+        <div>
+          <h3>ПЕРЕСНЯТЬ</h3>
+          <p>Поясничный отдел позвоночника — гребни подвздошных костей, посторонние предметы</p>
+        </div>
+      </div>
+
+      <div class="crit">
+        <div class="caps">
+          <span></span><span>Критерий</span><span class="r">Значение</span><span class="r">Норма</span><span></span>
+        </div>
+
+      <div class="item s-bad open">
+        <div class="row"><span class="st bad">✕</span><span class="nm">Гребни подвздошных костей</span><span class="val">левый вне кадра</span><span class="norm">обе</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Гребень слева не попал в кадр. Сместите зону сканирования ниже, чтобы верхние края подвздошных костей были видны, и повторите снимок.</p>
+      </div>
+
+      <div class="item s-warn">
+        <div class="row"><span class="st warn">!</span><span class="nm">Посторонние предметы</span><span class="val">возможна застёжка</span><span class="norm">нет</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Найден предмет, похожий на застёжку. Признак слабый, поэтому посмотрите на снимок сами: если предмет попадает в зону измерения, переснимите.</p>
+      </div>
+
+      <div class="item s-ok">
+        <div class="row"><span class="st ok">✓</span><span class="nm">Ось позвоночника</span><span class="val">1,9°</span><span class="norm">до 5°</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Ось отклонена на 1,9° при допуске 5°. Укладка в норме.</p>
+      </div>
+
+      <div class="item s-dead">
+        <div class="row"><span class="st dead">–</span><span class="nm">Ротация бедра</span><span class="val">не измерена</span><span class="norm">1,0–4,4 мм</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Ротацию не измеряли: не найдены опорные точки бедра.</p>
+      </div>
+
+      </div>
+
+      <div class="acts">
+        <button class="btn lg bad"><svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/></svg>Переснять</button>
+        <button class="btn lg">Всё равно принять</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================== микро-тулкит ===================== -->
+  <div class="sep">
+    <h2>Микро-тулкит</h2>
+    <p>Мелкие элементы в выбранном оттенке: кнопки, значки вердикта, зоны исследования, поля,
+       шаги обработки, строка очереди, уведомления, пустое состояние. По ним переносим стиль
+       на остальные экраны.</p>
+  </div>
+
+  <div class="kit">
+    <div class="box">
+      <h4>Кнопки</h4>
+      <div class="line">
+        <button class="btn pri">Основное</button>
+        <button class="btn">Обычное</button>
+        <button class="btn ok">Принять</button>
+        <button class="btn bad">Отклонить</button>
+      </div>
+      <div class="line" style="margin-top:10px">
+        <button class="btn lg pri" style="min-width:150px">Крупная</button>
+        <button class="btn" style="opacity:.45">Недоступна</button>
+      </div>
+    </div>
+
+    <div class="box">
+      <h4>Вердикт в списках</h4>
+      <div class="line">
+        <span class="badge ok">✓ Корректно</span>
+        <span class="badge warn">! Нужен взгляд</span>
+        <span class="badge bad">✕ Переснять</span>
+        <span class="badge dead">· В обработке</span>
+      </div>
+    </div>
+
+    <div class="box">
+      <h4>Зоны исследования</h4>
+      <div class="line">
+        <span class="zone"><i style="background:var(--ok)"></i>Позвоночник</span>
+        <span class="zone"><i style="background:var(--bad)"></i>Левое бедро</span>
+        <span class="zone"><i style="background:var(--warn)"></i>Правое бедро</span>
+      </div>
+    </div>
+
+    <div class="box">
+      <h4>Поля — обычное и в фокусе</h4>
+      <div class="input">Кабинет 3 · денситометрия</div>
+      <div class="input on" style="margin-top:10px">в фокусе</div>
+    </div>
+
+    <div class="box">
+      <h4>Шаги обработки</h4>
+      <div class="steps">
+        <span class="step on"><i>1</i>Загружено</span><span class="rule"></span>
+        <span class="step on"><i>2</i>Обработано</span><span class="rule"></span>
+        <span class="step"><i>3</i>Решение</span><span class="rule"></span>
+        <span class="step"><i>4</i>В отчёте</span>
+      </div>
+    </div>
+
+    <div class="box wide">
+      <h4>Строка очереди — обычная, при наведении, выбранная</h4>
+      <div class="qrow"><span class="tm">11:14</span><span class="pt">P-10428 · 3 снимка</span><span class="badge bad">✕ Переснять</span><span style="color:var(--muted)">не разобрано</span></div>
+      <div class="qrow"><span class="tm">10:42</span><span class="pt">P-10429 · 2 снимка</span><span class="badge ok">✓ Корректно</span><span style="color:var(--muted)">разобрано</span></div>
+      <div class="qrow sel"><span class="tm">10:05</span><span class="pt">P-10431 · 3 снимка</span><span class="badge warn">! Нужен взгляд</span><span style="color:var(--muted)">выбрана</span></div>
+    </div>
+
+    <div class="box">
+      <h4>Уведомления</h4>
+      <div class="line">
+        <span class="toast">Снимок принят, идёт обработка</span>
+      </div>
+      <div class="line" style="margin-top:10px">
+        <span class="toast bad">Не удалось загрузить снимок</span>
+      </div>
+    </div>
+
+    <div class="box">
+      <h4>Пустое состояние</h4>
+      <div class="empty">
+        <i>◻</i>
+        <b>Исследований ещё нет</b>
+        <span>Снимки появятся здесь, как только поликлиники начнут их присылать.</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* Строки критериев раскрываются по клику — как в системе. */
+document.querySelectorAll('.crit .row').forEach((row) => {
+  row.addEventListener('click', () => row.parentElement.classList.toggle('open'))
+})
+
+/* Переключатели: классы оттенка, приёма и вариантов живут на одном контейнере. */
+const stage = document.getElementById('stage')
+
+document.querySelectorAll('.pick').forEach((button) => {
+  button.addEventListener('click', () => {
+    const group = ['hue', 't', 'v', 'c'].find((name) => button.dataset[name])
+    const value = button.dataset[group]
+
+    document.querySelectorAll(`.pick[data-${group}]`).forEach((other) => {
+      other.setAttribute('aria-pressed', String(other === button))
+    })
+
+    const prefix = `${group}-`
+    for (const name of [...stage.classList]) {
+      if (name.startsWith(prefix)) stage.classList.remove(name)
+    }
+    stage.classList.add(value)
+
+    /* переключатели сами красятся выбранным оттенком */
+    if (group === 'hue') {
+      for (const name of [...document.body.classList]) {
+        if (name.startsWith('hue-')) document.body.classList.remove(name)
+      }
+      document.body.classList.add(value)
+    }
+  })
+})
+</script>
+</div>
+</body>
+</html>
