@@ -14,17 +14,25 @@ interface TopBarProps {
   subtitle: string
   meta?: React.ReactNode
   right?: React.ReactNode
+  /* A screen may hold the specialist back — the station does not let a scan
+     without a decision be left behind. Returns true when it took the action
+     over and the header should do nothing. */
+  beforeLeave?: (action: () => void) => boolean
 }
 
-const TopBar = ({ logo, title, subtitle, meta, right }: TopBarProps) => {
+const TopBar = ({ logo, title, subtitle, meta, right, beforeLeave }: TopBarProps) => {
   const { setIsAuth } = useUserContext()
   const { data: user } = useCurrentUser()
   const navigate = useNavigate()
 
   const logout = () => {
-    ApiAuth.logout()
-    setIsAuth(false)
-    navigate('/sign-in')
+    const leave = () => {
+      ApiAuth.logout()
+      setIsAuth(false)
+      navigate('/sign-in')
+    }
+    if (beforeLeave?.(leave)) return
+    leave()
   }
 
   return (

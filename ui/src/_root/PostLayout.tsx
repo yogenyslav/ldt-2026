@@ -1,9 +1,10 @@
 import { useEffect, useState } from 'react'
 import { Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { ArrowLeft, Radio, Settings, Upload } from 'lucide-react'
+import LeaveGuard from '@/components/shared/LeaveGuard'
 import TopBar from '@/components/widgets/TopBar'
 import CabinetProvider, { useCabinet } from '@/context/CabinetContext'
-import { useLatestJobs } from '@/hooks/useJobs'
+import { useLatestJobs, usePendingScan } from '@/hooks/useJobs'
 import { useOrgId } from '@/hooks/useUser'
 import { isConfigured } from '@/lib/cabinet'
 import { timeOf } from '@/lib/utils'
@@ -82,9 +83,41 @@ const PostShell = () => {
   const { pathname } = useLocation()
   const onSetup = pathname.startsWith('/setup')
 
+  /* The station does not let an analysed scan be left without a decision: it
+     would come back on the screen at the next sign-in, and by then nobody
+     remembers whether the patient was let go. Every way out asks first. */
+  const pending = usePendingScan(cabinet.intake === 'device')
+  const held = !onSetup && !!pending
+  const [leaving, setLeaving] = useState<(() => void) | null>(null)
+
+  /* React state stores a function by calling it, hence the extra wrapper. */
+  const guard = (action: () => void) => {
+    if (!held) return false
+    setLeaving(() => action)
+    return true
+  }
+
+  /* The dialog closes first, then the interrupted action runs: otherwise it
+     would linger over the screen it has just opened. */
+  const finish = () => {
+    const action = leaving
+    setLeaving(null)
+    action?.()
+  }
+
+  /* Reload and tab close go through the browser: the dialog there is the
+     browser's own, all we can do is ask for it. */
+  useEffect(() => {
+    if (!held) return
+    const ask = (event: BeforeUnloadEvent) => event.preventDefault()
+    window.addEventListener('beforeunload', ask)
+    return () => window.removeEventListener('beforeunload', ask)
+  }, [held])
+
   return (
     <div className="flex h-screen flex-col">
       <TopBar
+        beforeLeave={guard}
         logo={MOS_LOGO}
         title={cabinet.clinic || `Организация № ${orgId ?? '—'}`}
         subtitle={isConfigured(cabinet) ? cabinet.room : 'Кабинет не указан — откройте настройки'}
@@ -108,7 +141,10 @@ const PostShell = () => {
             <span className="tabular small-regular text-white/65">{clock}</span>
             <button
               type="button"
-              onClick={() => navigate(onSetup ? '/post' : '/setup')}
+              onClick={() => {
+                const open = () => navigate(onSetup ? '/post' : '/setup')
+                if (!guard(open)) open()
+              }}
               title={onSetup ? 'Вернуться к приёму' : 'Настройки кабинета'}
               className="flex-center h-10 w-10 cursor-pointer rounded-control text-white/70 transition-colors hover:bg-white/10 hover:text-white"
             >
@@ -118,6 +154,13 @@ const PostShell = () => {
         }
       />
       <Outlet />
+
+      <LeaveGuard
+        job={pending}
+        open={!!leaving}
+        onDone={finish}
+        onCancel={() => setLeaving(null)}
+      />
     </div>
   )
 }

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ApiJob from '@/services/apiJob'
 import { groupByStudy } from '@/lib/verdict'
@@ -31,6 +32,20 @@ export const useLatestJobs = (poll = true) =>
     queryFn: () => ApiJob.getJobs({ limit: 20, offset: 0 }).then((r) => r.data.jobs),
     refetchInterval: poll ? POLL_INTERVAL : false,
   })
+
+/* The scan the station is holding: analysed, and nobody has decided on it yet.
+   Leaving the screen with one of these open means meeting it again at the next
+   sign-in, so both the station and its header ask about it. */
+export const usePendingScan = (poll = true) => {
+  const { data } = useLatestJobs(poll)
+
+  return useMemo(() => {
+    const byTime = [...(data ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
+    return byTime.find(
+      (job) => !job.specialist_decision && (job.status === 'completed' || job.status === 'failed'),
+    )
+  }, [data])
+}
 
 export const useJob = (jobId?: string) =>
   useQuery({
