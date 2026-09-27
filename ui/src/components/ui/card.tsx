@@ -20,15 +20,22 @@ const Card = ({ className, mark, ...props }: CardProps) => {
 }
 
 export const CardHead = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
-  return <div className={cn('flex items-center gap-3 px-[22px] pt-[18px] pb-[14px]', className)} {...props} />
+  return <div className={cn('flex items-center gap-3 px-5 pt-4 pb-3.5', className)} {...props} />
 }
 
 export const CardBody = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
-  return <div className={cn('p-[22px]', className)} {...props} />
+  return <div className={cn('p-5', className)} {...props} />
 }
 
+/* A row, not a block: buttons and the note beside them need gaps of their own
+   and a line to wrap onto when the card is narrow. */
 export const CardFoot = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
-  return <div className={cn('border-t border-line px-[22px] py-4', className)} {...props} />
+  return (
+    <div
+      className={cn('flex flex-wrap items-center gap-x-3 gap-y-2.5 border-t border-line px-5 py-3.5', className)}
+      {...props}
+    />
+  )
 }
 
 export default Card

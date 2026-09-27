@@ -164,8 +164,10 @@ const PostWidget = () => {
           broken.length ? broken.join(', ') : 'замечаний нет'
         }`
 
-  const apply = async (decision: Decision) => {
-    await decide.mutateAsync({ jobIds: [current.id], decision })
+  /* A decision always belongs to the scan on the screen: while an earlier
+     attempt is open, it is that attempt that gets accepted, not the new one. */
+  const apply = async (decision: Decision, job: IJobInfo = current) => {
+    await decide.mutateAsync({ jobIds: [job.id], decision })
     setCompare(false)
     setFocus('now')
     setPrevIndex(0)
@@ -175,22 +177,15 @@ const PostWidget = () => {
     })
   }
 
-  /* Looking at an earlier attempt does not take the decision away: the
-     radiographer compares the two and accepts the new scan right here. The
-     second button only closes the comparison. */
+  /* Looking at an earlier attempt does not take the decision away: if that
+     attempt turns out to be the good one, it is accepted right here. */
   const actions = showPrev ? (
     <>
-      {isBusy(current) ? null : (
-        <Button variant="ok" size="lg" onClick={() => apply('approved')}>
-          <Check size={16} />
-          Принять новый
-        </Button>
-      )}
-      <Button
-        size="lg"
-        className={isBusy(current) ? 'col-span-2' : undefined}
-        onClick={() => setFocus('now')}
-      >
+      <Button variant="ok" size="lg" onClick={() => apply('approved', shown)}>
+        <Check size={16} />
+        Принять эту попытку
+      </Button>
+      <Button size="lg" onClick={() => setFocus('now')}>
         <ArrowRight size={16} />
         Вернуться к новому
       </Button>

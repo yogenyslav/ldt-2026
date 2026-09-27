@@ -33,8 +33,9 @@ const OPTIONS: Array<{
   },
 ]
 
-/* Setup check: the installer sends a test study from the densitometer and sees
-   whether it arrives. Any job created after the check has started counts. */
+/* The check is shown in both modes: before switching a room over to manual
+   uploads it is worth knowing whether the densitometer can send at all.
+   Any job created after the check has started counts as an arrival. */
 const WINDOW_MS = 90_000
 
 const IntakeCheck = () => {
@@ -54,7 +55,7 @@ const IntakeCheck = () => {
 
   if (arrived) {
     return (
-      <div className="flex items-center gap-3 rounded-control border border-ok-line bg-ok-bg px-4 py-3.5">
+      <div className="flex w-full items-center gap-3 rounded-control border border-ok-line bg-ok-bg px-4 py-3.5">
         <Check size={18} className="text-ok" />
         <span className="flex-1 base-semibold text-ok">
           Снимок получен в {timeOf(arrived.created_at)}
@@ -68,7 +69,7 @@ const IntakeCheck = () => {
 
   if (startedAt !== null) {
     return (
-      <div className="flex items-center gap-3 rounded-control border border-line bg-surface-2 px-4 py-3.5">
+      <div className="flex w-full items-center gap-3 rounded-control border border-line bg-surface-2 px-4 py-3.5">
         <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />
         <span className="flex-1 base-regular text-ink-2">
           Ждём снимок с аппарата — отправьте тестовое исследование в архив
@@ -81,7 +82,7 @@ const IntakeCheck = () => {
   }
 
   return (
-    <div className="flex flex-wrap items-center gap-3">
+    <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2.5">
       <Button onClick={() => setStartedAt(Date.now())}>Ждать снимок</Button>
       {/* Demo mode: there is no densitometer on the other end, so the check has
           to be given something to catch. */}
@@ -98,7 +99,7 @@ const IntakeCheck = () => {
         </Button>
       ) : null}
       <span className="small-regular text-muted">
-        проверка приёма: полторы минуты на тестовое исследование с аппарата
+        первичная настройка кабинета: полторы минуты на тестовый снимок с аппарата
       </span>
     </div>
   )
@@ -150,11 +151,9 @@ const IntakeCard = () => {
         })}
       </CardBody>
 
-      {cabinet.intake === 'device' ? (
-        <CardFoot className="bg-surface-2">
-          <IntakeCheck />
-        </CardFoot>
-      ) : null}
+      <CardFoot className="bg-surface-2">
+        <IntakeCheck />
+      </CardFoot>
     </Card>
   )
 }

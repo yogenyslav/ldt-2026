@@ -90,7 +90,9 @@ const StatsCard = () => {
         {stats.faults.length ? (
           <>
             <div className="mt-5 mb-2.5 base-semibold">Чаще всего мешает</div>
-            <div className="flex flex-col">
+            {/* three rows fit; the rest scrolls inside the card so that the
+                card itself keeps the height of its neighbour */}
+            <div className="flex max-h-[126px] flex-col overflow-auto">
               {stats.faults.map(([name, count]) => (
                 <div
                   key={name}
