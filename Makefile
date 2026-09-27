@@ -106,6 +106,16 @@ stop-manager:
 	@echo "stopping dicom manager"
 	@docker compose -f dicom-manager/compose.yaml --env-file .env down
 
+.PHONY: run-ui
+run-ui:
+	@echo "running ui service"
+	@docker compose -f docker/ui-compose.yaml --env-file .env up -d
+
+.PHONY: stop-ui
+stop-ui:
+	@echo "stopping ui service"
+	@docker compose -f docker/ui-compose.yaml --env-file .env down
+
 .PHONY: test-integration
 test-integration:
 	@bash scripts/test-integration.sh
