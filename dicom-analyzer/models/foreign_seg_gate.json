@@ -1,0 +1,24 @@
+{
+ "backbone": "resnet18.tv_in1k",
+ "img_size": [
+  320,
+  128
+ ],
+ "top_frac": 0.4,
+ "mask_thresh": 0.5,
+ "bg_median_px": 25,
+ "obj_merge_px": 9,
+ "max_objects": 1,
+ "min_obj_comp_px": 60,
+ "obj_min_mx": 77,
+ "min_wire_len_px": 30,
+ "min_wire_aspect": 2.5,
+ "max_wire_top_frac": 0.15,
+ "min_wire_verdict_px": 400,
+ "min_area_px": 30,
+ "verdict_levels": [
+  "ПРЕДМЕТ",
+  "проверить",
+  "чисто"
+ ]
+}
