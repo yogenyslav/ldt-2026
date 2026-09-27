@@ -1,0 +1,219 @@
+@import 'tailwindcss';
+
+/* ============================================================
+   Дизайн-токены. Перенесены из ui/prototype/prototype2.css.
+
+   Принципы:
+   · цвет несёт только смысл — вердикт и действие, остальное нейтрально
+   · статус читается формой (иконкой), а не одним лишь цветом
+   · крупные плоскости почти без скругления, органы управления мягкие
+   · снимок — тёмное окно в светлом кадре, как в просмотрщиках PACS
+   ============================================================ */
+
+@theme {
+  /* фирменный синий ЦДиТ */
+  --color-brand-900: #07182e;
+  --color-brand-800: #0b2547;
+  --color-brand-700: #0a4fb4;
+  --color-brand: #0b63e5;
+  --color-brand-400: #4c93ff;
+  --color-brand-100: #d6e6ff;
+  --color-brand-050: #eff5ff;
+
+  /* нейтральные */
+  --color-bg: #f1f3f7;
+  --color-surface: #ffffff;
+  --color-surface-2: #f6f7fa;
+  --color-surface-3: #eceef4;
+  --color-line: #e7e9f0;
+  --color-line-2: #d3d7e2;
+  --color-ink: #14161f;
+  --color-ink-2: #4a5068;
+  --color-muted: #7b8196;
+
+  /* статусы вердикта */
+  --color-ok: #0f7a54;
+  --color-ok-bg: #e4f5ec;
+  --color-ok-line: #a5d9c1;
+  --color-warn: #8f5d00;
+  --color-warn-bg: #fdf2dc;
+  --color-warn-line: #e8c57e;
+  --color-bad: #a8241d;
+  --color-bad-bg: #fbe9e7;
+  --color-bad-line: #efaaa3;
+  --color-dead: #5a6b7f;
+  --color-dead-bg: #edf1f5;
+  --color-dead-line: #c9d4e0;
+
+  /* окно снимка */
+  --color-scan-bg: #0a1119;
+  --color-scan-line: #1d2c3c;
+  --color-scan-edge: #33506d;
+  --color-scan-text: #8fa6bc;
+  --color-scan-text-on: #d6e6f3;
+
+  /* разметка поверх снимка */
+  --color-mark-ok: #4fd69c;
+  --color-mark-warn: #ffc93d;
+  --color-mark-bad: #ff6a5c;
+  --color-mark-dead: #8fa6bc;
+
+  --font-sans: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
+
+  --radius-panel: 8px;
+  --radius-control: 14px;
+  --radius-soft: 10px;
+
+  --shadow-card: 0 1px 2px rgba(20, 22, 31, 0.04), 0 10px 30px -22px rgba(20, 22, 31, 0.3);
+  --shadow-menu: 0 2px 6px rgba(20, 22, 31, 0.08), 0 20px 40px -20px rgba(20, 22, 31, 0.45);
+}
+
+@layer base {
+  * {
+    box-sizing: border-box;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+  }
+
+  body {
+    margin: 0;
+    background: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    font-size: 15px;
+    line-height: 1.45;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  h1,
+  h2,
+  h3 {
+    margin: 0;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+  }
+
+  button {
+    font: inherit;
+    color: inherit;
+  }
+}
+
+/* ============================================================
+   Типографика: размер и начертание — своим классом,
+   раскладка и отступы — обычными утилитами Tailwind.
+   ============================================================ */
+
+@utility h1-bold {
+  font-size: 30px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: -0.03em;
+}
+
+@utility h2-bold {
+  font-size: 24px;
+  font-weight: 700;
+  line-height: 1.25;
+  letter-spacing: -0.02em;
+}
+
+@utility h3-bold {
+  font-size: 17px;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+}
+
+@utility base-semibold {
+  font-size: 15.5px;
+  font-weight: 600;
+  line-height: 1.4;
+}
+
+@utility base-regular {
+  font-size: 15px;
+  font-weight: 400;
+  line-height: 1.5;
+}
+
+@utility small-regular {
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.45;
+}
+
+@utility tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+@utility flex-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@utility flex-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* ============================================================
+   Разметка поверх снимка. Штрихи не масштабируются вместе с
+   картинкой, поэтому остаются одинаковой толщины при любом размере.
+   ============================================================ */
+
+@utility mk-line {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-thin {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-area {
+  fill: currentColor;
+  fill-opacity: 0.32;
+  stroke: currentColor;
+  stroke-width: 1.25;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-box {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+
+@utility mk-label {
+  fill: currentColor;
+  font-variant-numeric: tabular-nums;
+  font-size: 9px;
+  font-weight: 500;
+  paint-order: stroke;
+  stroke: rgba(4, 9, 15, 0.9);
+  stroke-width: 2.6px;
+  stroke-linejoin: round;
+}
+
+@utility mk-marker {
+  fill: currentColor;
+  font-size: 11px;
+  font-weight: 700;
+  paint-order: stroke;
+  stroke: rgba(4, 9, 15, 0.9);
+  stroke-width: 2.8px;
+  stroke-linejoin: round;
+}
