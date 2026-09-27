@@ -25,7 +25,7 @@ http:
       description: If present, report the DICOM tags in hexadecimal format
       disabled: true
     - name: id
-      value: ""
+      value: 40e03b09-ecf5bda6-0d6129f3-1322c7e7-032a7095
       type: path
       description: Orthanc identifier of the study of interest
   auth: inherit

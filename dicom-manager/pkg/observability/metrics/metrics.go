@@ -2,13 +2,13 @@ package metrics
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 	"sync"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/collectors"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
-	"github.com/yogenyslav/errs"
 )
 
 var (
@@ -38,7 +38,7 @@ func New(appName string) (*Metrics, error) {
 	for _, bc := range baseCollectors {
 		err = registry.Register(bc)
 		if err != nil {
-			return nil, errs.Wrap(ErrRegisterBaseCollector, err.Error())
+			return nil, fmt.Errorf("%s: %v", ErrRegisterBaseCollector.Error(), err)
 		}
 	}
 

@@ -44,7 +44,7 @@ generate-orthanc:
 	@oapi-codegen -config dicom-manager/orthanc-generator.yaml api/orthanc/orthanc.yaml
 
 .PHONY: run-all
-run-all: run-nats run-orthanc run-storage run-observability run-worker
+run-all: run-nats run-orthanc run-storage run-observability run-worker run-manager
 	@echo "starting all services"
 
 .PHONY: run-nats
@@ -92,7 +92,27 @@ run-worker:
 	@echo "running dicom worker"
 	@docker compose -f dicom-worker/compose.yaml --env-file .env up -d
 
+.PHONY: run-worker-build
+run-worker-build:
+	@echo "building and running dicom worker"
+	@docker compose -f dicom-worker/compose.yaml --env-file .env up -d --build
+
 .PHONY: stop-worker
 stop-worker:
 	@echo "stopping dicom worker"
 	@docker compose -f dicom-worker/compose.yaml --env-file .env down
+
+.PHONY: run-manager
+run-manager:
+	@echo "running dicom manager"
+	@docker compose -f dicom-manager/compose.yaml --env-file .env up -d
+
+.PHONY: run-manager-build
+run-manager-build:
+	@echo "building and running dicom manager"
+	@docker compose -f dicom-manager/compose.yaml --env-file .env up -d --build
+
+.PHONY: stop-manager
+stop-manager:
+	@echo "stopping dicom manager"
+	@docker compose -f dicom-manager/compose.yaml --env-file .env down

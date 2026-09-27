@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"fmt"
 	"net"
 	"os"
 	"os/signal"
@@ -12,10 +13,8 @@ import (
 	"github.com/gofiber/contrib/v3/zerolog"
 	"github.com/gofiber/fiber/v3"
 	recoverer "github.com/gofiber/fiber/v3/middleware/recover"
-	"github.com/ilyakaznacheev/cleanenv"
-	"github.com/yogenyslav/errs"
+	jwtv5 "github.com/golang-jwt/jwt/v5"
 	_ "github.com/yogenyslav/ldt-2026/dicom-manager/docs"
-	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
 )
 
@@ -28,30 +27,31 @@ const (
 	defaultBodyLimit = 500 * 1024 * 1024 // 500 MB
 )
 
+// JwtProvider интерфейс для работы с JWT токенами.
+type JwtProvider interface {
+	CreateAccessToken(userID int64, role string, organizationID int64) (string, error)
+	ParseAccessToken(accessTokenString string) (*jwtv5.Token, error)
+}
+
 // Server сервер приложения.
 type Server struct {
 	srv         *fiber.App
 	obs         *observability.Observability
-	jwtProvider *jwt.Provider
+	jwtProvider JwtProvider
 }
 
 // New создает новый экземпляр сервера.
-func New(obs *observability.Observability) (*Server, error) {
-	var jwtConfig jwt.Config
-	if err := cleanenv.ReadEnv(&jwtConfig); err != nil {
-		return nil, errs.Wrap(err, "parse jwt config from env")
-	}
-	jwtProvider := jwt.New(jwtConfig)
-
+func New(obs *observability.Observability, jwt JwtProvider) (*Server, error) {
 	appName, ok := os.LookupEnv("APP_NAME")
 	if !ok {
-		return nil, errs.Wrap(ErrServicePortNotSet, "app name is required to start server")
+		return nil, fmt.Errorf("app name is required for server: %v", observability.ErrAppNameNotSet)
 	}
 
 	srv := fiber.New(
 		fiber.Config{
-			BodyLimit: defaultBodyLimit,
-			AppName:   appName,
+			BodyLimit:    defaultBodyLimit,
+			AppName:      appName,
+			ErrorHandler: errorHandler,
 		},
 	)
 
@@ -59,12 +59,13 @@ func New(obs *observability.Observability) (*Server, error) {
 		otel.Middleware(otel.WithTracerProvider(obs.Tracing().Provider())),
 		zerolog.New(zerolog.Config{Logger: obs.Logger()}),
 		recoverer.New(),
+		MetricsMiddleware(obs.Metrics()),
 	)
 	srv.Get("/swagger/*", swaggo.HandlerDefault)
 	srv.Get(
 		"/docs/*", swaggo.New(
 			swaggo.Config{
-				Title: "DICOM Manager API",
+				Title: fmt.Sprintf("%s API Documentation", appName),
 			},
 		),
 	)
@@ -72,15 +73,15 @@ func New(obs *observability.Observability) (*Server, error) {
 	return &Server{
 		srv:         srv,
 		obs:         obs,
-		jwtProvider: jwtProvider,
+		jwtProvider: jwt,
 	}, nil
 }
 
 // Serve запускает HTTP сервер.
 func (s *Server) Serve() error {
-	port, ok := os.LookupEnv("DICOM_WORKER_PORT")
+	port, ok := os.LookupEnv("DICOM_MANAGER_PORT")
 	if !ok {
-		return errs.Wrap(ErrServicePortNotSet, "service port is required to start server")
+		return fmt.Errorf("service port is required for server: %v", ErrServicePortNotSet)
 	}
 
 	defer func() {
@@ -103,14 +104,26 @@ func (s *Server) Serve() error {
 		s.obs.Logger().Info().Msg("received stop signal, shutting down server")
 		return nil
 	case err := <-errCh:
-		return errs.Wrap(err, "http server error")
+		return fmt.Errorf("http server error: %w", err)
+	}
+}
+
+// Router возвращает роутер по имени.
+func (s *Server) Router(name string) fiber.Router {
+	return s.srv.Group(name)
+}
+
+// UseMiddleware добавляет миддлварь в сервер.
+func (s *Server) UseMiddleware(middleware ...fiber.Handler) {
+	for _, m := range middleware {
+		s.srv.Use(m)
 	}
 }
 
 func (s *Server) listenHTTP(port string, errCh chan error) {
 	addr := net.JoinHostPort("", port)
 	if err := s.srv.Listen(addr); err != nil {
-		errCh <- errs.Wrap(err, "serve http server")
+		errCh <- fmt.Errorf("failed to listen on %s: %v", addr, err)
 		return
 	}
 }

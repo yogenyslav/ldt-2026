@@ -10,7 +10,7 @@ http:
   url: "{{baseUrl}}/instances/:id/frames"
   params:
     - name: id
-      value: 0061643a-2100f3a1-8e27c951-43911b9d-7f75b080
+      value: 697944ae-5b4f0fec-47f18636-262ac8da-7f1ea92f
       type: path
       description: Orthanc identifier of the DICOM instance of interest
   auth: inherit

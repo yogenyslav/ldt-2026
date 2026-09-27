@@ -19,9 +19,7 @@ import (
 const _ = grpc.SupportPackageIsVersion9
 
 const (
-	DicomWorkerService_ProcessDicom_FullMethodName      = "/api.dicom.worker.DicomWorkerService/ProcessDicom"
-	DicomWorkerService_ProcessDicomBatch_FullMethodName = "/api.dicom.worker.DicomWorkerService/ProcessDicomBatch"
-	DicomWorkerService_GetJobInfo_FullMethodName        = "/api.dicom.worker.DicomWorkerService/GetJobInfo"
+	DicomWorkerService_ProcessDicomFiles_FullMethodName = "/api.dicom.worker.DicomWorkerService/ProcessDicomFiles"
 	DicomWorkerService_GetJobInfoByIDs_FullMethodName   = "/api.dicom.worker.DicomWorkerService/GetJobInfoByIDs"
 )
 
@@ -29,12 +27,8 @@ const (
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
 type DicomWorkerServiceClient interface {
-	// ProcessDicom обработка одного DICOM объекта.
-	ProcessDicom(ctx context.Context, in *ProcessDicomIn, opts ...grpc.CallOption) (*ProcessDicomOut, error)
-	// ProcessDicomBatch обработка батча DICOM объектов.
-	ProcessDicomBatch(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProcessDicomBatchIn, ProcessDicomBatchOut], error)
-	// GetJobInfo получение информации о джобе обработки.
-	GetJobInfo(ctx context.Context, in *GetJobInfoIn, opts ...grpc.CallOption) (*GetJobInfoOut, error)
+	// ProcessDicomFiles обработка батча DICOM объектов.
+	ProcessDicomFiles(ctx context.Context, in *ProcessDicomFilesIn, opts ...grpc.CallOption) (*ProcessDicomFilesOut, error)
 	// GetJobInfoByIDs получение информации о нескольких джобах обработки.
 	GetJobInfoByIDs(ctx context.Context, in *GetJobInfoByIDsIn, opts ...grpc.CallOption) (*GetJobInfoByIDsOut, error)
 }
@@ -47,33 +41,10 @@ func NewDicomWorkerServiceClient(cc grpc.ClientConnInterface) DicomWorkerService
 	return &dicomWorkerServiceClient{cc}
 }
 
-func (c *dicomWorkerServiceClient) ProcessDicom(ctx context.Context, in *ProcessDicomIn, opts ...grpc.CallOption) (*ProcessDicomOut, error) {
+func (c *dicomWorkerServiceClient) ProcessDicomFiles(ctx context.Context, in *ProcessDicomFilesIn, opts ...grpc.CallOption) (*ProcessDicomFilesOut, error) {
 	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(ProcessDicomOut)
-	err := c.cc.Invoke(ctx, DicomWorkerService_ProcessDicom_FullMethodName, in, out, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	return out, nil
-}
-
-func (c *dicomWorkerServiceClient) ProcessDicomBatch(ctx context.Context, opts ...grpc.CallOption) (grpc.BidiStreamingClient[ProcessDicomBatchIn, ProcessDicomBatchOut], error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	stream, err := c.cc.NewStream(ctx, &DicomWorkerService_ServiceDesc.Streams[0], DicomWorkerService_ProcessDicomBatch_FullMethodName, cOpts...)
-	if err != nil {
-		return nil, err
-	}
-	x := &grpc.GenericClientStream[ProcessDicomBatchIn, ProcessDicomBatchOut]{ClientStream: stream}
-	return x, nil
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DicomWorkerService_ProcessDicomBatchClient = grpc.BidiStreamingClient[ProcessDicomBatchIn, ProcessDicomBatchOut]
-
-func (c *dicomWorkerServiceClient) GetJobInfo(ctx context.Context, in *GetJobInfoIn, opts ...grpc.CallOption) (*GetJobInfoOut, error) {
-	cOpts := append([]grpc.CallOption{grpc.StaticMethod()}, opts...)
-	out := new(GetJobInfoOut)
-	err := c.cc.Invoke(ctx, DicomWorkerService_GetJobInfo_FullMethodName, in, out, cOpts...)
+	out := new(ProcessDicomFilesOut)
+	err := c.cc.Invoke(ctx, DicomWorkerService_ProcessDicomFiles_FullMethodName, in, out, cOpts...)
 	if err != nil {
 		return nil, err
 	}
@@ -94,12 +65,8 @@ func (c *dicomWorkerServiceClient) GetJobInfoByIDs(ctx context.Context, in *GetJ
 // All implementations must embed UnimplementedDicomWorkerServiceServer
 // for forward compatibility.
 type DicomWorkerServiceServer interface {
-	// ProcessDicom обработка одного DICOM объекта.
-	ProcessDicom(context.Context, *ProcessDicomIn) (*ProcessDicomOut, error)
-	// ProcessDicomBatch обработка батча DICOM объектов.
-	ProcessDicomBatch(grpc.BidiStreamingServer[ProcessDicomBatchIn, ProcessDicomBatchOut]) error
-	// GetJobInfo получение информации о джобе обработки.
-	GetJobInfo(context.Context, *GetJobInfoIn) (*GetJobInfoOut, error)
+	// ProcessDicomFiles обработка батча DICOM объектов.
+	ProcessDicomFiles(context.Context, *ProcessDicomFilesIn) (*ProcessDicomFilesOut, error)
 	// GetJobInfoByIDs получение информации о нескольких джобах обработки.
 	GetJobInfoByIDs(context.Context, *GetJobInfoByIDsIn) (*GetJobInfoByIDsOut, error)
 	mustEmbedUnimplementedDicomWorkerServiceServer()
@@ -112,14 +79,8 @@ type DicomWorkerServiceServer interface {
 // pointer dereference when methods are called.
 type UnimplementedDicomWorkerServiceServer struct{}
 
-func (UnimplementedDicomWorkerServiceServer) ProcessDicom(context.Context, *ProcessDicomIn) (*ProcessDicomOut, error) {
-	return nil, status.Error(codes.Unimplemented, "method ProcessDicom not implemented")
-}
-func (UnimplementedDicomWorkerServiceServer) ProcessDicomBatch(grpc.BidiStreamingServer[ProcessDicomBatchIn, ProcessDicomBatchOut]) error {
-	return status.Error(codes.Unimplemented, "method ProcessDicomBatch not implemented")
-}
-func (UnimplementedDicomWorkerServiceServer) GetJobInfo(context.Context, *GetJobInfoIn) (*GetJobInfoOut, error) {
-	return nil, status.Error(codes.Unimplemented, "method GetJobInfo not implemented")
+func (UnimplementedDicomWorkerServiceServer) ProcessDicomFiles(context.Context, *ProcessDicomFilesIn) (*ProcessDicomFilesOut, error) {
+	return nil, status.Error(codes.Unimplemented, "method ProcessDicomFiles not implemented")
 }
 func (UnimplementedDicomWorkerServiceServer) GetJobInfoByIDs(context.Context, *GetJobInfoByIDsIn) (*GetJobInfoByIDsOut, error) {
 	return nil, status.Error(codes.Unimplemented, "method GetJobInfoByIDs not implemented")
@@ -145,45 +106,20 @@ func RegisterDicomWorkerServiceServer(s grpc.ServiceRegistrar, srv DicomWorkerSe
 	s.RegisterService(&DicomWorkerService_ServiceDesc, srv)
 }
 
-func _DicomWorkerService_ProcessDicom_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(ProcessDicomIn)
+func _DicomWorkerService_ProcessDicomFiles_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(ProcessDicomFilesIn)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(DicomWorkerServiceServer).ProcessDicom(ctx, in)
+		return srv.(DicomWorkerServiceServer).ProcessDicomFiles(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: DicomWorkerService_ProcessDicom_FullMethodName,
+		FullMethod: DicomWorkerService_ProcessDicomFiles_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DicomWorkerServiceServer).ProcessDicom(ctx, req.(*ProcessDicomIn))
-	}
-	return interceptor(ctx, in, info, handler)
-}
-
-func _DicomWorkerService_ProcessDicomBatch_Handler(srv interface{}, stream grpc.ServerStream) error {
-	return srv.(DicomWorkerServiceServer).ProcessDicomBatch(&grpc.GenericServerStream[ProcessDicomBatchIn, ProcessDicomBatchOut]{ServerStream: stream})
-}
-
-// This type alias is provided for backwards compatibility with existing code that references the prior non-generic stream type by name.
-type DicomWorkerService_ProcessDicomBatchServer = grpc.BidiStreamingServer[ProcessDicomBatchIn, ProcessDicomBatchOut]
-
-func _DicomWorkerService_GetJobInfo_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetJobInfoIn)
-	if err := dec(in); err != nil {
-		return nil, err
-	}
-	if interceptor == nil {
-		return srv.(DicomWorkerServiceServer).GetJobInfo(ctx, in)
-	}
-	info := &grpc.UnaryServerInfo{
-		Server:     srv,
-		FullMethod: DicomWorkerService_GetJobInfo_FullMethodName,
-	}
-	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(DicomWorkerServiceServer).GetJobInfo(ctx, req.(*GetJobInfoIn))
+		return srv.(DicomWorkerServiceServer).ProcessDicomFiles(ctx, req.(*ProcessDicomFilesIn))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -214,25 +150,14 @@ var DicomWorkerService_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*DicomWorkerServiceServer)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "ProcessDicom",
-			Handler:    _DicomWorkerService_ProcessDicom_Handler,
-		},
-		{
-			MethodName: "GetJobInfo",
-			Handler:    _DicomWorkerService_GetJobInfo_Handler,
+			MethodName: "ProcessDicomFiles",
+			Handler:    _DicomWorkerService_ProcessDicomFiles_Handler,
 		},
 		{
 			MethodName: "GetJobInfoByIDs",
 			Handler:    _DicomWorkerService_GetJobInfoByIDs_Handler,
 		},
 	},
-	Streams: []grpc.StreamDesc{
-		{
-			StreamName:    "ProcessDicomBatch",
-			Handler:       _DicomWorkerService_ProcessDicomBatch_Handler,
-			ServerStreams: true,
-			ClientStreams: true,
-		},
-	},
+	Streams:  []grpc.StreamDesc{},
 	Metadata: "proto/api/dicom/worker.proto",
 }
