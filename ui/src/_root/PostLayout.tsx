@@ -4,7 +4,8 @@ import { ArrowLeft, Radio, Settings, Upload } from 'lucide-react'
 import LeaveGuard from '@/components/shared/LeaveGuard'
 import TopBar from '@/components/widgets/TopBar'
 import CabinetProvider, { useCabinet } from '@/context/CabinetContext'
-import { useLatestJobs, usePendingScan } from '@/hooks/useJobs'
+import StationProvider, { useStation } from '@/context/StationContext'
+import { useLatestJobs } from '@/hooks/useJobs'
 import { useOrgId } from '@/hooks/useUser'
 import { isConfigured } from '@/lib/cabinet'
 import { timeOf } from '@/lib/utils'
@@ -83,11 +84,11 @@ const PostShell = () => {
   const { pathname } = useLocation()
   const onSetup = pathname.startsWith('/setup')
 
-  /* The station does not let an analysed scan be left without a decision: it
-     would come back on the screen at the next sign-in, and by then nobody
-     remembers whether the patient was let go. Every way out asks first. */
-  const pending = usePendingScan(cabinet.intake === 'device')
-  const held = !onSetup && !!pending
+  /* The station does not let a visit be left open: it would come back on the
+     screen at the next sign-in, and by then nobody remembers whether the
+     patient was let go. Every way out asks first. */
+  const station = useStation()
+  const held = !onSetup && station.open
   const [leaving, setLeaving] = useState<(() => void) | null>(null)
 
   /* React state stores a function by calling it, hence the extra wrapper. */
@@ -155,19 +156,16 @@ const PostShell = () => {
       />
       <Outlet />
 
-      <LeaveGuard
-        job={pending}
-        open={!!leaving}
-        onDone={finish}
-        onCancel={() => setLeaving(null)}
-      />
+      <LeaveGuard open={!!leaving} onDone={finish} onCancel={() => setLeaving(null)} />
     </div>
   )
 }
 
 const PostLayout = () => (
   <CabinetProvider>
-    <PostShell />
+    <StationProvider>
+      <PostShell />
+    </StationProvider>
   </CabinetProvider>
 )
 

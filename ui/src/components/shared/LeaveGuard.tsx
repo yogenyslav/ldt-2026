@@ -1,68 +1,64 @@
-import { Check, RefreshCw } from 'lucide-react'
+import { Check, X } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Modal from '@/components/ui/modal'
 import { useToast } from '@/components/ui/toast'
 import { REGION } from '@/constants'
-import { useDecideJob } from '@/hooks/useJobs'
-import { brokenNames } from '@/lib/criteria'
-import { timeOf } from '@/lib/utils'
-import type { Decision, IJobInfo } from '@/types'
+import { useStation } from '@/context/StationContext'
+import { plural } from '@/lib/utils'
 
-/* A scan that has been analysed but not decided on must not be left behind:
-   the next shift — or the same technologist after a sign-in — would meet it on
-   the screen again, without knowing whether the patient had already left.
-   So the way out of the station goes through a decision. */
+/* A visit with analysed attempts and no decision must not be left behind: the
+   next shift — or the same technologist after a sign-in — would meet it on the
+   screen without knowing whether the patient had already left. So the way out
+   of the station goes through closing the visit. */
 
 interface LeaveGuardProps {
-  job?: IJobInfo
   open: boolean
   /* carries on with whatever the specialist was trying to do */
   onDone: () => void
   onCancel: () => void
 }
 
-const LeaveGuard = ({ job, open, onDone, onCancel }: LeaveGuardProps) => {
-  const decide = useDecideJob()
+const LeaveGuard = ({ open, onDone, onCancel }: LeaveGuardProps) => {
+  const { attempts, current, patient, accept, dismiss } = useStation()
   const { toast } = useToast()
 
-  if (!job || !open) return null
+  if (!open || !current) return null
 
-  const region = job.anatomical_region ? REGION[job.anatomical_region] : 'Область не определена'
-  const broken = job.status === 'completed' ? brokenNames(job) : []
+  const region = current.anatomical_region ? REGION[current.anatomical_region] : 'Область не определена'
 
-  const apply = async (decision: Decision) => {
-    await decide.mutateAsync({ jobIds: [job.id], decision })
-    toast({ title: decision === 'approved' ? 'Исследование принято' : 'Отправлено на пересъёмку' })
+  const take = async () => {
+    await accept(current)
+    toast({ title: 'Исследование принято' })
+    onDone()
+  }
+
+  const drop = async () => {
+    await dismiss()
+    toast({ title: 'Посещение закрыто без приёма', variant: 'destructive' })
     onDone()
   }
 
   return (
     <Modal
       open
-      title="Исследование не разобрано"
-      note={`${region}, ${timeOf(job.created_at)}`}
+      title="Исследование не закрыто"
+      note={`Пациент ${patient || '—'} · ${attempts.length} ${plural(attempts.length, 'попытка', 'попытки', 'попыток')}`}
       onClose={onCancel}
       className="max-w-[540px]"
     >
       <p className="mt-0 mb-4 base-regular text-ink-2">
-        На экране остался снимок без решения
-        {broken.length ? `: ${broken.join(', ')}` : ''}. Примите его или отправьте на пересъёмку —
-        иначе он встретит вас на этом же экране при следующем входе.
+        По этому пациенту ещё не выбрана принятая попытка ({region}). Примите последнюю или
+        закройте посещение — иначе оно встретит вас на этом же экране при следующем входе.
       </p>
 
       <div className="grid grid-cols-2 gap-2.5">
-        <Button
-          variant="ok"
-          size="lg"
-          disabled={decide.isPending}
-          onClick={() => void apply('approved')}
-        >
+        <Button variant="ok" size="lg" onClick={() => void take()}>
           <Check size={16} />
-          Принять
+          Принять последнюю
         </Button>
-        <Button size="lg" disabled={decide.isPending} onClick={() => void apply('rejected')}>
-          <RefreshCw size={16} />
-          Переснять
+        <Button variant="bad" size="lg" onClick={() => void drop()}>
+          <X size={16} />
+          Ни одна не подошла
         </Button>
       </div>
 

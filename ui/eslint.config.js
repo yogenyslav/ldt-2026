@@ -22,7 +22,7 @@ export default tseslint.config(
       /* the access hook lives next to its provider — project convention */
       'react-refresh/only-export-components': [
         'warn',
-        { allowConstantExport: true, allowExportNames: ['useToast', 'useUserContext', 'useCabinet'] },
+        { allowConstantExport: true, allowExportNames: ['useToast', 'useUserContext', 'useCabinet', 'useStation'] },
       ],
       '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     },
