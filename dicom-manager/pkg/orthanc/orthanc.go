@@ -35,6 +35,7 @@ func New() (*Orthanc, error) {
 	addr := "http://" + net.JoinHostPort(cfg.Host, cfg.Port)
 	client, err := orthanc.NewClientWithResponses(
 		addr, orthanc.WithRequestEditorFn(authorizationHeader(cfg.User, cfg.Password, cfg.Token)),
+		orthanc.WithHTTPClient(&retryClient{client: http.DefaultClient}),
 	)
 	if err != nil {
 		return nil, fmt.Errorf("create orthanc client: %w", err)
