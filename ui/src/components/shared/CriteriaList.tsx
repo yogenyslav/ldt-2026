@@ -59,11 +59,20 @@ const CriteriaList = ({ job, className }: CriteriaListProps) => {
               />
             </div>
 
-            {isOpen && row.detail ? (
-              <p className="m-0 bg-surface-3 px-[22px] py-[18px] base-regular text-ink shadow-[inset_0_2px_4px_-2px_rgba(20,22,31,0.18)]">
-                {row.detail}
-              </p>
-            ) : null}
+            {/* высота не задана заранее, поэтому анимируем grid-template-rows:
+                0fr -> 1fr даёт плавное раскрытие любого объёма текста */}
+            <div
+              className={cn(
+                'grid transition-[grid-template-rows,opacity] duration-300 ease-out',
+                isOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+              )}
+            >
+              <div className="overflow-hidden">
+                <p className="m-0 bg-surface-3 px-[22px] py-[18px] base-regular text-ink shadow-[inset_0_2px_4px_-2px_rgba(20,22,31,0.18)]">
+                  {row.detail}
+                </p>
+              </div>
+            </div>
           </div>
         )
       })}
