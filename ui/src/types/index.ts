@@ -1,6 +1,6 @@
-/* Типы повторяют контракт dicom-manager (context/swagger.yaml).
-   Поля study_id, patient_ref, study_date и device запрошены у бекендера —
-   см. context/backend_requests.md. */
+/* Types mirror the dicom-manager contract (context/swagger.yaml).
+   The study_id, patient_ref, study_date and device fields were requested
+   from the backend developer — see context/backend_requests.md. */
 
 export type JobStatus = 'pending' | 'processing' | 'completed' | 'failed'
 
@@ -10,13 +10,13 @@ export type UserRole = 'specialist' | 'admin'
 
 export type Region = 'spine' | 'hip_left' | 'hip_right'
 
-/* Уровень, в котором интерфейс показывает критерий или весь снимок. */
+/* Level at which the UI presents a criterion or the whole scan. */
 export type VerdictKind = 'ok' | 'warn' | 'bad' | 'none' | 'failed' | 'wait'
 
 export type Point = [number, number]
 
-/* Единый формат критерия из qc_prototype/qc/types.py.
-   Координаты точек и полигонов — пиксели исходного снимка. */
+/* Shared criterion shape from qc_prototype/qc/types.py.
+   Point and polygon coordinates are pixels of the original scan. */
 export interface ICriterion {
   name: string
   ok: 0 | 1 | null
@@ -67,12 +67,12 @@ export interface IJobInfo {
   created_at: string
   updated_at?: string
   error?: string
-  /* дублируются в metadata; вынесены наверх для удобства списков */
+  /* duplicated in metadata; lifted to the top level for convenient lists */
   study_id?: string
   patient_ref?: string
 }
 
-/* Посещение: снимки, сделанные пациенту за один приход. */
+/* A visit: the scans taken for one patient during a single appointment. */
 export interface IStudy {
   study_id: string
   patient_ref?: string
@@ -85,8 +85,8 @@ export interface IUserResponse {
   user_id: number
   org_id: number
   role: UserRole
-  /* контур интерфейса; пока бекенд не различает лаборанта и врача,
-     см. пункт 4 в context/backend_requests.md */
+  /* UI scope; the backend does not yet distinguish a technologist from a
+     radiologist — see item 4 in context/backend_requests.md */
   scope?: Scope
 }
 
@@ -113,7 +113,7 @@ export interface IUploadedDicom {
   job_id: string
 }
 
-/* Контур интерфейса определяется ролью при входе. */
+/* The UI scope is decided by the role returned at sign-in. */
 export type Scope = 'post' | 'center'
 
 export interface IAuthContext {

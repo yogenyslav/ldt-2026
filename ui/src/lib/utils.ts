@@ -7,7 +7,7 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs))
 }
 
-/* Числа по-русски: запятая как разделитель и настоящий минус. */
+/* Russian number format: comma as the decimal separator and a real minus sign. */
 export function nm(value: number | null | undefined, digits = 1) {
   if (value === null || value === undefined || Number.isNaN(value)) return '—'
   return value.toFixed(digits).replace('.', ',').replace('-', '\u2212')
@@ -33,7 +33,7 @@ export function plural(n: number, one: string, few: string, many: string) {
   return many
 }
 
-/* Пока снимок не обработан, вместо области показываем состояние. */
+/* Until the scan is processed, show its status instead of the anatomical region. */
 export function zoneLabel(job: IJobInfo) {
   return job.anatomical_region ? REGION_SHORT[job.anatomical_region] : STATUS[job.status]
 }

@@ -1,9 +1,9 @@
 import type { ICriterion, IJobInfo, IStudy, VerdictKind } from '@/types'
 
-/* Вывод вердикта — раздел 3 в context/system_flows.md.
-   ML отдаёт бинарный metadata.verdict, а жёлтый уровень спрятан в details:
-   у малого вертела «проверить» — это ok: 1, у посторонних предметов — ok: 0.
-   Правило живёт только здесь. */
+/* Verdict derivation — section 3 of context/system_flows.md.
+   ML returns a binary metadata.verdict while the amber level hides in details:
+   for the lesser trochanter "проверить" means ok: 1, for foreign objects ok: 0.
+   This rule lives here and nowhere else. */
 export function verdictOf(job: IJobInfo): VerdictKind {
   if (job.status === 'failed') return 'failed'
   if (job.status !== 'completed') return 'wait'
@@ -24,7 +24,7 @@ export function verdictOf(job: IJobInfo): VerdictKind {
   return 'bad'
 }
 
-/* Цвет элемента разметки выводится из ответа так же, как в qc_prototype/render.py. */
+/* Overlay colour is derived from the response exactly as in qc_prototype/render.py. */
 export function levelOfCriterion(criterion?: ICriterion): VerdictKind | '' {
   if (!criterion || criterion.ok === null || criterion.ok === undefined) return ''
   const details = criterion.details ?? {}
@@ -41,7 +41,7 @@ const RANK: Record<VerdictKind, number> = {
   ok: 5,
 }
 
-/* Вердикт посещения — худший из его снимков. */
+/* A visit verdict is the worst verdict among its scans. */
 export function studyVerdict(study: IStudy): VerdictKind {
   let worst: VerdictKind = 'ok'
   for (const job of study.jobs) {
@@ -51,8 +51,8 @@ export function studyVerdict(study: IStudy): VerdictKind {
   return worst
 }
 
-/* Группировка задач по посещению. study_id запрошен у бекендера,
-   у него поле уже лежит в таблице dicom_file. */
+/* Group jobs into visits. study_id was requested from the backend developer;
+   the column already exists in his dicom_file table. */
 export function groupByStudy(jobs: IJobInfo[]): IStudy[] {
   const order: IStudy[] = []
   const map = new Map<string, IStudy>()

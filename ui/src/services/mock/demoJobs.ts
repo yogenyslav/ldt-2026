@@ -1,6 +1,6 @@
-/* Демо-данные. Собраны из настоящих результатов qc_prototype/examples:
- * геометрия разметки подлинная и совпадает со снимками в public/assets.
- * Используются только в мок-режиме (VITE_USE_MOCKS=true). */
+/* Demo data, assembled from real qc_prototype/examples results: the overlay
+ * geometry is genuine and matches the scans in public/assets.
+ * Used only in mock mode (VITE_USE_MOCKS=true). */
 import type { IJobInfo } from '@/types'
 
 export const DEMO_JOBS: IJobInfo[] = [
@@ -6428,7 +6428,7 @@ export const DEMO_JOBS: IJobInfo[] = [
   }
 ]
 
-/* dicom_id -> файл снимка. В рабочей системе это ответ GET /dicom/{id}/image. */
+/* dicom_id -> scan file. In the real system this is the GET /dicom/{id}/image response. */
 export const DEMO_SCANS: Record<string, string> = {
   "d41f8a63": "/assets/scan-spine.png",
   "f03d2a71": "/assets/scan-hip-left.png",

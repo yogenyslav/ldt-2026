@@ -22,8 +22,8 @@ const text = (details: Record<string, unknown>, key: string) => {
   return typeof value === 'string' ? value : ''
 }
 
-/* Значение критерия человеческим языком: строка должна читаться сама,
-   без пояснения под ней. */
+/* Criterion value in plain language: the row must read on its own,
+   without a caption underneath. */
 function criterionValue(key: string, criterion: ICriterion): string {
   const details = criterion.details ?? {}
 
@@ -60,8 +60,8 @@ function criterionValue(key: string, criterion: ICriterion): string {
   return '—'
 }
 
-/* Пояснение — связный текст: что измерено, как это соотносится с нормой
-   и что делать. Раскрывается по клику на строку. */
+/* The explanation is continuous prose: what was measured, how it compares
+   to the limit and what to do. Expands when the row is clicked. */
 function criterionDetail(key: string, criterion: ICriterion, level: VerdictKind | ''): string {
   const details = criterion.details ?? {}
 
@@ -127,8 +127,8 @@ function criterionDetail(key: string, criterion: ICriterion, level: VerdictKind 
   return ''
 }
 
-/* Отступы бедра разворачиваем в три строки: у каждого своя норма,
-   и число рядом с нормой читается без пояснений. */
+/* Hip margins expand into three rows: each has its own limit, so the number
+   next to the limit reads without extra explanation. */
 function marginRow(key: string, name: string, side: string, value: number | null, min: number): ICriterionRow {
   const ok = value !== null && value >= min
   let detail: string
@@ -180,7 +180,7 @@ export function criteriaRows(job: IJobInfo): ICriterionRow[] {
   return rows
 }
 
-/* Короткий список нарушений для подзаголовка вердикта. */
+/* Short list of violations for the verdict subtitle. */
 export function brokenNames(job: IJobInfo): string[] {
   return criteriaRows(job)
     .filter((row) => row.level === 'bad' || row.level === 'warn')

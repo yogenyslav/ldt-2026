@@ -17,8 +17,8 @@ export default defineConfig({
   build: {
     rollupOptions: {
       output: {
-        /* библиотеки меняются редко — держим их отдельным файлом,
-           чтобы правки интерфейса не сбрасывали кеш целиком */
+        /* libraries change rarely, so keep them in a separate file:
+           UI edits then do not invalidate the whole cache */
         manualChunks: {
           react: ['react', 'react-dom', 'react-router-dom'],
           query: ['@tanstack/react-query', 'axios'],

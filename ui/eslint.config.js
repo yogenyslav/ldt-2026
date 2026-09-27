@@ -19,7 +19,7 @@ export default tseslint.config(
     },
     rules: {
       ...reactHooks.configs.recommended.rules,
-      /* хук доступа лежит рядом со своим провайдером — соглашение проекта */
+      /* the access hook lives next to its provider — project convention */
       'react-refresh/only-export-components': [
         'warn',
         { allowConstantExport: true, allowExportNames: ['useToast', 'useUserContext'] },

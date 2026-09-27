@@ -26,8 +26,8 @@ const Cell = ({ label, value }: { label: string; value: string }) => (
   </div>
 )
 
-/* Служебная строка. Уверенность показывается только здесь и с подписью,
-   которая не даёт спутать её с уверенностью в вердикте. */
+/* Utility line. Confidence is shown only here, with wording that keeps it
+   from being read as confidence in the verdict. */
 const QuietLine = ({ job }: { job: IJobInfo }) => {
   if (job.confidence === null || job.confidence === undefined) return null
   return (

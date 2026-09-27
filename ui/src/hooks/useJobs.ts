@@ -10,14 +10,14 @@ export const useJobs = (limit = 50, offset = 0) =>
     queryFn: () => ApiJob.getJobs({ limit, offset }).then((r) => r.data.jobs),
   })
 
-/* Очередь центра: список посещений вместо плоского списка снимков. */
+/* Centre queue: a list of visits instead of a flat list of scans. */
 export const useStudies = (limit = 50, offset = 0) => {
   const query = useJobs(limit, offset)
   return { ...query, studies: query.data ? groupByStudy(query.data) : [] }
 }
 
-/* Пост лаборанта: экран сам обновляется, пока открыт.
-   Заменится подпиской, когда у бекенда появится push-канал. */
+/* Technologist station: the screen refreshes itself while open.
+   Will be replaced by a subscription once the backend exposes a push channel. */
 export const useLatestJobs = (enabled = true) =>
   useQuery({
     queryKey: ['jobs', 'latest'],

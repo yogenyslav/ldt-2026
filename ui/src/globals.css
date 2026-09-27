@@ -1,17 +1,17 @@
 @import 'tailwindcss';
 
 /* ============================================================
-   Дизайн-токены. Перенесены из ui/prototype/prototype2.css.
+   Design tokens, carried over from ui/prototype/prototype2.css.
 
-   Принципы:
-   · цвет несёт только смысл — вердикт и действие, остальное нейтрально
-   · статус читается формой (иконкой), а не одним лишь цветом
-   · крупные плоскости почти без скругления, органы управления мягкие
-   · снимок — тёмное окно в светлом кадре, как в просмотрщиках PACS
+   Principles:
+   · colour carries meaning only — verdict and action; everything else neutral
+   · status is readable by shape (an icon), not by colour alone
+   · large surfaces are barely rounded, controls stay soft
+   · the scan is a dark window in a light frame, like a PACS viewer
    ============================================================ */
 
 @theme {
-  /* фирменный синий ЦДиТ */
+  /* corporate blue of the diagnostics centre */
   --color-brand-900: #07182e;
   --color-brand-800: #0b2547;
   --color-brand-700: #0a4fb4;
@@ -20,7 +20,7 @@
   --color-brand-100: #d6e6ff;
   --color-brand-050: #eff5ff;
 
-  /* нейтральные */
+  /* neutrals */
   --color-bg: #f1f3f7;
   --color-surface: #ffffff;
   --color-surface-2: #f6f7fa;
@@ -31,7 +31,7 @@
   --color-ink-2: #4a5068;
   --color-muted: #7b8196;
 
-  /* статусы вердикта */
+  /* verdict statuses */
   --color-ok: #0f7a54;
   --color-ok-bg: #e4f5ec;
   --color-ok-line: #a5d9c1;
@@ -45,14 +45,14 @@
   --color-dead-bg: #edf1f5;
   --color-dead-line: #c9d4e0;
 
-  /* окно снимка */
+  /* scan viewport */
   --color-scan-bg: #0a1119;
   --color-scan-line: #1d2c3c;
   --color-scan-edge: #33506d;
   --color-scan-text: #8fa6bc;
   --color-scan-text-on: #d6e6f3;
 
-  /* разметка поверх снимка */
+  /* overlay on top of the scan */
   --color-mark-ok: #4fd69c;
   --color-mark-warn: #ffc93d;
   --color-mark-bad: #ff6a5c;
@@ -107,8 +107,8 @@
 }
 
 /* ============================================================
-   Типографика: размер и начертание — своим классом,
-   раскладка и отступы — обычными утилитами Tailwind.
+   Typography: size and weight come from a dedicated class,
+   layout and spacing from plain Tailwind utilities.
    ============================================================ */
 
 @utility h1-bold {
@@ -167,8 +167,8 @@
 }
 
 /* ============================================================
-   Разметка поверх снимка. Штрихи не масштабируются вместе с
-   картинкой, поэтому остаются одинаковой толщины при любом размере.
+   Scan overlay. Strokes are not scaled together with the image,
+   so they keep the same weight at any size.
    ============================================================ */
 
 @utility mk-line {

@@ -11,7 +11,7 @@ interface StepsProps {
   now: number
 }
 
-/* Дорожка этапов исследования: загружено — обработано — решение — в отчёте. */
+/* Study progress track: uploaded — processed — reviewed — included in report. */
 const Steps = ({ steps, now }: StepsProps) => {
   const fill = (100 * now) / (steps.length - 1)
 

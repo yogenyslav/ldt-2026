@@ -2,7 +2,7 @@ import { Navigate, Outlet } from 'react-router-dom'
 import { useUserContext } from '@/context/AuthContext'
 import type { Scope } from '@/types'
 
-/* Контур определяется ролью при входе, а не переключателем в шапке. */
+/* The scope comes from the role at sign-in, not from a toggle in the header. */
 const PrivateRoute = ({ scope }: { scope: Scope }) => {
   const { isAuth, scope: current } = useUserContext()
 

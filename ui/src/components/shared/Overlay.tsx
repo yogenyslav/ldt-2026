@@ -3,10 +3,10 @@ import { nm } from '@/lib/utils'
 import { levelOfCriterion } from '@/lib/verdict'
 import type { ICriterion, IJobInfo, Point, VerdictKind } from '@/types'
 
-/* Разметка поверх снимка.
-   Координаты — пиксели исходного снимка, поэтому viewBox совпадает с
-   metadata.shape и всё масштабируется само. Снимок вписан через
-   object-fit: contain, у svg то же правило — они совмещаются точно. */
+/* Overlay drawn on top of the scan.
+   Coordinates are pixels of the original scan, so the viewBox matches
+   metadata.shape and everything scales on its own. The image is fitted with
+   object-fit: contain and the svg follows the same rule, so they align exactly. */
 
 const MARK_COLOR: Record<string, string> = {
   ok: 'text-mark-ok',
@@ -44,7 +44,7 @@ const Overlay = ({ job }: OverlayProps) => {
     </text>
   )
 
-  /* --- ось позвоночника: линия между серединами пар точек --- */
+  /* --- spine axis: a line between the midpoints of the two point pairs --- */
   const axis = criteria.spine_axis
   if (axis?.points?.top_left) {
     const points = axis.points
@@ -66,7 +66,7 @@ const Overlay = ({ job }: OverlayProps) => {
     )
   }
 
-  /* --- гребни: два окна в нижних углах, цвет у каждой стороны свой --- */
+  /* --- iliac crests: two windows in the bottom corners, coloured per side --- */
   const crest = criteria.pelvis_crest
   const square = detailsOf(crest ?? ({} as ICriterion)).square as
     | { width_px: number; height_px: number; left_ok: boolean; right_ok: boolean }
@@ -116,7 +116,7 @@ const Overlay = ({ job }: OverlayProps) => {
     }
   }
 
-  /* --- посторонние предметы --- */
+  /* --- foreign objects --- */
   const foreign = criteria.foreign_objects
   if (foreign?.regions?.length) {
     groups.push(
@@ -132,7 +132,7 @@ const Overlay = ({ job }: OverlayProps) => {
     )
   }
 
-  /* --- отступы бедра: перпендикуляры до краёв кадра --- */
+  /* --- hip margins: perpendiculars to the frame edges --- */
   const margins = criteria.hip_margins
   if (margins?.points && Object.keys(margins.points).length) {
     const points = margins.points
@@ -177,7 +177,7 @@ const Overlay = ({ job }: OverlayProps) => {
     )
   }
 
-  /* --- три ключевые точки бедра: кружок и русская буква --- */
+  /* --- three hip keypoints: a circle and a Cyrillic letter --- */
   const keypoints = criteria.hip_keypoints
   if (keypoints?.points && Object.keys(keypoints.points).length) {
     const points = keypoints.points
@@ -203,7 +203,7 @@ const Overlay = ({ job }: OverlayProps) => {
     )
   }
 
-  /* --- область малого вертела --- */
+  /* --- lesser trochanter region --- */
   const trochanter = criteria.lesser_trochanter
   if (trochanter?.regions?.length) {
     const first = trochanter.regions[0][0]

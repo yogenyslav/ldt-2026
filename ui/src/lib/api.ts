@@ -5,7 +5,7 @@ import { BASE_URL, USE_MOCKS } from '@/config'
 
 export const api = axios.create({ baseURL: BASE_URL })
 
-/* Демо-режим: транспорт подменяется, сами сервисы остаются настоящими. */
+/* Demo mode swaps the transport only; the services themselves stay real. */
 if (USE_MOCKS) {
   api.defaults.adapter = mockAdapter
 }

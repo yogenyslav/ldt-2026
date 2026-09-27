@@ -21,8 +21,8 @@ const ApiDicom = {
 
 export default ApiDicom
 
-/* Ручка отдаёт base64, а в демо-режиме — путь к файлу.
-   Приводим оба варианта к тому, что понимает <img src>. */
+/* The endpoint returns base64, the demo mode returns a file path.
+   Normalise both into something <img src> understands. */
 export function toImageSrc(image?: IDicomImage) {
   const data = image?.image_data
   if (!data) return ''

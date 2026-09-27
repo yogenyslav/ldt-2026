@@ -5,9 +5,9 @@ import { criteriaRows } from '@/lib/criteria'
 import { cn } from '@/lib/utils'
 import type { IJobInfo } from '@/types'
 
-/* Строка критерия живёт по тем же правилам, что выбор роли на экране входа:
-   своя подложка, синий контур при наведении, синеющая стрелка.
-   Пояснение раскрывается вдавленной плашкой. */
+/* A criterion row follows the same rules as the role picker on the sign-in
+   screen: its own surface, a blue outline on hover and an arrow that turns blue.
+   The explanation expands as an inset panel. */
 
 const COLUMNS = 'grid grid-cols-[40px_1fr_128px_100px_20px] items-center gap-3.5'
 
@@ -59,8 +59,8 @@ const CriteriaList = ({ job, className }: CriteriaListProps) => {
               />
             </div>
 
-            {/* высота не задана заранее, поэтому анимируем grid-template-rows:
-                0fr -> 1fr даёт плавное раскрытие любого объёма текста */}
+            {/* the height is not known up front, so animate grid-template-rows:
+                0fr -> 1fr expands any amount of text smoothly */}
             <div
               className={cn(
                 'grid transition-[grid-template-rows,opacity] duration-300 ease-out',

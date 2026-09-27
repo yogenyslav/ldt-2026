@@ -15,14 +15,14 @@ const App = () => {
           <Route path="sign-in" element={<SigninForm />} />
         </Route>
 
-        {/* контур А — пост рентгенолаборанта */}
+        {/* scope A — radiographer station */}
         <Route element={<PrivateRoute scope="post" />}>
           <Route element={<PostLayout />}>
             <Route path="/post" element={<Post />} />
           </Route>
         </Route>
 
-        {/* контур Б — центр обработки */}
+        {/* scope B — processing centre */}
         <Route element={<PrivateRoute scope="center" />}>
           <Route element={<RootLayout />}>
             <Route index element={<Queue />} />

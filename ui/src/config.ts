@@ -1,9 +1,9 @@
 export const BASE_URL = import.meta.env.VITE_BASE_URL ?? 'http://localhost:8000'
 
-/* Хендлеры dicom-manager пока возвращают 501, поэтому по умолчанию
-   интерфейс работает на демо-данных. Выключается в .env одной строкой. */
+/* The dicom-manager handlers still return 501, so the UI runs on demo data
+   by default. One line in .env switches it off. */
 export const USE_MOCKS = import.meta.env.VITE_USE_MOCKS !== 'false'
 
-/* Как часто пост лаборанта спрашивает новые снимки.
-   Заменится подпиской, когда у бекенда появится push-канал. */
+/* How often the technologist station polls for new scans.
+   Will be replaced by a subscription once the backend exposes a push channel. */
 export const POLL_INTERVAL = 3000

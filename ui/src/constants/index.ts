@@ -1,6 +1,6 @@
 import type { Decision, JobStatus, Region, VerdictKind } from '@/types'
 
-/* Весь текст интерфейса русский: ключи API наружу не выходят. */
+/* All UI copy is Russian; API keys never reach the user. */
 
 export const REGION: Record<Region, string> = {
   spine: 'Поясничный отдел позвоночника',
@@ -27,7 +27,7 @@ export const DECISION: Record<Decision, string> = {
   force_approved: 'Принято вопреки рекомендации',
 }
 
-/* Названия критериев и норма. Ключи приходят из ML как есть. */
+/* Criterion names and limits. Keys arrive from ML as they are. */
 export const CRITERIA: Record<string, { name: string; norm: string }> = {
   spine_axis: { name: 'Ось позвоночника', norm: 'до 5°' },
   pelvis_crest: { name: 'Гребни подвздошных костей', norm: 'обе' },
@@ -36,7 +36,7 @@ export const CRITERIA: Record<string, { name: string; norm: string }> = {
   lesser_trochanter: { name: 'Ротация бедра', norm: '1,0–4,4 мм' },
 }
 
-/* Маркеры на снимке: одна русская буква, расшифровка — в ключе под снимком. */
+/* Scan markers: a single Cyrillic letter, explained in the key below the scan. */
 export const POINT_MARK: Record<string, { mark: string; name: string }> = {
   greater_trochanter_apex: { mark: 'В', name: 'Большой вертел' },
   femoral_neck: { mark: 'Ш', name: 'Шейка бедра' },
@@ -45,7 +45,7 @@ export const POINT_MARK: Record<string, { mark: string; name: string }> = {
   crest_right: { mark: 'Г', name: 'Гребень подвздошной кости' },
 }
 
-/* Как вердикт называется на экране лаборанта и в списках. */
+/* How the verdict is worded on the station screen and in lists. */
 export const VERDICT_POST: Record<VerdictKind, { title: string; tone: string }> = {
   ok: { title: 'КОРРЕКТНО', tone: 'ok' },
   warn: { title: 'НУЖЕН ВЗГЛЯД СПЕЦИАЛИСТА', tone: 'warn' },
@@ -101,7 +101,7 @@ export const sidebarLinks = [
   },
 ] as const
 
-/* Разделы, под которые у бекенда пока нет ручек. */
+/* Sections the backend has no endpoints for yet. */
 export const SOON: Record<string, { title: string; text: string }> = {
   markup: {
     title: 'Разметка',

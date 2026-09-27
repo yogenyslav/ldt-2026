@@ -2,11 +2,11 @@ import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'ax
 import { DEMO_JOBS, DEMO_SCANS } from '@/services/mock/demoJobs'
 import type { Decision, IJobInfo, IReport } from '@/types'
 
-/* Демо-режим. Адаптер подменяет транспорт axios, поэтому сервисы в
-   services/apiXxx.ts остаются настоящими: при VITE_USE_MOCKS=false те же
-   методы уходят в dicom-manager без единой правки.
+/* Demo mode. The adapter replaces the axios transport, so the services in
+   services/apiXxx.ts stay real: with VITE_USE_MOCKS=false the very same
+   methods hit dicom-manager without a single edit.
 
-   Нужен, пока хендлеры бекенда возвращают 501. */
+   Needed while the backend handlers return 501. */
 
 const store = {
   jobs: DEMO_JOBS.map((job) => ({ ...job })) as IJobInfo[],
@@ -18,8 +18,8 @@ const store = {
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms))
 
-/* Настоящая ручка каждый раз отдаёт свежий JSON. Возвращаем копию, иначе
-   react-query получит те же ссылки, что уже держит, и не заметит изменений. */
+/* A real endpoint returns fresh JSON every time. Return a copy, otherwise
+   react-query gets the references it already holds and misses the change. */
 const clone = <T,>(value: T): T => structuredClone(value)
 
 function reply<T>(config: InternalAxiosRequestConfig, data: T, status = 200): AxiosResponse<T> {
@@ -56,7 +56,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
   const query = new URLSearchParams((config.url ?? '').split('?')[1] ?? '')
   await delay()
 
-  /* --- вход --- */
+  /* --- sign-in --- */
   if (method === 'post' && url === '/user/login') {
     const { username } = body(config) as { username?: string }
     const isLaborant = (username ?? '').toLowerCase().startsWith('ivanova')
@@ -76,7 +76,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       : { id, full_name: 'Соколова М. И.', role: 'admin', organisation_ids: [1] })
   }
 
-  /* --- задачи --- */
+  /* --- jobs --- */
   if (method === 'get' && url === '/job/info') {
     const offset = Number(query.get('offset') ?? 0)
     const limit = Number(query.get('limit') ?? 10)
@@ -106,17 +106,17 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     return reply(config, '', 204)
   }
 
-  /* --- снимок --- */
+  /* --- scan --- */
   if (method === 'get' && /^\/dicom\/[^/]+\/image$/.test(url)) {
     const dicomId = url.split('/')[2]
     const src = DEMO_SCANS[dicomId]
     if (!src) return fail(config, 404, 'Снимок не найден')
-    /* в рабочей системе здесь base64; в демо отдаём путь к файлу,
-       разбор обоих вариантов — в services/apiDicom.ts */
+    /* the real system sends base64 here; the demo sends a file path,
+       both are handled in services/apiDicom.ts */
     return reply(config, { image_data: src })
   }
 
-  /* --- загрузка --- */
+  /* --- upload --- */
   if (method === 'post' && url === '/dicom/upload/batch') {
     const source = store.jobs.filter((job) => job.status === 'completed').slice(0, 8)
     return reply(config, {
@@ -129,7 +129,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     return reply(config, { dicom_id: job.dicom_id, job_id: job.id }, 201)
   }
 
-  /* --- отчёты --- */
+  /* --- reports --- */
   if (method === 'get' && url === '/report') {
     return reply(config, { reports: clone(store.reports) })
   }

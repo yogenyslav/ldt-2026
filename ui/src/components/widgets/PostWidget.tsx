@@ -12,9 +12,9 @@ import { cn, timeOf } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 import type { Decision, IJobInfo, VerdictKind } from '@/types'
 
-/* Контур А — пост рентгенолаборанта.
-   Экран один: вердикт, критерии с раскрывающимися пояснениями, кнопки.
-   Снимок приходит сам, загружать ничего не нужно. */
+/* Scope A — radiographer station.
+   A single screen: verdict, criteria with expandable explanations, actions.
+   The scan arrives on its own; nothing has to be uploaded. */
 
 const TONE: Record<string, { box: string; icon: string; title: string }> = {
   ok: { box: 'border-ok-line bg-ok-bg', icon: 'text-ok', title: 'text-ok' },
@@ -53,9 +53,9 @@ const PostWidget = () => {
   const [focus, setFocus] = useState<'now' | 'prev'>('now')
   const [prevIndex, setPrevIndex] = useState(0)
 
-  /* Снимки разбираются в порядке поступления: пациента нельзя пропустить.
-     Разобранные становятся предыдущими попытками смены — их можно
-     перелистать в режиме сравнения. */
+  /* Scans are reviewed in arrival order: a patient must not be skipped.
+     Reviewed ones become earlier attempts of the shift and can be flipped
+     through in comparison mode. */
   const { current, history } = useMemo(() => {
     const byTime = [...(jobs ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
     const fresh = byTime.filter(
@@ -206,11 +206,11 @@ const PostWidget = () => {
         prevHead={prevHead}
       />
 
-      {/* Панель центрируется по вертикали относительно окна снимка.
-          my-auto вместо justify-center: центрирует, когда есть запас высоты.
-          max-h-full не даёт панели вылезти за экран — вместо этого
-          прокручивается только список критериев, а вердикт и кнопки
-          остаются на месте. Экран лаборанта не листается целиком. */}
+      {/* The panel is centred vertically against the scan viewport.
+          my-auto rather than justify-center: it centres while there is spare
+          height. max-h-full keeps the panel inside the screen — only the
+          criteria list scrolls, while the verdict and the actions stay put.
+          The station screen itself never scrolls. */}
       <div className="flex min-h-0 flex-col">
         <div className="my-auto flex max-h-full min-h-0 flex-col overflow-hidden rounded-panel bg-surface shadow-card">
           {showPrev ? (

@@ -12,7 +12,7 @@ const TONE: Record<string, string> = {
   wait: 'border-dead-line bg-dead-bg text-dead',
 }
 
-/* Статус читается формой, а не одним лишь цветом. */
+/* Status is readable by shape, not by colour alone. */
 const ICON: Record<VerdictKind, React.ComponentType<{ size?: number }>> = {
   ok: CircleCheck,
   warn: TriangleAlert,

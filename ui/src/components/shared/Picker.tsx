@@ -6,8 +6,8 @@ import { cn, timeOf, zoneLabel } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 import type { IJobInfo } from '@/types'
 
-/* Снимков в исследовании и попыток пересъёмки может быть сколько угодно,
-   поэтому выпадающий список, а не ряд кнопок. */
+/* A study may hold any number of scans and any number of retakes,
+   so this is a dropdown rather than a row of buttons. */
 
 interface PickerProps {
   current: IJobInfo

@@ -6,8 +6,8 @@ import { cn } from '@/lib/utils'
 import { useDicomImage } from '@/hooks/useDicomImage'
 import type { IJobInfo } from '@/types'
 
-/* Окно снимка. Снимок и разметка занимают один прямоугольник и вписываются
-   в него одинаково, поэтому совмещение не зависит от размеров окна. */
+/* Scan viewport. Image and overlay share one rectangle and are fitted into it
+   the same way, so their alignment does not depend on the viewport size. */
 
 interface StageProps {
   job: IJobInfo
@@ -31,7 +31,7 @@ const Stage = ({ job, showOverlay }: StageProps) => {
   )
 }
 
-/* Ключ маркеров — легенда к снимку, как у графика. */
+/* Marker key — a legend for the scan, like a chart legend. */
 const MarkerKey = ({ job }: { job: IJobInfo }) => {
   const criteria = job.metadata?.criteria ?? {}
   const used: Array<{ mark: string; name: string }> = []
@@ -84,7 +84,7 @@ const Tool = ({
 
 interface ViewerProps {
   job: IJobInfo
-  /* правая панель разбирает выбранный снимок */
+  /* the right-hand panel reviews whichever scan is selected */
   compareWith?: IJobInfo
   focus?: 'now' | 'prev'
   onFocus?: (target: 'now' | 'prev') => void

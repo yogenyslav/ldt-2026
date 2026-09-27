@@ -4,7 +4,7 @@ import { useUserContext } from '@/context/AuthContext'
 import { useCurrentUser } from '@/hooks/useUser'
 import ApiAuth from '@/services/apiAuth'
 
-/* Тёмная шапка с подсветкой — тот же язык, что на экране входа. */
+/* Dark header with a glow — the same visual language as the sign-in screen. */
 const BACKGROUND =
   'radial-gradient(680px 340px at 6% 0%, rgba(11, 99, 229, 0.45) 0%, transparent 62%), var(--color-brand-900)'
 

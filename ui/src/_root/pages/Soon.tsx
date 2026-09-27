@@ -9,7 +9,7 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   cases: FolderClosed,
 }
 
-/* Разделы, под которые у бекенда пока нет ручек — см. context/backend_requests.md. */
+/* Sections the backend has no endpoints for yet — see context/backend_requests.md. */
 const Soon = ({ section }: { section: string }) => {
   const info = SOON[section]
   const Icon = ICONS[section]

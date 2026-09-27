@@ -19,7 +19,7 @@ const ServiceWidget = () => {
 
   if (isLoading) return <Loader />
 
-  /* Состав моделей и пороги приходят в metadata любой обработанной задачи. */
+  /* Model list and thresholds arrive in the metadata of any processed job. */
   const withMeta = (jobs ?? []).find((job) => job.metadata?.models)
   const models = withMeta?.metadata?.models ?? {}
   const settings = withMeta?.metadata?.settings ?? {}
