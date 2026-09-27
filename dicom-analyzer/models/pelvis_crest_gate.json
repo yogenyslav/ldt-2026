@@ -1,0 +1,23 @@
+{
+ "keypoint_backbone": "convnext_tiny.fb_in22k_ft_in1k",
+ "keypoint_presence_threshold": 0.97,
+ "classifier_threshold": 0.7,
+ "math_threshold": 0.05866835014419594,
+ "vote_min": 2,
+ "window": {
+  "crop_top_frac": 0.667,
+  "side_frac": 0.36,
+  "crop_size": 128,
+  "crop_mode": "spine"
+ },
+ "math": {
+  "rows": 6,
+  "outer": 0.7,
+  "rel": 0.15
+ },
+ "keypoint_names": [
+  "подвздошный_гребень_слева",
+  "подвздошный_гребень_справа"
+ ],
+ "image_size": 224
+}
