@@ -1,0 +1,6 @@
+info:
+  name: Jobs
+  type: folder
+
+request:
+  auth: inherit

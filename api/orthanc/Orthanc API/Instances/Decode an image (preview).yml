@@ -1,0 +1,40 @@
+info:
+  name: Decode an image (preview)
+  type: http
+  seq: 51
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/preview"
+  headers:
+    - name: Accept
+      value: ""
+      description: Format of the resulting image. Can be `image/png` (default), `image/jpeg` or `image/x-portable-arbitrarymap`
+      disabled: true
+  params:
+    - name: quality
+      value: ""
+      type: query
+      description: Quality for JPEG images (between 1 and 100, defaults to 90)
+      disabled: true
+    - name: returnUnsupportedImage
+      value: ""
+      type: query
+      description: Returns an unsupported.png placeholder image if unable to provide the image instead of returning a 415 HTTP error (value is true if option is present)
+      disabled: true
+    - name: id
+      value: 697944ae-5b4f0fec-47f18636-262ac8da-7f1ea92f
+      type: path
+      description: Orthanc identifier of the DICOM instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Decode the first frame of the given DICOM instance. The full dynamic range of grayscale images is rescaled to the [0,255] range.

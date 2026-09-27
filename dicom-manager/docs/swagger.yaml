@@ -1,0 +1,745 @@
+definitions:
+  generate.GenerateIn:
+    properties:
+      job_ids:
+        description: Список ID задач на обработку DICOM-файлов, для которых необходимо
+          сгенерировать отчет.
+        items:
+          type: string
+        type: array
+    type: object
+  generate.GenerateOut:
+    properties:
+      report_id:
+        description: ID сгенерированного отчета по результатам обработки DICOM-файлов.
+        type: integer
+    type: object
+  get_image.GetImageOut:
+    properties:
+      image_data:
+        description: Если Raw=false, то возвращается base64 изображения.
+        type: string
+      image_data_raw:
+        description: Если Raw=true, то возвращаются байты изображения.
+        items:
+          type: integer
+        type: array
+    type: object
+  get_paginated.GetInfoPaginatedOut:
+    properties:
+      jobs:
+        description: Список информации о задачах на обработку DICOM-файлов.
+        items:
+          $ref: '#/definitions/model.JobInfo'
+        type: array
+    type: object
+  get_paginated.GetPaginatedOut:
+    properties:
+      reports:
+        description: Список отчетов по результатам обработки DICOM-файлов.
+        items:
+          $ref: '#/definitions/model.Report'
+        type: array
+    type: object
+  get_users_paginated.GetUsersPaginatedOut:
+    properties:
+      users:
+        description: Список пользователей организации.
+        items:
+          $ref: '#/definitions/get_users_paginated.OrganizationUser'
+        type: array
+    type: object
+  get_users_paginated.OrganizationUser:
+    properties:
+      full_name:
+        type: string
+      id:
+        type: string
+    type: object
+  internal_api_job_get_by_id.GetByIDOut:
+    properties:
+      job:
+        allOf:
+        - $ref: '#/definitions/model.JobInfo'
+        description: Содержит информацию о задаче на обработку DICOM-файлоа.
+    type: object
+  internal_api_organization_get_by_id.GetByIDOut:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
+    type: object
+  internal_api_report_get_by_id.GetByIDOut:
+    properties:
+      report:
+        allOf:
+        - $ref: '#/definitions/model.Report'
+        description: Содержит отчет по результатам обработки DICOM-файлов.
+    type: object
+  internal_api_user_get_by_id.GetByIDOut:
+    properties:
+      full_name:
+        description: Имя пользователя.
+        type: string
+      id:
+        description: ID пользователя.
+        type: integer
+      organization_id:
+        description: Список ID организаций, к которым принадлежит пользователь.
+        type: integer
+      role:
+        allOf:
+        - $ref: '#/definitions/model.UserRole'
+        description: Роль пользователя (specialist, admin).
+    type: object
+  login.LoginIn:
+    properties:
+      email:
+        description: Email пользователя для входа в систему.
+        type: string
+      password:
+        description: Пароль пользователя для входа в систему.
+        type: string
+    type: object
+  login.LoginOut:
+    properties:
+      organization_id:
+        description: ID организации, к которой принадлежит пользователь.
+        type: integer
+      role:
+        allOf:
+        - $ref: '#/definitions/model.UserRole'
+        description: Роль пользователя (specialist, admin).
+      token:
+        description: JWT-токен, который будет использоваться для аутентификации последующих
+          запросов.
+        type: string
+      user_id:
+        description: ID пользователя.
+        type: integer
+    type: object
+  model.Decision:
+    enum:
+    - approved
+    - rejected
+    - force_approved
+    type: string
+    x-enum-comments:
+      DecisionApprove: Результат задачи принят специалистом.
+      DecisionForceApproved: Результат задачи принят специалистом, несмотря на рекомендацию
+        системы.
+      DecisionReject: Результат задачи отклонен специалистом.
+    x-enum-descriptions:
+    - Результат задачи принят специалистом.
+    - Результат задачи отклонен специалистом.
+    - Результат задачи принят специалистом, несмотря на рекомендацию системы.
+    x-enum-varnames:
+    - DecisionApprove
+    - DecisionReject
+    - DecisionForceApproved
+  model.JobInfo:
+    properties:
+      anatomical_region:
+        description: Анатомическая область, к которой относится DICOM-файл.
+        type: string
+      comment:
+        description: Комментарий специалиста.
+        type: string
+      confidence:
+        description: Уровень уверенности в результатах обработки от 0 до 1.
+        type: number
+      created_at:
+        type: string
+      dicom_id:
+        description: ID DICOM-файла.
+        type: string
+      duration_ms:
+        description: Время обработки задачи в миллисекундах.
+        type: integer
+      id:
+        description: ID задачи на обработку.
+        type: string
+      metadata:
+        additionalProperties: {}
+        description: Дополнительные метаданные, связанные с задачей.
+        type: object
+      specialist_decision:
+        allOf:
+        - $ref: '#/definitions/model.Decision'
+        description: Решение специалиста по результату задачи.
+      specialist_id:
+        description: ID специалиста, который принял решение.
+        type: integer
+      status:
+        allOf:
+        - $ref: '#/definitions/model.JobStatus'
+        description: Статус задачи на обработку.
+      updated_at:
+        type: string
+      violations:
+        description: Список нарушений, обнаруженных в DICOM-файле.
+        items:
+          type: string
+        type: array
+    type: object
+  model.JobStatus:
+    enum:
+    - pending
+    - processing
+    - completed
+    - failed
+    type: string
+    x-enum-comments:
+      JobStatusCompleted: Задача успешно завершена.
+      JobStatusFailed: Задача завершилась с ошибкой.
+      JobStatusPending: Задача ожидает обработки.
+      JobStatusProcessing: Задача в процессе обработки.
+    x-enum-descriptions:
+    - Задача ожидает обработки.
+    - Задача в процессе обработки.
+    - Задача успешно завершена.
+    - Задача завершилась с ошибкой.
+    x-enum-varnames:
+    - JobStatusPending
+    - JobStatusProcessing
+    - JobStatusCompleted
+    - JobStatusFailed
+  model.Report:
+    properties:
+      created_at:
+        description: Дата и время создания отчета по результатам обработки DICOM-файлов.
+        type: string
+      download_url:
+        description: URL для скачивания отчета по результатам обработки DICOM-файлов.
+        type: string
+      id:
+        description: ID отчета по результатам обработки DICOM-файлов.
+        type: integer
+    type: object
+  model.UserRole:
+    enum:
+    - specialist
+    - admin
+    type: string
+    x-enum-comments:
+      UserRoleAdmin: Администратор системы.
+      UserRoleSpecialist: Специалист, который может принимать решения по обработке
+        DICOM-файлов.
+    x-enum-descriptions:
+    - Специалист, который может принимать решения по обработке DICOM-файлов.
+    - Администратор системы.
+    x-enum-varnames:
+    - UserRoleSpecialist
+    - UserRoleAdmin
+  result_decision.ResultDecisionIn:
+    properties:
+      comment:
+        description: Комментарий к решению по результатам обработки DICOM-файлов (необязательный).
+        type: string
+      decision:
+        allOf:
+        - $ref: '#/definitions/model.Decision'
+        description: Решение по результатам обработки DICOM-файлов ("approved", "reject",
+          "force_approved").
+      job_ids:
+        description: Список ID задач на обработку DICOM-файлов, для которых необходимо
+          принять решение по результатам.
+        items:
+          type: string
+        type: array
+    type: object
+  upload.UploadOut:
+    properties:
+      dicom_id:
+        type: string
+      job_id:
+        description: ID задачи на сервере для обработки DICOM файла.
+        type: string
+    type: object
+  upload_batch.DicomData:
+    properties:
+      dicom_id:
+        type: string
+      job_id:
+        description: ID задачи на сервере для обработки DICOM файла.
+        type: string
+    type: object
+  upload_batch.UploadBatchOut:
+    properties:
+      data:
+        description: Список данных о DICOM файлах и задачах на сервере.
+        items:
+          $ref: '#/definitions/upload_batch.DicomData'
+        type: array
+    type: object
+info:
+  contact: {}
+paths:
+  /dicom/{dicom_id}/image:
+    get:
+      consumes:
+      - application/json
+      description: Получить изображение DICOM по его идентификатору. Можно указать
+        флаг raw, чтобы получить байты изображения вместо base64.
+      parameters:
+      - description: DICOM ID
+        in: path
+        name: dicom_id
+        required: true
+        type: string
+      - description: Флаг, указывающий, что нужно вернуть байты изображения вместо
+          base64.
+        in: query
+        name: raw
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: DICOM изображение успешно получено.
+          schema:
+            $ref: '#/definitions/get_image.GetImageOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "404":
+          description: DICOM изображение не найдено.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить изображение DICOM
+      tags:
+      - dicom
+  /dicom/upload:
+    post:
+      consumes:
+      - application/dicom
+      description: Загрузить DICOM файл на сервер.
+      parameters:
+      - description: DICOM файл для загрузки.
+        in: body
+        name: file
+        required: true
+        schema:
+          type: string
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Файл успешно загружен.
+          schema:
+            $ref: '#/definitions/upload.UploadOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Загрузить DICOM файл
+      tags:
+      - dicom
+  /dicom/upload/batch:
+    post:
+      consumes:
+      - multipart/form-data
+      description: Загрузить несколько DICOM файлов на сервер в одном запросе.
+      parameters:
+      - description: .zip архив с DICOM файлами для загрузки.
+        in: formData
+        name: files
+        required: true
+        type: file
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Файлы успешно загружены.
+          schema:
+            $ref: '#/definitions/upload_batch.UploadBatchOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Загрузить DICOM файлы батчами
+      tags:
+      - dicom
+  /job/info:
+    get:
+      consumes:
+      - application/json
+      description: Получить информацию о задачах на обработку DICOM-файлов по их ID
+        с пагинацией
+      parameters:
+      - description: Offset для пагинации (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Limit для пагинации (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о задачах успешно получена.
+          schema:
+            $ref: '#/definitions/get_paginated.GetInfoPaginatedOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить информацию о задачах на обработку DICOM-файлов по их ID с
+        пагинацией
+      tags:
+      - job
+  /job/info/{job_id}:
+    get:
+      consumes:
+      - application/json
+      description: Получить информацию о задаче на обработку DICOM-файла по ID
+      parameters:
+      - description: ID задачи на обработку DICOM-файла
+        in: query
+        name: job_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о задаче успешно получена.
+          schema:
+            $ref: '#/definitions/internal_api_job_get_by_id.GetByIDOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "404":
+          description: Задача не найдена.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить информацию о задаче на обработку DICOM-файла по ID
+      tags:
+      - job
+  /job/result/decision:
+    post:
+      consumes:
+      - application/json
+      description: Принять решение по результатам обработки DICOM-файлов по их ID.
+      parameters:
+      - description: Данные для принятия решения по результатам обработки DICOM-файлов
+        in: body
+        name: JobResultDecision
+        required: true
+        schema:
+          $ref: '#/definitions/result_decision.ResultDecisionIn'
+      produces:
+      - application/json
+      responses:
+        "204":
+          description: Решение по результатам обработки успешно принято.
+          schema:
+            type: string
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "404":
+          description: Задачи не найдены.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Принять решение по результатам обработки DICOM-файлов.
+      tags:
+      - job
+  /organization/{org_id}:
+    get:
+      consumes:
+      - application/json
+      description: Получить организацию по ID.
+      parameters:
+      - description: ID организации
+        in: path
+        name: org_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Организация успешно получена.
+          schema:
+            $ref: '#/definitions/internal_api_organization_get_by_id.GetByIDOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "404":
+          description: Организация не найдена.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить организацию по ID.
+      tags:
+      - organization
+  /organization/{org_id}/users:
+    get:
+      consumes:
+      - application/json
+      description: Получить пользователей организации с пагинацией.
+      parameters:
+      - description: ID организации
+        in: path
+        name: org_id
+        required: true
+        type: string
+      - description: Offset для пагинации (по умолчанию 0)
+        in: query
+        name: offset
+        type: integer
+      - description: Limit для пагинации (по умолчанию 10)
+        in: query
+        name: limit
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователи успешно получены.
+          schema:
+            $ref: '#/definitions/get_users_paginated.GetUsersPaginatedOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "404":
+          description: Организация не найдена.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить пользователей с пагинацией.
+      tags:
+      - organization
+  /report:
+    get:
+      consumes:
+      - application/json
+      description: Получить отчеты по результатам обработки DICOM-файлов с пагинацией.
+      parameters:
+      - description: Offset для пагинации (по умолчанию 0)
+        in: query
+        name: offset
+        required: true
+        type: integer
+      - description: Limit для пагинации (по умолчанию 10)
+        in: query
+        name: limit
+        required: true
+        type: integer
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Отчеты по результатам обработки DICOM-файлов успешно получены.
+          schema:
+            $ref: '#/definitions/get_paginated.GetPaginatedOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить отчеты по результатам обработки DICOM-файлов.
+      tags:
+      - report
+  /report/{report_id}:
+    get:
+      consumes:
+      - application/json
+      description: Получить отчет по результатам обработки DICOM-файлов по ID.
+      parameters:
+      - description: ID отчета по результатам обработки DICOM-файлов
+        in: query
+        name: report_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Отчет по результатам обработки DICOM-файлов успешно получены.
+          schema:
+            $ref: '#/definitions/internal_api_report_get_by_id.GetByIDOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "404":
+          description: Отчет не найден.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить отчет по результатам обработки DICOM-файлов.
+      tags:
+      - report
+  /report/generate:
+    post:
+      consumes:
+      - application/json
+      description: Сгенерировать отчет по результатам обработки DICOM-файлов в формате
+        .csv.
+      parameters:
+      - description: ID для генерации отчета по результатам обработки DICOM-файлов
+        in: body
+        name: ReportGenerateIn
+        required: true
+        schema:
+          $ref: '#/definitions/generate.GenerateIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Отчет по результатам обработки DICOM-файлов успешно сгенерирован.
+          schema:
+            $ref: '#/definitions/generate.GenerateOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Сгенерировать отчет по результатам обработки DICOM-файлов.
+      tags:
+      - report
+  /user/{user_id}:
+    get:
+      consumes:
+      - application/json
+      description: Получить информацию о пользователе по его ID.
+      parameters:
+      - description: ID пользователя
+        in: path
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Информация о пользователе успешно получена.
+          schema:
+            $ref: '#/definitions/internal_api_user_get_by_id.GetByIDOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "404":
+          description: Пользователь не найден.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить информацию о пользователе.
+      tags:
+      - user
+  /user/login:
+    post:
+      consumes:
+      - application/json
+      description: Аутентификация пользователя по его логину и паролю.
+      parameters:
+      - description: Данные для аутентификации пользователя
+        in: body
+        name: UserLoginIn
+        required: true
+        schema:
+          $ref: '#/definitions/login.LoginIn'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Пользователь успешно аутентифицирован.
+          schema:
+            $ref: '#/definitions/login.LoginOut'
+        "400":
+          description: Некорректный запрос.
+          schema:
+            type: string
+        "401":
+          description: Неверный логин или пароль.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Аутентификация пользователя.
+      tags:
+      - user
+swagger: "2.0"

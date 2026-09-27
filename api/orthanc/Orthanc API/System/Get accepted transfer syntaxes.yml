@@ -1,0 +1,20 @@
+info:
+  name: Get accepted transfer syntaxes
+  type: http
+  seq: 7
+  tags:
+    - System
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools/accepted-transfer-syntaxes"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get the list of UIDs of the DICOM transfer syntaxes that are accepted by Orthanc C-STORE SCP. This corresponds to the configuration options `AcceptedTransferSyntaxes` and `XXXTransferSyntaxAccepted`.

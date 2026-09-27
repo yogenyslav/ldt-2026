@@ -1,0 +1,106 @@
+info:
+  name: Get parent study (GET)
+  type: http
+  seq: 41
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/study"
+  params:
+    - name: full
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in full format (tags indexed by their hexadecimal format, associated with their symbolic name and their value)
+      disabled: true
+    - name: requested-tags
+      value: ""
+      type: query
+      description: "If present, list the DICOM Tags you want to list in the response.  This argument is a semi-column separated list of DICOM Tags identifiers; e.g: 'requested-tags=0010,0010;PatientBirthDate'.  The tags requested tags are returned in the 'RequestedTags' field in the response.  Note that, if you are requesting tags that are not listed in the Main Dicom Tags stored in DB, building the response might be slow since Orthanc will need to access the DICOM files.  If not specified, Orthanc will return all Main Dicom Tags to keep backward compatibility with Orthanc prior to 1.11.0."
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series/:id/study"
+      method: GET
+      params:
+        - name: full
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in full format (tags indexed by their hexadecimal format, associated with their symbolic name and their value)
+          disabled: true
+        - name: requested-tags
+          value: ""
+          type: query
+          description: "If present, list the DICOM Tags you want to list in the response.  This argument is a semi-column separated list of DICOM Tags identifiers; e.g: 'requested-tags=0010,0010;PatientBirthDate'.  The tags requested tags are returned in the 'RequestedTags' field in the response.  Note that, if you are requesting tags that are not listed in the Main Dicom Tags stored in DB, building the response might be slow since Orthanc will need to access the DICOM files.  If not specified, Orthanc will return all Main Dicom Tags to keep backward compatibility with Orthanc prior to 1.11.0."
+          disabled: true
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the series of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "ID": "49974143-ec23cb52-6b2a1c46-14d5daa0-0822ce1a",
+            "IsStable": true,
+            "Labels": [],
+            "LastUpdate": "20231109T160911",
+            "MainDicomTags": {
+              "AccessionNumber": "A10011234814",
+              "InstitutionName": "HUG",
+              "ReferringPhysicianName": "CHIR-PED^CHIR-PE",
+              "RequestedProcedureDescription": "CT2 TÊTE, FACE, SINUS",
+              "RequestingPhysician": "KOHLER^Romain",
+              "StudyDate": "20050927",
+              "StudyDescription": "CT2 tête, face, sinus",
+              "StudyID": "1361",
+              "StudyInstanceUID": "2.16.840.1.113669.632.20.1211.10000098591",
+              "StudyTime": "154952.000000"
+            },
+            "ParentPatient": "2f74083e-9b042648-10edac14-b26950f8-f82ec3a0",
+            "PatientMainDicomTags": {
+              "PatientBirthDate": "19910101",
+              "PatientID": "Vafk,T,6",
+              "PatientName": "PHENIX",
+              "PatientSex": ""
+            },
+            "Series": [
+              "17cc7e52-4f1a3e4d-9182f727-56e9cc71-c037892f",
+              "37836232-d13a2350-fa1dedc5-962b31aa-010f8e52",
+              "7696013f-4c89c563-2b071693-5d1f97f6-f8ab232d"
+            ],
+            "Type": "Study"
+          }
+
+docs: Get detailed information about the parent study of the DICOM series whose Orthanc identifier is provided in the URL

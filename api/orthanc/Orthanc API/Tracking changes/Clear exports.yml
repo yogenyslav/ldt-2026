@@ -1,0 +1,32 @@
+info:
+  name: Clear exports
+  type: http
+  seq: 3
+  tags:
+    - Tracking changes
+
+http:
+  method: DELETE
+  url: "{{baseUrl}}/exports"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/exports"
+      method: DELETE
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Clear the full history stored in the exports log

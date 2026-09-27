@@ -1,0 +1,55 @@
+info:
+  name: List attachments (1)
+  type: http
+  seq: 7
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/attachments"
+  params:
+    - name: full
+      value: ""
+      type: query
+      description: If present, retrieve the attachments list and their numerical ids
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series/:id/attachments"
+      method: GET
+      params:
+        - name: full
+          value: ""
+          type: query
+          description: If present, retrieve the attachments list and their numerical ids
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the series of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: "[]"
+
+docs: Get the list of attachments that are associated with the given series

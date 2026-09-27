@@ -1,0 +1,45 @@
+info:
+  name: Create DICOMDIR media (4)
+  type: http
+  seq: 27
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/media"
+  params:
+    - name: extended
+      value: ""
+      type: query
+      description: If present, will include additional tags such as `SeriesDescription`, leading to a so-called *extended DICOMDIR*
+      disabled: true
+    - name: filename
+      value: ""
+      type: query
+      description: Filename to set in the "Content-Disposition" HTTP header (including file extension)
+      disabled: true
+    - name: lossy-quality
+      value: ""
+      type: query
+      description: If transcoding to a lossy transfer syntax, this entry defines the quality as an integer between 1 and 100.  If not provided, the value is defined by the "DicomLossyTranscodingQuality" configuration. (new in v1.12.7)
+      disabled: true
+    - name: transcode
+      value: ""
+      type: query
+      description: "If present, the DICOM files in the archive will be transcoded to the provided transfer syntax: https://orthanc.uclouvain.be/book/faq/transcoding.html"
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Synchronously create a DICOMDIR media containing the DICOM series whose Orthanc identifier is provided in the URL. This flavor is synchronous, which might *not* be desirable to archive large amount of data, as it might lead to network timeouts. Prefer the asynchronous version using `POST` method.

@@ -1,0 +1,663 @@
+openapi: 3.1.0
+
+info:
+  title: DICOM Manager API
+  version: 1.0.0
+  description: API для просмотра DICOM-исследований, принятия решений и экспорта отчетов.
+
+servers:
+  - url: /api/v1
+
+security:
+  - bearerAuth: []
+
+tags:
+  - name: Studies
+  - name: Images
+  - name: Decisions
+  - name: Jobs
+  - name: Reports
+  - name: Organizations
+  - name: Users
+
+paths:
+  /studies:
+    get:
+      tags: [Studies]
+      operationId: listStudies
+      summary: Получить список исследований
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/ReviewStatus'
+        - name: patient_id
+          in: query
+          schema:
+            type: string
+        - name: from
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: to
+          in: query
+          schema:
+            type: string
+            format: date-time
+        - name: cursor
+          in: query
+          schema:
+            type: string
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Список исследований
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Study'
+                  next_cursor:
+                    type: [string, 'null']
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /studies/{study_id}:
+    get:
+      tags: [Studies]
+      operationId: getStudy
+      summary: Получить исследование
+      parameters:
+        - $ref: '#/components/parameters/StudyId'
+      responses:
+        '200':
+          description: Исследование
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Study'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /studies/{study_id}/images:
+    get:
+      tags: [Images]
+      operationId: listStudyImages
+      summary: Получить снимки исследования
+      parameters:
+        - $ref: '#/components/parameters/StudyId'
+      responses:
+        '200':
+          description: Снимки исследования
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Image'
+
+  /images:
+    post:
+      tags: [Images]
+      operationId: uploadImages
+      summary: Загрузить один или несколько DICOM-файлов вручную
+      description: multipart/form-data загрузка. Большие батчи рекомендуется отправлять частями.
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [files]
+              properties:
+                files:
+                  type: array
+                  items:
+                    type: string
+                    format: binary
+                study_id:
+                  type: string
+                  format: uuid
+                organization_id:
+                  type: string
+                  format: uuid
+      responses:
+        '202':
+          description: Файлы приняты в обработку
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/UploadAccepted'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '413':
+          description: Превышен допустимый размер загрузки
+
+  /images/{dicom_id}:
+    get:
+      tags: [Images]
+      operationId: getImage
+      summary: Получить информацию о снимке
+      parameters:
+        - $ref: '#/components/parameters/DicomId'
+      responses:
+        '200':
+          description: Информация о снимке
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Image'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /images/{dicom_id}/content:
+    get:
+      tags: [Images]
+      operationId: getImageContent
+      summary: Получить изображение для просмотра
+      parameters:
+        - $ref: '#/components/parameters/DicomId'
+      responses:
+        '200':
+          description: Изображение или DICOM-файл
+          content:
+            application/dicom:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /images/{dicom_id}/decisions:
+    post:
+      tags: [Decisions]
+      operationId: createImageDecision
+      summary: Принять решение по снимку
+      parameters:
+        - $ref: '#/components/parameters/DicomId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DecisionRequest'
+      responses:
+        '200':
+          description: Решение сохранено
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Decision'
+        '409':
+          description: Конфликт состояния или версии снимка
+        '422':
+          description: Недопустимое решение для текущего состояния
+
+  /decisions/batch:
+    post:
+      tags: [Decisions]
+      operationId: createBatchDecisions
+      summary: Принять решение сразу по нескольким снимкам
+      description: Операция поддерживает частичный успех. Результат возвращается отдельно для каждого снимка.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [items]
+              properties:
+                items:
+                  type: array
+                  minItems: 1
+                  maxItems: 100
+                  items:
+                    type: object
+                    required: [dicom_id, decision]
+                    properties:
+                      dicom_id:
+                        type: string
+                        format: uuid
+                      decision:
+                        $ref: '#/components/schemas/DecisionType'
+                      comment:
+                        type: string
+                        maxLength: 2000
+      responses:
+        '200':
+          description: Результаты выполнения по каждому снимку
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [items]
+                properties:
+                  items:
+                    type: array
+                    items:
+                      type: object
+                      required: [dicom_id, success]
+                      properties:
+                        dicom_id:
+                          type: string
+                          format: uuid
+                        success:
+                          type: boolean
+                        decision:
+                          $ref: '#/components/schemas/Decision'
+                        error:
+                          $ref: '#/components/schemas/ApiError'
+
+  /jobs/{job_id}:
+    get:
+      tags: [Jobs]
+      operationId: getJob
+      summary: Получить статус обработки
+      parameters:
+        - name: job_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Задание обработки
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Job'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports:
+    post:
+      tags: [Reports]
+      operationId: createReport
+      summary: Создать отчет
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [format, filters]
+              properties:
+                format:
+                  type: string
+                  enum: [csv, xlsx]
+                filters:
+                  $ref: '#/components/schemas/StudyFilters'
+      responses:
+        '202':
+          description: Отчет поставлен на формирование
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [report_id, status]
+                properties:
+                  report_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending, processing, completed, failed]
+
+  /reports/{report_id}:
+    get:
+      tags: [Reports]
+      operationId: getReport
+      summary: Получить статус отчета и ссылку на скачивание
+      parameters:
+        - name: report_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Состояние отчета
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [report_id, status]
+                properties:
+                  report_id:
+                    type: string
+                    format: uuid
+                  status:
+                    type: string
+                    enum: [pending, processing, completed, failed]
+                  download_url:
+                    type: [string, 'null']
+                    format: uri
+                  error:
+                    $ref: '#/components/schemas/ApiError'
+
+  /organizations:
+    get:
+      tags: [Organizations]
+      operationId: listOrganizations
+      summary: Получить доступные пользователю организации
+      responses:
+        '200':
+          description: Организации
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Organization'
+
+  /users:
+    get:
+      tags: [Users]
+      operationId: listUsers
+      summary: Получить пользователей организации
+      parameters:
+        - $ref: '#/components/parameters/OrganizationId'
+      responses:
+        '200':
+          description: Пользователи организации
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    StudyId:
+      name: study_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    DicomId:
+      name: dicom_id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OrganizationId:
+      name: organization_id
+      in: query
+      required: false
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    Study:
+      type: object
+      required: [study_id, organization_id, images, created_at]
+      properties:
+        study_id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        patient_id:
+          type: [string, 'null']
+        patient_name:
+          type: [string, 'null']
+        study_instance_uid:
+          type: [string, 'null']
+        modality:
+          type: [string, 'null']
+        study_date:
+          type: [string, 'null']
+          format: date
+        review_status:
+          $ref: '#/components/schemas/ReviewStatus'
+        images:
+          type: integer
+          minimum: 0
+        created_at:
+          type: string
+          format: date-time
+
+    Image:
+      type: object
+      required: [dicom_id, study_id, processing_status, review_status, created_at]
+      properties:
+        dicom_id:
+          type: string
+          format: uuid
+        study_id:
+          type: string
+          format: uuid
+        orthanc_instance_id:
+          type: [string, 'null']
+        processing_status:
+          $ref: '#/components/schemas/JobStatus'
+        review_status:
+          $ref: '#/components/schemas/ReviewStatus'
+        analysis:
+          oneOf:
+            - $ref: '#/components/schemas/AnalysisResult'
+            - type: 'null'
+        decision:
+          oneOf:
+            - $ref: '#/components/schemas/Decision'
+            - type: 'null'
+        created_at:
+          type: string
+          format: date-time
+
+    AnalysisResult:
+      type: object
+      required: [anatomical_region, confidence, violations]
+      properties:
+        anatomical_region:
+          type: string
+        confidence:
+          type: number
+          minimum: 0
+          maximum: 1
+        confidence_level:
+          type: string
+          enum: [green, yellow, red]
+        violations:
+          type: array
+          items:
+            type: string
+        duration_ms:
+          type: integer
+          minimum: 0
+        model_version:
+          type: [string, 'null']
+
+    DecisionType:
+      type: string
+      enum: [approve, redo, force_approve, reject]
+
+    DecisionRequest:
+      type: object
+      required: [decision]
+      properties:
+        decision:
+          $ref: '#/components/schemas/DecisionType'
+        comment:
+          type: string
+          maxLength: 2000
+        expected_version:
+          type: integer
+          minimum: 1
+
+    Decision:
+      type: object
+      required: [decision_id, dicom_id, decision, user_id, created_at]
+      properties:
+        decision_id:
+          type: string
+          format: uuid
+        dicom_id:
+          type: string
+          format: uuid
+        decision:
+          $ref: '#/components/schemas/DecisionType'
+        comment:
+          type: [string, 'null']
+        user_id:
+          type: string
+          format: uuid
+        created_at:
+          type: string
+          format: date-time
+
+    JobStatus:
+      type: string
+      enum: [pending, running, completed, failed]
+
+    ReviewStatus:
+      type: string
+      enum: [pending_review, approved, redo_requested, force_approved, rejected]
+
+    Job:
+      type: object
+      required: [job_id, dicom_id, status, created_at, updated_at]
+      properties:
+        job_id:
+          type: string
+          format: uuid
+        dicom_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/JobStatus'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        error:
+          type: [string, 'null']
+
+    UploadAccepted:
+      type: object
+      required: [dicom_id, job_id, status]
+      properties:
+        dicom_id:
+          type: string
+          format: uuid
+        job_id:
+          type: string
+          format: uuid
+        status:
+          $ref: '#/components/schemas/JobStatus'
+
+    StudyFilters:
+      type: object
+      properties:
+        organization_id:
+          type: string
+          format: uuid
+        from:
+          type: string
+          format: date-time
+        to:
+          type: string
+          format: date-time
+        review_status:
+          $ref: '#/components/schemas/ReviewStatus'
+
+    Organization:
+      type: object
+      required: [organization_id, name]
+      properties:
+        organization_id:
+          type: string
+          format: uuid
+        name:
+          type: string
+
+    User:
+      type: object
+      required: [user_id, organization_id, display_name, role]
+      properties:
+        user_id:
+          type: string
+          format: uuid
+        organization_id:
+          type: string
+          format: uuid
+        display_name:
+          type: string
+        role:
+          type: string
+          enum: [admin, lab_technician]
+
+    ApiError:
+      type: object
+      properties:
+        code:
+          type: string
+        message:
+          type: string
+        details:
+          type: object
+          additionalProperties: true
+
+  responses:
+    BadRequest:
+      description: Некорректный запрос
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'
+    Unauthorized:
+      description: Необходима аутентификация
+    Forbidden:
+      description: Недостаточно прав
+    NotFound:
+      description: Ресурс не найден
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ApiError'

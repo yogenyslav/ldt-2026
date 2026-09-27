@@ -1,0 +1,6 @@
+info:
+  name: Instances
+  type: folder
+
+request:
+  auth: inherit

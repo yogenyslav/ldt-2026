@@ -1,0 +1,8 @@
+name: Environment 1
+variables:
+  - name: baseUrl
+    value: https://orthanc.dicom.dv-du.ru
+    description: ""
+  - name: orthanc-token
+    value: ZGljb20tb3J0aGFuYzoxMjNkaWNvbS1vcnRoYW5jLXBhc3MxMjM=
+    description: ""

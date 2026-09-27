@@ -1,0 +1,33 @@
+info:
+  name: C-FIND SCU for worklist
+  type: http
+  seq: 12
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modalities/:id/find-worklist"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the modality of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Full": false,
+        "Query": {},
+        "Short": false
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Trigger C-FIND SCU command against the remote worklists of the DICOM modality whose identifier is provided in URL

@@ -1,0 +1,42 @@
+info:
+  name: Trigger C-MOVE SCU
+  type: http
+  seq: 14
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modalities/:id/move"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the modality of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Level": "",
+        "LocalAet": "",
+        "Permissive": false,
+        "Priority": 0,
+        "Resources": [
+          {}
+        ],
+        "Synchronous": false,
+        "TargetAet": "",
+        "Timeout": 0,
+        "UserData": {}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Start a C-MOVE SCU command as a job, in order to drive the execution of a sequence of C-STORE commands by some remote DICOM modality whose identifier is provided in the URL: https://orthanc.uclouvain.be/book/users/rest.html#performing-c-move"

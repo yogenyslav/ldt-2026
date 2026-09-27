@@ -1,0 +1,6 @@
+info:
+  name: Logs
+  type: folder
+
+request:
+  auth: inherit

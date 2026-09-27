@@ -1,0 +1,29 @@
+info:
+  name: Decode frame for Matlab
+  type: http
+  seq: 27
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/frames/:frame/matlab"
+  params:
+    - name: frame
+      value: ""
+      type: path
+      description: Index of the frame (starts at `0`)
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the DICOM instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Decode one frame of interest from the given DICOM instance, and export this frame as a Octave/Matlab matrix to be imported with `eval()`: https://orthanc.uclouvain.be/book/faq/matlab.html"

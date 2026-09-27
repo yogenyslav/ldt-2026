@@ -1,0 +1,44 @@
+info:
+  name: Look for local resources
+  type: http
+  seq: 26
+  tags:
+    - System
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tools/find"
+  body:
+    type: json
+    data: |-
+      {
+        "CaseSensitive": false,
+        "Expand": false,
+        "Full": false,
+        "Labels": [],
+        "LabelsConstraint": "",
+        "Level": "",
+        "Limit": 0,
+        "MetadataQuery": {},
+        "OrderBy": [
+          {}
+        ],
+        "ParentPatient": "",
+        "ParentSeries": "",
+        "ParentStudy": "",
+        "Query": {},
+        "RequestedTags": [],
+        "ResponseContent": [],
+        "Short": false,
+        "Since": 0
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "This URI can be used to perform a search on the content of the local Orthanc server, in a way that is similar to querying remote DICOM modalities using C-FIND SCU: https://orthanc.uclouvain.be/book/users/rest.html#performing-finds-within-orthanc"

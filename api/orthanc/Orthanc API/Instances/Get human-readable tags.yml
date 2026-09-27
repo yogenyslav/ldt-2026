@@ -1,0 +1,78 @@
+info:
+  name: Get human-readable tags
+  type: http
+  seq: 55
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/simplified-tags"
+  params:
+    - name: ignore-length
+      value: "[]"
+      type: query
+      description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+      disabled: true
+    - name: whole
+      value: ""
+      type: query
+      description: Whether to read the whole DICOM file from the storage area (new in Orthanc 1.12.4). If set to "false" (default value), the DICOM file is read until the pixel data tag (7fe0,0010) to optimize access to storage. Setting the option to "true" provides access to the DICOM tags stored after the pixel data tag.
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the DICOM instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/instances/:id/simplified-tags"
+      method: GET
+      params:
+        - name: ignore-length
+          value: "[]"
+          type: query
+          description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+          disabled: true
+        - name: whole
+          value: ""
+          type: query
+          description: Whether to read the whole DICOM file from the storage area (new in Orthanc 1.12.4). If set to "false" (default value), the DICOM file is read until the pixel data tag (7fe0,0010) to optimize access to storage. Setting the option to "true" provides access to the DICOM tags stored after the pixel data tag.
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the DICOM instance of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "AccessionNumber": "0",
+            "AcquisitionDate": "20061005",
+            "AcquisitionNumber": "3",
+            "AcquisitionTime": "101812.967223",
+            "BitsAllocated": "16",
+            "BitsStored": "12",
+            "BodyPartExamined": "EXTREMITY",
+            "Columns": "512",
+            "ContentDate": "20061005",
+            "ContentTime": "101812.967223",
+            "{...}": "..."
+          }
+
+docs: Get the DICOM tags in human-readable format (same as the `/instances/{id}/tags?simplify` route)

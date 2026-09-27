@@ -1,0 +1,38 @@
+info:
+  name: Send to Orthanc peer
+  type: http
+  seq: 24
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/peers/:id/store"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the modality of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Compress": false,
+        "Permissive": false,
+        "Priority": 0,
+        "Resources": [],
+        "Synchronous": false,
+        "Transcode": "",
+        "UserData": {}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Send DICOM resources stored locally to some remote Orthanc peer whose identifier is provided in the URL: https://orthanc.uclouvain.be/book/users/rest.html#sending-one-resource"

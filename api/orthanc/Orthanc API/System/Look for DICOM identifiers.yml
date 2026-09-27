@@ -1,0 +1,23 @@
+info:
+  name: Look for DICOM identifiers
+  type: http
+  seq: 30
+  tags:
+    - System
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tools/lookup"
+  body:
+    type: text
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: This URI can be used to convert one DICOM identifier to a list of matching Orthanc resources

@@ -1,0 +1,93 @@
+info:
+  name: Get shared tags (GET)
+  type: http
+  seq: 39
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/shared-tags"
+  params:
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: simplify
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series/:id/shared-tags"
+      method: GET
+      params:
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: simplify
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the series of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "0008,0005": {
+              "Name": "SpecificCharacterSet",
+              "Type": "String",
+              "Value": "ISO_IR 100"
+            },
+            "0008,0008": {
+              "Name": "ImageType",
+              "Type": "String",
+              "Value": "ORIGINAL\\PRIMARY\\LOCALIZER\\ES"
+            },
+            "0008,0012": {
+              "Name": "InstanceCreationDate",
+              "Type": "String",
+              "Value": "20050927"
+            },
+            "0008,0013": {
+              "Name": "InstanceCreationTime",
+              "Type": "String",
+              "Value": "155030.000000"
+            },
+            "0008,0016": {
+              "Name": "SOPClassUID",
+              "Type": "String",
+              "Value": "1.2.840.10008.5.1.4.1.1.2"
+            },
+            "{...}": "..."
+          }
+
+docs: Extract the DICOM tags whose value is constant across all the child instances of the DICOM series whose Orthanc identifier is provided in the URL

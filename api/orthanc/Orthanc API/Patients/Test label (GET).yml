@@ -1,0 +1,29 @@
+info:
+  name: Test label (GET)
+  type: http
+  seq: 25
+  tags:
+    - Patients
+
+http:
+  method: GET
+  url: "{{baseUrl}}/patients/:id/labels/:label"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+    - name: label
+      value: ""
+      type: path
+      description: The label of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Test whether the patient is associated with the given label

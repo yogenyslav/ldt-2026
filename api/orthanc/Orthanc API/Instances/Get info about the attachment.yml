@@ -1,0 +1,71 @@
+info:
+  name: Get info about the attachment
+  type: http
+  seq: 14
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/attachments/:name/info"
+  headers:
+    - name: If-None-Match
+      value: ""
+      description: Optional revision of the attachment, to check if its content has changed
+      disabled: true
+  params:
+    - name: id
+      value: d2eb3ed6-2717bed6-3149ee32-53e690c3-0e3fcb0d
+      type: path
+      description: Orthanc identifier of the instance of interest
+    - name: name
+      value: dicom
+      type: path
+      description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/instances/:id/attachments/:name/info"
+      method: GET
+      headers:
+        - name: If-None-Match
+          value: ""
+          description: Optional revision of the attachment, to check if its content has changed
+          disabled: true
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the instance of interest
+        - name: name
+          value: ""
+          type: path
+          description: The name of the attachment, or its index (cf. `UserContentType` configuration option)
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "CompressedMD5": "26f3fad6ca0c355f02d57c7fa6770248",
+            "CompressedSize": 526970,
+            "ContentType": 1,
+            "UncompressedMD5": "26f3fad6ca0c355f02d57c7fa6770248",
+            "UncompressedSize": 526970,
+            "Uuid": "ada05909-0efc-43fd-b615-c5cafbaeacf8"
+          }
+
+docs: Get all the information about the attachment associated with the given instance

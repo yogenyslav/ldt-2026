@@ -1,0 +1,199 @@
+info:
+  name: Get series module
+  type: http
+  seq: 34
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series/:id/module"
+  params:
+    - name: ignore-length
+      value: "[]"
+      type: query
+      description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: simplify
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+      disabled: true
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the series of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series/:id/module"
+      method: GET
+      params:
+        - name: ignore-length
+          value: "[]"
+          type: query
+          description: Also include the DICOM tags that are provided in this list, even if their associated value is long
+          disabled: true
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: simplify
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in human-readable format (using the symbolic name of the tags)
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the series of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          {
+            "0008,0060": {
+              "Name": "Modality",
+              "Type": "String",
+              "Value": "CT"
+            },
+            "0008,1111": {
+              "Name": "ReferencedPerformedProcedureStepSequence",
+              "Type": "Sequence",
+              "Value": [
+                {
+                  "0008,1150": {
+                    "Name": "ReferencedSOPClassUID",
+                    "Type": "String",
+                    "Value": "1.2.840.10008.3.1.2.3.3"
+                  },
+                  "0008,1155": {
+                    "Name": "ReferencedSOPInstanceUID",
+                    "Type": "String",
+                    "Value": "1.2.840.113704.1.111.4496.1127828841.54"
+                  }
+                }
+              ]
+            },
+            "0018,1030": {
+              "Name": "ProtocolName",
+              "Type": "String",
+              "Value": "COU 2 mm/Neck/Sv"
+            },
+            "0018,5100": {
+              "Name": "PatientPosition",
+              "Type": "String",
+              "Value": "HFS"
+            },
+            "0020,000e": {
+              "Name": "SeriesInstanceUID",
+              "Type": "String",
+              "Value": "1.2.840.113704.1.111.5692.1127828999.2"
+            },
+            "0020,0011": {
+              "Name": "SeriesNumber",
+              "Type": "String",
+              "Value": "2276"
+            },
+            "0040,0253": {
+              "Name": "PerformedProcedureStepID",
+              "Type": "String",
+              "Value": "A10011234815"
+            },
+            "0040,0254": {
+              "Name": "PerformedProcedureStepDescription",
+              "Type": "String",
+              "Value": "CT2 tête, face, sinus"
+            },
+            "0040,0260": {
+              "Name": "PerformedProtocolCodeSequence",
+              "Type": "Sequence",
+              "Value": [
+                {
+                  "0008,0100": {
+                    "Name": "CodeValue",
+                    "Type": "String",
+                    "Value": "CTTETE"
+                  },
+                  "0008,0102": {
+                    "Name": "CodingSchemeDesignator",
+                    "Type": "String",
+                    "Value": "XPLORE"
+                  },
+                  "0008,0104": {
+                    "Name": "CodeMeaning",
+                    "Type": "String",
+                    "Value": "CT2 tête, face, sinus"
+                  }
+                }
+              ]
+            },
+            "0040,0275": {
+              "Name": "RequestAttributesSequence",
+              "Type": "Sequence",
+              "Value": [
+                {
+                  "0040,0007": {
+                    "Name": "ScheduledProcedureStepDescription",
+                    "Type": "String",
+                    "Value": "CT2 tête, face, sinus"
+                  },
+                  "0040,0008": {
+                    "Name": "ScheduledProtocolCodeSequence",
+                    "Type": "Sequence",
+                    "Value": [
+                      {
+                        "0008,0100": {
+                          "Name": "CodeValue",
+                          "Type": "String",
+                          "Value": "CTTETE"
+                        },
+                        "0008,0102": {
+                          "Name": "CodingSchemeDesignator",
+                          "Type": "String",
+                          "Value": "XPLORE"
+                        },
+                        "0008,0104": {
+                          "Name": "CodeMeaning",
+                          "Type": "String",
+                          "Value": "CT2 TÊTE, FACE, SINUS"
+                        }
+                      }
+                    ]
+                  },
+                  "0040,0009": {
+                    "Name": "ScheduledProcedureStepID",
+                    "Type": "String",
+                    "Value": "A10011234815"
+                  },
+                  "0040,1001": {
+                    "Name": "RequestedProcedureID",
+                    "Type": "String",
+                    "Value": "A10011234814"
+                  }
+                }
+              ]
+            }
+          }
+
+docs: Get the series module of the DICOM series whose Orthanc identifier is provided in the URL

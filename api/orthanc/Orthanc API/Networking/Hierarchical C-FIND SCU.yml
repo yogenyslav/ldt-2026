@@ -1,0 +1,28 @@
+info:
+  name: Hierarchical C-FIND SCU
+  type: http
+  seq: 7
+  tags:
+    - Networking
+
+http:
+  method: POST
+  url: "{{baseUrl}}/modalities/:id/find"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Identifier of the modality of interest
+  body:
+    type: json
+    data: "{}"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Trigger a sequence of C-FIND SCU commands against the DICOM modality whose identifier is provided in URL, in order to discover a hierarchy of matching patients/studies/series. Deprecated in favor of `/modalities/{id}/query`.

@@ -1,0 +1,6 @@
+info:
+  name: Studies
+  type: folder
+
+request:
+  auth: inherit

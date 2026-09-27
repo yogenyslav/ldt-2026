@@ -1,0 +1,111 @@
+name: dicom-manager
+
+services:
+  dicom-manager:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    container_name: dicom-manager
+    restart: unless-stopped
+    command: ["./service"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - NATS_REPLICAS=3
+      - METRICS_ADDR=:9100
+      - APP_NAME=dicom-manager
+      - ORTHANC_HOST=orthanc
+      - ORTHANC_PORT=8042
+      - DICOM_MANAGER_S3_HOST=reports
+      - DICOM_MANAGER_S3_PORT=9000
+      - DICOM_MANAGER_S3_BUCKET=${DICOM_MANAGER_S3_BUCKET:-reports}
+      - DB_USER=${DICOM_MANAGER_DB_USER}
+      - DB_PASSWORD=${DICOM_MANAGER_DB_PASSWORD}
+      - DB_NAME=${DICOM_MANAGER_DB_NAME}
+      - DB_HOST=dicom-manager-postgres
+      - DB_PORT=5432
+    ports:
+      - "127.0.0.1:10000:${DICOM_MANAGER_PORT:-10000}"
+    networks:
+      - dicom-network
+
+  dicom-manager-poller:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    container_name: dicom-manager-poller
+    restart: unless-stopped
+    command: ["./poller"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - NATS_REPLICAS=3
+      - METRICS_ADDR=:9100
+      - APP_NAME=dicom-manager-poller
+      - DB_USER=${DICOM_MANAGER_DB_USER}
+      - DB_PASSWORD=${DICOM_MANAGER_DB_PASSWORD}
+      - DB_NAME=${DICOM_MANAGER_DB_NAME}
+      - DB_HOST=dicom-manager-postgres
+      - DB_PORT=5432
+    networks:
+      - dicom-network
+
+  dicom-manager-job-listener:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    container_name: dicom-manager-job-listener
+    restart: unless-stopped
+    command: ["./job_listener"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - NATS_REPLICAS=3
+      - METRICS_ADDR=:9100
+      - APP_NAME=dicom-manager-job-listener
+      - DB_USER=${DICOM_MANAGER_DB_USER}
+      - DB_PASSWORD=${DICOM_MANAGER_DB_PASSWORD}
+      - DB_NAME=${DICOM_MANAGER_DB_NAME}
+      - DB_HOST=dicom-manager-postgres
+      - DB_PORT=5432
+    networks:
+      - dicom-network
+
+  postgres:
+    image: postgres:17-alpine
+    container_name: dicom-manager-postgres
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DICOM_MANAGER_DB_USER} -d ${DICOM_MANAGER_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    env_file:
+      - ../.env
+    environment:
+      - POSTGRES_USER=${DICOM_MANAGER_DB_USER}
+      - POSTGRES_PASSWORD=${DICOM_MANAGER_DB_PASSWORD}
+      - POSTGRES_DB=${DICOM_MANAGER_DB_NAME}
+    ports:
+      - "127.0.0.1:${DICOM_MANAGER_DB_PORT:-5432}:5432"
+    networks:
+      - dicom-network
+
+networks:
+  dicom-network:
+    external: true

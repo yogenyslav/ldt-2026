@@ -1,0 +1,35 @@
+info:
+  name: Get UTC time
+  type: http
+  seq: 34
+  tags:
+    - System
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools/now"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools/now"
+      method: GET
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: text/plain
+      body:
+        type: text
+        data: 20260815T220308
+
+docs: Get UTC time

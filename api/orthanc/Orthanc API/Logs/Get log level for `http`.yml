@@ -1,0 +1,20 @@
+info:
+  name: Get log level for `http`
+  type: http
+  seq: 7
+  tags:
+    - Logs
+
+http:
+  method: GET
+  url: "{{baseUrl}}/tools/log-level-http"
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Get the log level of the log category `http`

@@ -1,0 +1,29 @@
+info:
+  name: Test label (2)
+  type: http
+  seq: 25
+  tags:
+    - Studies
+
+http:
+  method: GET
+  url: "{{baseUrl}}/studies/:id/labels/:label"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+    - name: label
+      value: ""
+      type: path
+      description: The label of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Test whether the study is associated with the given label

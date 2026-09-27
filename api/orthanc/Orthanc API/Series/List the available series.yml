@@ -1,0 +1,111 @@
+info:
+  name: List the available series
+  type: http
+  seq: 1
+  tags:
+    - Series
+
+http:
+  method: GET
+  url: "{{baseUrl}}/series"
+  params:
+    - name: expand
+      value: ""
+      type: query
+      description: If present, retrieve detailed information about the individual resources, not only their Orthanc identifiers
+      disabled: true
+    - name: full
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in full format (tags indexed by their hexadecimal format, associated with their symbolic name and their value)
+      disabled: true
+    - name: limit
+      value: ""
+      type: query
+      description: Limit the number of results
+      disabled: true
+    - name: requested-tags
+      value: ""
+      type: query
+      description: "If present, list the DICOM Tags you want to list in the response.  This argument is a semi-column separated list of DICOM Tags identifiers; e.g: 'requested-tags=0010,0010;PatientBirthDate'.  The tags requested tags are returned in the 'RequestedTags' field in the response.  Note that, if you are requesting tags that are not listed in the Main Dicom Tags stored in DB, building the response might be slow since Orthanc will need to access the DICOM files.  If not specified, Orthanc will return all Main Dicom Tags to keep backward compatibility with Orthanc prior to 1.11.0."
+      disabled: true
+    - name: response-content
+      value: ""
+      type: query
+      description: "Defines the content of response for each returned resource.  Allowed values are `MainDicomTags`, `Metadata`, `Children`, `Parent`, `Labels`, `Status`, `IsStable`, `IsProtected`, `Attachments`.  If not specified, Orthanc will return `MainDicomTags`, `Metadata`, `Children`, `Parent`, `Labels`, `Status`, `IsStable`, `IsProtected`.e.g: 'response-content=MainDicomTags;Children (new in Orthanc 1.12.5 - overrides `expand`)"
+      disabled: true
+    - name: short
+      value: ""
+      type: query
+      description: If present, report the DICOM tags in hexadecimal format
+      disabled: true
+    - name: since
+      value: ""
+      type: query
+      description: Show only the resources since the provided index
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/series"
+      method: GET
+      params:
+        - name: expand
+          value: ""
+          type: query
+          description: If present, retrieve detailed information about the individual resources, not only their Orthanc identifiers
+          disabled: true
+        - name: full
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in full format (tags indexed by their hexadecimal format, associated with their symbolic name and their value)
+          disabled: true
+        - name: limit
+          value: ""
+          type: query
+          description: Limit the number of results
+          disabled: true
+        - name: requested-tags
+          value: ""
+          type: query
+          description: "If present, list the DICOM Tags you want to list in the response.  This argument is a semi-column separated list of DICOM Tags identifiers; e.g: 'requested-tags=0010,0010;PatientBirthDate'.  The tags requested tags are returned in the 'RequestedTags' field in the response.  Note that, if you are requesting tags that are not listed in the Main Dicom Tags stored in DB, building the response might be slow since Orthanc will need to access the DICOM files.  If not specified, Orthanc will return all Main Dicom Tags to keep backward compatibility with Orthanc prior to 1.11.0."
+          disabled: true
+        - name: response-content
+          value: ""
+          type: query
+          description: "Defines the content of response for each returned resource.  Allowed values are `MainDicomTags`, `Metadata`, `Children`, `Parent`, `Labels`, `Status`, `IsStable`, `IsProtected`, `Attachments`.  If not specified, Orthanc will return `MainDicomTags`, `Metadata`, `Children`, `Parent`, `Labels`, `Status`, `IsStable`, `IsProtected`.e.g: 'response-content=MainDicomTags;Children (new in Orthanc 1.12.5 - overrides `expand`)"
+          disabled: true
+        - name: short
+          value: ""
+          type: query
+          description: If present, report the DICOM tags in hexadecimal format
+          disabled: true
+        - name: since
+          value: ""
+          type: query
+          description: Show only the resources since the provided index
+          disabled: true
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          [
+            "17cc7e52-4f1a3e4d-9182f727-56e9cc71-c037892f",
+            "1d9c4560-6480f3d9-0a4d3654-65715f38-755ad2e0"
+          ]
+
+docs: List the Orthanc identifiers of all the available DICOM series

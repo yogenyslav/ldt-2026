@@ -1,0 +1,31 @@
+info:
+  name: List exports
+  type: http
+  seq: 4
+  tags:
+    - Tracking changes
+
+http:
+  method: GET
+  url: "{{baseUrl}}/exports"
+  params:
+    - name: limit
+      value: ""
+      type: query
+      description: Limit the number of results
+      disabled: true
+    - name: since
+      value: ""
+      type: query
+      description: Show only the resources since the provided index
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: For medical traceability, Orthanc can be configured to store a log of all the resources that have been exported to remote modalities. In auto-routing scenarios, it is important to prevent this log to grow indefinitely as incoming instances are routed. You can either disable this logging by setting the option `LogExportedResources` to `false` in the configuration file, or periodically clear this log by `DELETE`-ing this URI. This route might be removed in future versions of Orthanc.

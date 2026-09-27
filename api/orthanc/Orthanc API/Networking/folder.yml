@@ -1,0 +1,6 @@
+info:
+  name: Networking
+  type: folder
+
+request:
+  auth: inherit

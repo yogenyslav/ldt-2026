@@ -1,0 +1,50 @@
+info:
+  name: Add label (2)
+  type: http
+  seq: 26
+  tags:
+    - Studies
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/studies/:id/labels/:label"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the study of interest
+    - name: label
+      value: ""
+      type: path
+      description: The label to be added
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/studies/:id/labels/:label"
+      method: PUT
+      params:
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the study of interest
+        - name: label
+          value: ""
+          type: path
+          description: The label to be added
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Associate a label with a study

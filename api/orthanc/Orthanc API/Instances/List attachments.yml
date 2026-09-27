@@ -1,0 +1,58 @@
+info:
+  name: List attachments
+  type: http
+  seq: 6
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/attachments"
+  params:
+    - name: full
+      value: ""
+      type: query
+      description: If present, retrieve the attachments list and their numerical ids
+      disabled: true
+    - name: id
+      value: 08a01ace-56807640-0aa0f8b2-ce6858dd-24ffa23b
+      type: path
+      description: Orthanc identifier of the instance of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/instances/:id/attachments"
+      method: GET
+      params:
+        - name: full
+          value: ""
+          type: query
+          description: If present, retrieve the attachments list and their numerical ids
+          disabled: true
+        - name: id
+          value: ""
+          type: path
+          description: Orthanc identifier of the instance of interest
+    response:
+      status: 200
+      statusText: OK
+      headers:
+        - name: Content-Type
+          value: application/json
+      body:
+        type: json
+        data: |-
+          [
+            "dicom"
+          ]
+
+docs: Get the list of attachments that are associated with the given instance

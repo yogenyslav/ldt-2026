@@ -1,0 +1,38 @@
+info:
+  name: Set unknown SOP class accepted
+  type: http
+  seq: 40
+  tags:
+    - System
+
+http:
+  method: PUT
+  url: "{{baseUrl}}/tools/unknown-sop-class-accepted"
+  body:
+    type: text
+    data: ""
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools/unknown-sop-class-accepted"
+      method: PUT
+      body:
+        type: text
+        data: ""
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Set whether Orthanc C-STORE SCP should accept DICOM instances with an unknown SOP class UID

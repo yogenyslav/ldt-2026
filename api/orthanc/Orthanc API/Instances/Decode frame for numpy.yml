@@ -1,0 +1,39 @@
+info:
+  name: Decode frame for numpy
+  type: http
+  seq: 28
+  tags:
+    - Instances
+
+http:
+  method: GET
+  url: "{{baseUrl}}/instances/:id/frames/:frame/numpy"
+  params:
+    - name: compress
+      value: ""
+      type: query
+      description: Compress the file as `.npz`
+      disabled: true
+    - name: rescale
+      value: ""
+      type: query
+      description: On grayscale images, apply the rescaling and return floating-point values
+      disabled: true
+    - name: frame
+      value: ""
+      type: path
+      description: Index of the frame (starts at `0`)
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the DICOM resource of interest
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Decode one frame of interest from the given DICOM instance, for use with numpy in Python. The numpy array has 3 dimensions: (height, width, color channel)."

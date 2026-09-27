@@ -1,0 +1,44 @@
+info:
+  name: Modify patient
+  type: http
+  seq: 33
+  tags:
+    - Patients
+
+http:
+  method: POST
+  url: "{{baseUrl}}/patients/:id/modify"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the patient of interest
+  body:
+    type: json
+    data: |-
+      {
+        "Asynchronous": false,
+        "Force": false,
+        "Keep": [],
+        "KeepSource": false,
+        "LossyQuality": 0,
+        "Permissive": false,
+        "Priority": 0,
+        "PrivateCreator": "",
+        "Remove": [],
+        "RemovePrivateTags": false,
+        "Replace": {},
+        "Synchronous": false,
+        "Transcode": "",
+        "UserData": {}
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: Start a job that will modify all the DICOM instances within the patient whose identifier is provided in the URL. The modified DICOM instances will be stored into a brand new patient, whose Orthanc identifiers will be returned by the job. https://orthanc.uclouvain.be/book/users/anonymization.html#modification-of-studies-or-series

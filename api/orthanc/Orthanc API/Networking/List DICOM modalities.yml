@@ -1,0 +1,26 @@
+info:
+  name: List DICOM modalities
+  type: http
+  seq: 1
+  tags:
+    - Networking
+
+http:
+  method: GET
+  url: "{{baseUrl}}/modalities"
+  params:
+    - name: expand
+      value: ""
+      type: query
+      description: If present, retrieve detailed information about the individual DICOM modalities
+      disabled: true
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: List all the DICOM modalities that are known to Orthanc. This corresponds either to the content of the `DicomModalities` configuration option, or to the information stored in the database if `DicomModalitiesInDatabase` is `true`.

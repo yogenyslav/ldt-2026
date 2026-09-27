@@ -1,0 +1,41 @@
+info:
+  name: Anonymize instance
+  type: http
+  seq: 5
+  tags:
+    - Instances
+
+http:
+  method: POST
+  url: "{{baseUrl}}/instances/:id/anonymize"
+  params:
+    - name: id
+      value: ""
+      type: path
+      description: Orthanc identifier of the instance of interest
+  body:
+    type: json
+    data: |-
+      {
+        "DicomVersion": "",
+        "Force": false,
+        "Keep": [],
+        "KeepLabels": false,
+        "KeepPrivateTags": false,
+        "KeepSource": false,
+        "LossyQuality": 0,
+        "PrivateCreator": "",
+        "Remove": [],
+        "Replace": {},
+        "Transcode": ""
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+docs: "Download an anonymized version of the DICOM instance whose Orthanc identifier is provided in the URL: https://orthanc.uclouvain.be/book/users/anonymization.html#anonymization-of-a-single-instance"

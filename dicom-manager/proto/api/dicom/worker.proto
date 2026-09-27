@@ -1,0 +1,48 @@
+syntax = "proto3";
+
+package api.dicom.worker;
+option go_package = "internal/generated/dicom-worker;dicom_worker";
+
+import "google/protobuf/timestamp.proto";
+
+service DicomWorkerService {
+  // ProcessDicomFiles обработка батча DICOM объектов.
+  rpc ProcessDicomFiles (ProcessDicomFilesIn) returns (ProcessDicomFilesOut) {}
+  // GetJobInfoByIDs получение информации о нескольких джобах обработки.
+  rpc GetJobInfoByIDs (GetJobInfoByIDsIn) returns (GetJobInfoByIDsOut) {}
+}
+
+enum JobStatus {
+  JOB_STATUS_UNSPECIFIED = 0;
+  JOB_STATUS_PENDING     = 1;
+  JOB_STATUS_RUNNING     = 2;
+  JOB_STATUS_COMPLETED   = 3;
+  JOB_STATUS_FAILED      = 4;
+}
+
+message DicomData {
+  string id = 1; // UID из Orthanc (instanceID).
+}
+
+message ProcessDicomFilesIn {
+  repeated DicomData dicoms = 1;
+}
+
+message ProcessDicomFilesOut {
+  map <string, string> job_ids = 1; // dicom_id -> job_id
+}
+
+message JobInfo {
+  string                    job_id     = 1;
+  JobStatus                 status     = 2;
+  google.protobuf.Timestamp created_at = 3;
+  google.protobuf.Timestamp updated_at = 4;
+}
+
+message GetJobInfoByIDsIn {
+  repeated string job_ids = 1;
+}
+
+message GetJobInfoByIDsOut {
+  repeated JobInfo job = 1;
+}

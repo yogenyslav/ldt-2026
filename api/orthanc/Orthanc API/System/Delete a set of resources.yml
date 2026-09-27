@@ -1,0 +1,44 @@
+info:
+  name: Delete a set of resources
+  type: http
+  seq: 11
+  tags:
+    - System
+
+http:
+  method: POST
+  url: "{{baseUrl}}/tools/bulk-delete"
+  body:
+    type: json
+    data: |-
+      {
+        "Resources": []
+      }
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5
+  forwardAuthorizationHeader: false
+
+examples:
+  - name: 200 Response
+    request:
+      url: "{{baseUrl}}/tools/bulk-delete"
+      method: POST
+      body:
+        type: json
+        data: |-
+          {
+            "Resources": []
+          }
+    response:
+      status: 200
+      statusText: OK
+      body:
+        type: text
+        data: ""
+
+docs: Delete all the DICOM patients, studies, series or instances whose identifiers are provided in the `Resources` field.
