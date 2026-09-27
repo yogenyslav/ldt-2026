@@ -1,0 +1,11 @@
+{
+ "presence_threshold": 0.3,
+ "inside_bone_radius_px": 2,
+ "keypoint_names": [
+  "большой_вертел",
+  "шейка_бедра",
+  "седалищная_кость"
+ ],
+ "backbone": "convnext_tiny.fb_in22k_ft_in1k",
+ "image_size": 224
+}
