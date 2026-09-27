@@ -19,17 +19,26 @@
   --bg:#f1f3f7; --surface:#fff; --surface-2:#f6f7fa; --surface-3:#eceef4;
   --line:#e7e9f0; --line-2:#d3d7e2; --ink:#14161f; --ink-2:#4a5068; --muted:#7b8196;
   --ok:#0f7a54; --ok-bg:#e4f5ec; --warn:#8f5d00; --warn-bg:#fdf2dc; --bad:#a8241d; --bad-bg:#fbe9e7;
+  --dead:#5a6b7f;
   --scan-bg:#0a1119; --scan-line:#1d2c3c; --scan-edge:#33506d; --scan-text:#8fa6bc; --scan-text-on:#d6e6f3;
 
-  /* оттенок по умолчанию — индиго */
-  --accent:#4b3fd4; --accent-strong:#3a2fb0; --accent-050:#f1efff; --accent-100:#ddd8ff; --accent-900:#171141;
+  /* оттенок по умолчанию — выбранный сине-фиолетовый */
+  --accent:#1e3f93; --accent-strong:#16306f; --accent-050:#eef2fa; --accent-100:#d2dcf1; --accent-900:#0b1440;
+
+  /* заливка при наведении: вдвое прозрачнее подложки 050, поэтому полупрозрачная,
+     а не сплошная — ложится и на белое, и на приглушённое */
+  --hover-fill: color-mix(in srgb, var(--accent) 5%, transparent);
 }
 
-/* ---------- оттенки ---------- */
+/* ---------- оттенки ----------
+   У сине-фиолетового средний тон уведён в тёмно-синий: на белом фоне
+   светлый тон того же угла читается заметно фиолетовее, чем в шапке. */
 .hue-indigo{ --accent:#4b3fd4; --accent-strong:#3a2fb0; --accent-050:#f1efff; --accent-100:#ddd8ff; --accent-900:#171141 }
-.hue-navy  { --accent:#2b3a9c; --accent-strong:#1f2b78; --accent-050:#eef0fb; --accent-100:#d2d8f4; --accent-900:#0b1440 }
+.hue-navy  { --accent:#1e3f93; --accent-strong:#16306f; --accent-050:#eef2fa; --accent-100:#d2dcf1; --accent-900:#0b1440 }
 .hue-plum  { --accent:#6b3f9e; --accent-strong:#54317c; --accent-050:#f7f0fc; --accent-100:#e7d8f5; --accent-900:#2b1247 }
 .hue-teal  { --accent:#0f6d78; --accent-strong:#0a555e; --accent-050:#ecf7f8; --accent-100:#c9e7ea; --accent-900:#062a2f }
+/* для сравнения: ярко-синий ЕМИАС и наш прежний акцент — один и тот же угол */
+.hue-emias { --accent:#0b63e5; --accent-strong:#0a4fb4; --accent-050:#eff5ff; --accent-100:#d6e6ff; --accent-900:#07182e }
 
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);
@@ -48,7 +57,7 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
   font:inherit;font-size:14px;font-weight:500;cursor:pointer}
 .pick i{width:12px;height:12px;border-radius:4px;display:block}
 .pick[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-050);color:var(--accent-strong)}
-.sw-indigo{background:#4b3fd4} .sw-navy{background:#2b3a9c} .sw-plum{background:#6b3f9e} .sw-teal{background:#0f6d78}
+.sw-indigo{background:#4b3fd4} .sw-navy{background:#1e3f93} .sw-plum{background:#6b3f9e} .sw-teal{background:#0f6d78} .sw-emias{background:#0b63e5}
 
 /* ---------- сетка экрана ---------- */
 .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:stretch}
@@ -122,7 +131,8 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
 .chips{display:flex;gap:8px;margin-bottom:12px}
 .chip{height:34px;padding:0 14px;border-radius:11px;border:1px solid var(--line-2);background:var(--surface);
   color:var(--ink-2);font:inherit;font-size:14px;font-weight:500;display:inline-flex;align-items:center;cursor:pointer}
-.chip.on{border-color:var(--accent);background:var(--accent);color:#fff}
+.chip{border-width:1.5px}
+.chip.on{border-color:var(--accent);background:var(--accent-050);color:var(--accent-strong);font-weight:600}
 .area{border-radius:11px;border:1px solid var(--line-2);background:var(--surface);
   padding:11px 14px;color:var(--muted);font-size:15px;min-height:70px}
 .entry{display:flex;gap:12px;padding:12px 0;border-top:1px solid var(--line)}
@@ -166,10 +176,9 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
    Единственная плашка с подъёмом над фоном — но тень мягкая,
    без объёма прошлой версии.
    ============================================================ */
-.reviewer{display:grid;grid-template-columns:minmax(320px,1fr) minmax(430px,520px);gap:18px;align-items:stretch}
-.review{display:flex;flex-direction:column;overflow:hidden;border-radius:18px;background:var(--surface);
-  border:1px solid var(--line);
-  box-shadow:0 1px 2px rgba(20,22,31,.04), 0 18px 36px -20px rgba(20,22,31,.38)}
+.reviewer{max-width:560px}
+.review{display:flex;flex-direction:column;overflow:hidden;border-radius:16px;background:var(--surface);
+  border:1px solid var(--line)}
 .verdict{display:flex;align-items:center;gap:16px;padding:20px 22px;border-bottom:1px solid transparent}
 .verdict .mark{display:flex;align-items:center;justify-content:center;width:56px;height:56px;flex:none;border-radius:18px}
 .verdict h3{font-size:26px;letter-spacing:-.03em;line-height:1.1}
@@ -190,14 +199,18 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
 .v-solid .verdict p{color:rgba(255,255,255,.78)}
 .v-solid .verdict .mark{background:rgba(255,255,255,.18);color:#fff}
 
-.crit{flex:1}
+.crit{flex:1;padding:0 12px 10px}
 /* колонки заголовка и строк совпадают: критерий · значение · норма */
 .crit .caps,.crit .row{display:grid;grid-template-columns:30px 1fr 124px 88px 18px;gap:13px;align-items:center}
-.crit .caps{padding:14px 22px 9px;color:var(--muted);font-size:13.5px}
+.crit .caps{padding:14px 12px 8px;color:var(--muted);font-size:13.5px}
 .crit .caps .r{text-align:right}
-.crit .row{padding:12px 22px;border-top:1px solid var(--line);cursor:pointer;transition:background .15s}
-/* контур при наведении — тот же приём, что у карточек выбора на входе */
-.crit .row:hover{background:var(--accent-050);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, #fff)}
+
+/* Строка и её пояснение — один блок: скруглён, как всё остальное,
+   разделителей нет, ритм задаёт отступ между блоками. */
+.crit .item{border-radius:12px;transition:background .15s,box-shadow .15s}
+.crit .item + .item{margin-top:3px}
+.crit .row{padding:11px 12px;border-radius:12px;cursor:pointer;transition:background .15s,box-shadow .15s}
+.crit .row:hover{background:var(--hover-fill);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, #fff)}
 .crit .st{display:flex;align-items:center;justify-content:center;width:30px;height:30px;flex:none;
   border-radius:9px;font-weight:700;font-size:14px}
 .st.ok{background:var(--ok-bg);color:var(--ok)} .st.warn{background:var(--warn-bg);color:var(--warn)}
@@ -205,23 +218,57 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
 .crit .nm{font-weight:600;font-size:15.5px}
 .crit .val{text-align:right;font-weight:600;font-size:15.5px;white-space:nowrap;font-variant-numeric:tabular-nums}
 .crit .norm{text-align:right;font-size:13.5px;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
-.crit .arr{color:var(--line-2)}
+.crit .arr{color:var(--line-2);transition:transform .2s,color .15s}
 .crit .row:hover .arr{color:var(--accent)}
-.crit .row.open{background:var(--accent-050)}
-.crit .row.open .arr{color:var(--accent);transform:rotate(90deg)}
-.crit .exp{margin:0;padding:16px 22px;background:var(--surface-3);color:var(--ink);font-size:15px;line-height:1.5;
-  box-shadow:inset 0 2px 4px -2px rgba(20,22,31,.18)}
+.crit .item.open .arr{color:var(--accent);transform:rotate(90deg)}
+.crit .exp{display:none;margin:0;padding:0 12px 13px 55px;font-size:14.5px;line-height:1.5;color:var(--ink-2)}
+.crit .item.open .exp{display:block}
+
+/* состояние критерия — источник цвета для варианта «по состоянию» */
+.item.s-bad { --state:var(--bad);  --tint:var(--bad-bg);  --edge:#efaaa3 }
+.item.s-warn{ --state:var(--warn); --tint:var(--warn-bg); --edge:#e8c57e }
+.item.s-ok  { --state:var(--ok);   --tint:var(--ok-bg);   --edge:#a5d9c1 }
+.item.s-dead{ --state:var(--dead); --tint:#edf1f5;        --edge:#c9d4e0 }
+
+/* --- вариант 1: единый блок акцентом --- */
+.c-one .item.open{background:var(--accent-050);box-shadow:inset 0 0 0 1.5px var(--accent)}
+.c-one .item.open .row{background:transparent;box-shadow:none}
+.c-one .item.open .exp{color:var(--ink)}
+
+/* --- вариант 2: цвет блока от состояния критерия ---
+   Наведение здесь тоже красится состоянием: иначе строка сначала синеет,
+   а при раскрытии перекрашивается, и цвет скачет. Формула та же, что у
+   акцентного наведения, только цвет берётся от критерия. */
+.c-state .row:hover{background:color-mix(in srgb, var(--state) 6%, transparent);
+  box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--state) 40%, #fff)}
+.c-state .row:hover .arr{color:var(--state)}
+.c-state .item.open{background:var(--tint);box-shadow:inset 0 0 0 1.5px var(--edge)}
+.c-state .item.open .row{background:transparent;box-shadow:none}
+.c-state .item.open .row:hover{background:transparent;box-shadow:none}
+.c-state .item.open .arr{color:var(--state)}
+.c-state .item.open .exp{color:var(--ink)}
+
+/* --- вариант 3: отдельные карточки с цветной гранью --- */
+.c-card .item{position:relative;overflow:hidden;background:var(--surface);
+  box-shadow:inset 0 0 0 1px var(--line)}
+.c-card .item::before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:var(--edge)}
+.c-card .row{padding-left:16px}
+.c-card .item + .item{margin-top:6px}
+.c-card .item.open{box-shadow:inset 0 0 0 1.5px var(--accent)}
+.c-card .item.open .exp{color:var(--ink)}
+
 .acts{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:16px 18px;border-top:1px solid var(--line)}
 .btn.lg{height:52px;border-radius:13px;font-size:16px;justify-content:center}
 .btn.ok{border-color:var(--ok);background:var(--ok);color:#fff}
 .btn.bad{border-color:var(--bad);background:var(--bad);color:#fff}
-.scanbox{display:flex;align-items:center;justify-content:center;border:1px solid var(--scan-line);
-  border-radius:12px;background:var(--scan-bg);padding:18px;min-height:420px}
-.scanbox img{max-height:380px;max-width:100%;border-radius:6px}
 
 /* ============================================================
    Микро-тулкит: мелкие элементы в том же оттенке и приёме,
    чтобы переносить в код одним махом.
+
+   Выделение везде одно и то же — как у карточек «Приём с аппарата»:
+   контур 1,5 пикселя акцентом и сплошная подложка 050.
+   Наведение — тот же контур, но заливка вдвое прозрачнее.
    ============================================================ */
 .kit{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:16px}
 .kit .box{border:1px solid var(--line);border-radius:14px;background:var(--surface);padding:15px 17px}
@@ -236,7 +283,8 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
 .zone i{width:8px;height:8px;border-radius:50%;display:block}
 .input{display:flex;align-items:center;height:44px;padding:0 14px;border-radius:12px;
   border:1px solid var(--line-2);background:var(--surface);color:var(--muted);font-size:15px}
-.input.on{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-100);color:var(--ink)}
+.input{border-width:1.5px}
+.input.on{border-color:var(--accent);background:var(--accent-050);color:var(--ink)}
 .steps{display:flex;align-items:center;flex-wrap:wrap;gap:6px}
 .step{display:inline-flex;align-items:center;gap:8px;color:var(--muted);font-size:14px}
 .step i{display:flex;align-items:center;justify-content:center;width:22px;height:22px;border-radius:50%;
@@ -248,7 +296,8 @@ h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.02em}
   padding:12px 14px;border-radius:10px;border-top:1px solid var(--line);font-size:14.5px;
   cursor:pointer;transition:background .15s}
 .qrow:first-of-type{border-top:0}
-.qrow:hover{background:var(--accent-050);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, #fff)}
+.qrow:hover{background:var(--hover-fill);box-shadow:inset 0 0 0 1.5px color-mix(in srgb, var(--accent) 45%, #fff)}
+.qrow.sel{background:var(--accent-050);box-shadow:inset 0 0 0 1.5px var(--accent)}
 .qrow .pt{font-weight:600}
 .qrow .tm{color:var(--ink-2);font-variant-numeric:tabular-nums}
 .toast{display:inline-flex;align-items:center;gap:10px;padding:11px 15px;border-radius:12px;
@@ -265,33 +314,40 @@ svg{display:block}
 <div class="wrap">
 
 <h1 style="font-size:30px;letter-spacing:-.03em">Лаборатория стиля</h1>
-<p class="lead">Структура — вариант А, он остаётся. Меняем две вещи, чтобы уйти от ЕМИАС:
-<b>оттенок</b> (там ярко-синий) и <b>приём выделения заголовка</b> (там его нет вовсе — карточка
-опознаётся по бледно-голубой плитке под иконкой, ровно как было у нас). Щёлкайте комбинации.</p>
+<p class="lead"><b>Зафиналено:</b> сине-фиолетовый, угловая метка, мягкий вердикт, критерии — цвет
+по состоянию, пунктир у загрузки. Так страница и открывается, переключатели оставлены для сверки.
+Последний оттенок в ряду — ярко-синий ЕМИАС, он же наш прежний акцент: видно, от чего ушли.</p>
 
 <div class="bar">
   <section>
     <h4>Оттенок</h4>
-    <button class="pick" data-hue="hue-indigo" aria-pressed="true"><i class="sw-indigo"></i>Индиго</button>
-    <button class="pick" data-hue="hue-navy" aria-pressed="false"><i class="sw-navy"></i>Сине-фиолетовый</button>
+    <button class="pick" data-hue="hue-indigo" aria-pressed="false"><i class="sw-indigo"></i>Индиго</button>
+    <button class="pick" data-hue="hue-navy" aria-pressed="true"><i class="sw-navy"></i>Сине-фиолетовый</button>
     <button class="pick" data-hue="hue-plum" aria-pressed="false"><i class="sw-plum"></i>Сливовый</button>
     <button class="pick" data-hue="hue-teal" aria-pressed="false"><i class="sw-teal"></i>Хвойный</button>
+    <button class="pick" data-hue="hue-emias" aria-pressed="false"><i class="sw-emias"></i>ЕМИАС, для сравнения</button>
   </section>
   <section>
     <h4>Приём</h4>
-    <button class="pick" data-t="t-plain" aria-pressed="true">Ровная</button>
+    <button class="pick" data-t="t-plain" aria-pressed="false">Ровная</button>
     <button class="pick" data-t="t-strip" aria-pressed="false">Лента заголовка</button>
     <button class="pick" data-t="t-dark" aria-pressed="false">Тёмная шапка</button>
-    <button class="pick" data-t="t-mark" aria-pressed="false">Угловая метка</button>
+    <button class="pick" data-t="t-mark" aria-pressed="true">Угловая метка</button>
   </section>
   <section>
     <h4>Вердикт</h4>
     <button class="pick" data-v="v-soft" aria-pressed="true">Мягкий</button>
     <button class="pick" data-v="v-solid" aria-pressed="false">Заливка</button>
   </section>
+  <section>
+    <h4>Критерии</h4>
+    <button class="pick" data-c="c-one" aria-pressed="false">Единый блок</button>
+    <button class="pick" data-c="c-state" aria-pressed="true">Цвет по состоянию</button>
+    <button class="pick" data-c="c-card" aria-pressed="false">Карточки</button>
+  </section>
 </div>
 
-<div id="stage" class="hue-indigo t-plain v-soft">
+<div id="stage" class="hue-navy t-mark v-soft c-state">
 
   <div class="topbar">
     <span class="brand">
@@ -426,14 +482,13 @@ svg{display:block}
   <!-- ===================== разбор снимка ===================== -->
   <div class="sep">
     <h2>Разбор снимка у лаборанта</h2>
-    <p>Главный экран системы: вердикт, критерии с пояснением и решение. Единственная плашка, которая
-       приподнята над фоном, — но подъём мягкий, без прежнего объёма. Переключатель «Вердикт» наверху
-       меняет шапку: тонированная или залитая цветом.</p>
+    <p>Вердикт, критерии с пояснением и решение. Плоская, как и всё остальное: подъёма над фоном
+       больше нигде нет. Строки кликабельны — нажмите, чтобы раскрыть пояснение. Наверху два
+       переключателя про эту плашку: «Вердикт» меняет шапку, «Критерии» — как выглядит раскрытая
+       строка.</p>
   </div>
 
   <div class="reviewer">
-    <div class="scanbox"><img src="assets/scan-spine.png" alt="снимок позвоночника"></div>
-
     <div class="review">
       <div class="verdict bad">
         <span class="mark"><svg width="30" height="30" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg></span>
@@ -448,13 +503,26 @@ svg{display:block}
           <span></span><span>Критерий</span><span class="r">Значение</span><span class="r">Норма</span><span></span>
         </div>
 
-        <div class="row open"><span class="st bad">✕</span><span class="nm">Гребни подвздошных костей</span><span class="val">левый вне кадра</span><span class="norm">обе</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
-        <p class="exp">Гребень слева не попал в кадр. Сместите зону сканирования ниже, чтобы верхние
-          края подвздошных костей были видны, и повторите снимок.</p>
+      <div class="item s-bad open">
+        <div class="row"><span class="st bad">✕</span><span class="nm">Гребни подвздошных костей</span><span class="val">левый вне кадра</span><span class="norm">обе</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Гребень слева не попал в кадр. Сместите зону сканирования ниже, чтобы верхние края подвздошных костей были видны, и повторите снимок.</p>
+      </div>
 
+      <div class="item s-warn">
         <div class="row"><span class="st warn">!</span><span class="nm">Посторонние предметы</span><span class="val">возможна застёжка</span><span class="norm">нет</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Найден предмет, похожий на застёжку. Признак слабый, поэтому посмотрите на снимок сами: если предмет попадает в зону измерения, переснимите.</p>
+      </div>
+
+      <div class="item s-ok">
         <div class="row"><span class="st ok">✓</span><span class="nm">Ось позвоночника</span><span class="val">1,9°</span><span class="norm">до 5°</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Ось отклонена на 1,9° при допуске 5°. Укладка в норме.</p>
+      </div>
+
+      <div class="item s-dead">
         <div class="row"><span class="st dead">–</span><span class="nm">Ротация бедра</span><span class="val">не измерена</span><span class="norm">1,0–4,4 мм</span><span class="arr"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 18l6-6-6-6"/></svg></span></div>
+        <p class="exp">Ротацию не измеряли: не найдены опорные точки бедра.</p>
+      </div>
+
       </div>
 
       <div class="acts">
@@ -507,7 +575,7 @@ svg{display:block}
     </div>
 
     <div class="box">
-      <h4>Поля</h4>
+      <h4>Поля — обычное и в фокусе</h4>
       <div class="input">Кабинет 3 · денситометрия</div>
       <div class="input on" style="margin-top:10px">в фокусе</div>
     </div>
@@ -523,9 +591,10 @@ svg{display:block}
     </div>
 
     <div class="box wide">
-      <h4>Строка очереди</h4>
+      <h4>Строка очереди — обычная, при наведении, выбранная</h4>
       <div class="qrow"><span class="tm">11:14</span><span class="pt">P-10428 · 3 снимка</span><span class="badge bad">✕ Переснять</span><span style="color:var(--muted)">не разобрано</span></div>
       <div class="qrow"><span class="tm">10:42</span><span class="pt">P-10429 · 2 снимка</span><span class="badge ok">✓ Корректно</span><span style="color:var(--muted)">разобрано</span></div>
+      <div class="qrow sel"><span class="tm">10:05</span><span class="pt">P-10431 · 3 снимка</span><span class="badge warn">! Нужен взгляд</span><span style="color:var(--muted)">выбрана</span></div>
     </div>
 
     <div class="box">
@@ -551,13 +620,18 @@ svg{display:block}
 </div>
 
 <script>
-/* Переключатели: класс оттенка и класс приёма живут на одном контейнере. */
+/* Строки критериев раскрываются по клику — как в системе. */
+document.querySelectorAll('.crit .row').forEach((row) => {
+  row.addEventListener('click', () => row.parentElement.classList.toggle('open'))
+})
+
+/* Переключатели: классы оттенка, приёма и вариантов живут на одном контейнере. */
 const stage = document.getElementById('stage')
 
 document.querySelectorAll('.pick').forEach((button) => {
   button.addEventListener('click', () => {
-    const group = button.dataset.hue ? 'hue' : button.dataset.v ? 'v' : 't'
-    const value = button.dataset.hue ?? button.dataset.v ?? button.dataset.t
+    const group = ['hue', 't', 'v', 'c'].find((name) => button.dataset[name])
+    const value = button.dataset[group]
 
     document.querySelectorAll(`.pick[data-${group}]`).forEach((other) => {
       other.setAttribute('aria-pressed', String(other === button))
