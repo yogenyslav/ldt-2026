@@ -31,6 +31,7 @@ func (s *Storage) findUserByColumn(ctx context.Context, columnName string, value
 	query, args, err := sq.Select("id", "organization_id", "full_name", "email", "password_hash", "role").
 		From("user").
 		Where(sq.Eq{columnName: value}).
+		PlaceholderFormat(sq.Dollar).
 		ToSql()
 	if err != nil {
 		return User{}, err
