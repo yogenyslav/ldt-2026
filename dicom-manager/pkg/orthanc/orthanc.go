@@ -31,7 +31,7 @@ func New() (*Orthanc, error) {
 		return nil, fmt.Errorf("read orthanc config from env: %w", err)
 	}
 
-	addr := net.JoinHostPort(cfg.Host, cfg.Port)
+	addr := "http://" + net.JoinHostPort(cfg.Host, cfg.Port)
 	client, err := orthanc.NewClientWithResponses(
 		addr, orthanc.WithRequestEditorFn(authorizationHeader(cfg.User, cfg.Password)),
 	)

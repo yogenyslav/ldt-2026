@@ -52,17 +52,29 @@ receivers:
                 service: 'grafana'
                 group: 'infrastructure'
 
-        # Scrape from the DICOM services services.
+        # Сбор метрик HTTP-сервиса, gRPC-сервиса и фоновых процессов DICOM.
         - job_name: 'dicom-services'
           scrape_interval: 2s
           static_configs:
-#            - targets: [ 'dicom-manager:10000' ]
-#              labels:
-#                service: 'dicom-manager'
-#                group: 'dicom'
-            - targets: [ 'dicom-worker:11000' ]
+            - targets: ['dicom-manager:9100']
+              labels:
+                service: 'dicom-manager'
+                group: 'dicom'
+            - targets: ['dicom-manager-job-listener:9100']
+              labels:
+                service: 'dicom-manager-job-listener'
+                group: 'dicom'
+            - targets: ['dicom-worker:9100']
               labels:
                 service: 'dicom-worker'
+                group: 'dicom'
+            - targets: ['dicom-worker-outbox:9100']
+              labels:
+                service: 'dicom-worker-outbox'
+                group: 'dicom'
+            - targets: ['dicom-worker-result-listener:9100']
+              labels:
+                service: 'dicom-worker-result-listener'
                 group: 'dicom'
 
 # Define processors to process received data.

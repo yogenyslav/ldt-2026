@@ -5,7 +5,7 @@ create index if not exists idx_dicom_file_organization_id on dicom_file (organiz
 
 create index if not exists idx_dicom_job_result_dicom_file_id on dicom_job_result (dicom_file_id);
 
-create index if not exists idx_report_dicom_job_result_id on report (dicom_job_result_id);
+create index if not exists idx_report_dicom_job_result_id on report using gin (dicom_job_result_ids);
 create index if not exists idx_report_creator_id on report (creator_id);
 
 -- +goose Down

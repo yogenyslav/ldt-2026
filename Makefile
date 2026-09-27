@@ -116,3 +116,7 @@ run-manager-build:
 stop-manager:
 	@echo "stopping dicom manager"
 	@docker compose -f dicom-manager/compose.yaml --env-file .env down
+
+.PHONY: test-integration
+test-integration:
+	@bash scripts/test-integration.sh

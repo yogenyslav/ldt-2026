@@ -38,7 +38,7 @@ func (s *Storage) SaveDicomFiles(ctx context.Context, dicoms []Dicom) error {
 		return err
 	}
 
-	_, err = s.db.Exec(ctx, query, args...)
+	_, err = s.db.TxExec(ctx, query, args...)
 	return err
 }
 

@@ -10,16 +10,20 @@ services:
     restart: unless-stopped
     command: ["./service"]
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - ../.env
     environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - NATS_REPLICAS=3
+      - METRICS_ADDR=:9100
       - APP_NAME=dicom-worker
       - DB_USER=${DICOM_WORKER_DB_USER}
       - DB_PASSWORD=${DICOM_WORKER_DB_PASSWORD}
       - DB_NAME=${DICOM_WORKER_DB_NAME}
-      - DB_HOST=${DICOM_WORKER_DB_HOST}
-      - DB_PORT=${DICOM_WORKER_DB_PORT}
+      - DB_HOST=dicom-worker-postgres
+      - DB_PORT=5432
     ports:
       - "127.0.0.1:11000:${DICOM_WORKER_PORT:-11000}"
     networks:
@@ -34,16 +38,46 @@ services:
     restart: unless-stopped
     command: ["./outbox"]
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     env_file:
       - ../.env
     environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - NATS_REPLICAS=3
+      - METRICS_ADDR=:9100
       - APP_NAME=dicom-worker-outbox
       - DB_USER=${DICOM_WORKER_DB_USER}
       - DB_PASSWORD=${DICOM_WORKER_DB_PASSWORD}
       - DB_NAME=${DICOM_WORKER_DB_NAME}
-      - DB_HOST=${DICOM_WORKER_DB_HOST}
-      - DB_PORT=${DICOM_WORKER_DB_PORT}
+      - DB_HOST=dicom-worker-postgres
+      - DB_PORT=5432
+    networks:
+      - dicom-network
+
+  dicom-worker-result-listener:
+    build:
+        context: .
+        dockerfile: Dockerfile
+        target: prod
+    container_name: dicom-worker-result-listener
+    restart: unless-stopped
+    command: ["./result_listener"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
+      - NATS_REPLICAS=3
+      - METRICS_ADDR=:9100
+      - APP_NAME=dicom-worker-result-listener
+      - DB_USER=${DICOM_WORKER_DB_USER}
+      - DB_PASSWORD=${DICOM_WORKER_DB_PASSWORD}
+      - DB_NAME=${DICOM_WORKER_DB_NAME}
+      - DB_HOST=dicom-worker-postgres
+      - DB_PORT=5432
     networks:
       - dicom-network
 
@@ -63,7 +97,7 @@ services:
       - POSTGRES_PASSWORD=${DICOM_WORKER_DB_PASSWORD}
       - POSTGRES_DB=${DICOM_WORKER_DB_NAME}
     ports:
-      - "127.0.0.1:5432:5432"
+      - "127.0.0.1:${DICOM_WORKER_DB_PORT:-5433}:5432"
     networks:
       - dicom-network
 

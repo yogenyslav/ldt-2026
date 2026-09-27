@@ -24,7 +24,7 @@ type Config struct {
 	Host      string `env:"DICOM_MANAGER_S3_HOST"`
 	Port      string `env:"DICOM_MANAGER_S3_PORT"`
 	AccessKey string `env:"S3_ACCESS_KEY"`
-	SecretKey string `env:"S3_SECRET_KET"`
+	SecretKey string `env:"S3_SECRET_KEY"`
 	Bucket    string `env:"DICOM_MANAGER_S3_BUCKET"`
 }
 

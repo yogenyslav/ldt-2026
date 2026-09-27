@@ -158,7 +158,6 @@ func (uc *Usecase) UploadDicomFiles(
 func dicomsToZip(dicoms []RawDicomData) ([]byte, error) {
 	buf := bytes.NewBuffer(nil)
 	zipWriter := zip.NewWriter(buf)
-	defer zipWriter.Close()
 
 	for _, dicom := range dicoms {
 		w, err := zipWriter.Create(dicom.FileName)
@@ -171,5 +170,8 @@ func dicomsToZip(dicoms []RawDicomData) ([]byte, error) {
 		}
 	}
 
+	if err := zipWriter.Close(); err != nil {
+		return nil, fmt.Errorf("failed to finalize dicom zip: %w", err)
+	}
 	return buf.Bytes(), nil
 }
