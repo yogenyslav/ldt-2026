@@ -18,6 +18,10 @@ const store = {
 
 const delay = (ms = 120) => new Promise((resolve) => setTimeout(resolve, ms))
 
+/* Настоящая ручка каждый раз отдаёт свежий JSON. Возвращаем копию, иначе
+   react-query получит те же ссылки, что уже держит, и не заметит изменений. */
+const clone = <T,>(value: T): T => structuredClone(value)
+
 function reply<T>(config: InternalAxiosRequestConfig, data: T, status = 200): AxiosResponse<T> {
   return {
     data,
@@ -77,14 +81,14 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     const offset = Number(query.get('offset') ?? 0)
     const limit = Number(query.get('limit') ?? 10)
     const sorted = [...store.jobs].sort((a, b) => b.created_at.localeCompare(a.created_at))
-    return reply(config, { jobs: sorted.slice(offset, offset + limit) })
+    return reply(config, { jobs: clone(sorted.slice(offset, offset + limit)) })
   }
 
   if (method === 'get' && url.startsWith('/job/info/')) {
     const id = url.split('/')[3]
     const job = store.jobs.find((item) => item.id === id)
     if (!job) return fail(config, 404, 'Задача не найдена')
-    return reply(config, { job })
+    return reply(config, { job: clone(job) })
   }
 
   if (method === 'post' && url === '/job/result/decision') {
@@ -127,14 +131,14 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
   /* --- отчёты --- */
   if (method === 'get' && url === '/report') {
-    return reply(config, { reports: store.reports })
+    return reply(config, { reports: clone(store.reports) })
   }
 
   if (method === 'get' && url.startsWith('/report/')) {
     const id = Number(url.split('/')[2])
     const report = store.reports.find((item) => item.id === id)
     if (!report) return fail(config, 404, 'Отчёт не найден')
-    return reply(config, { report })
+    return reply(config, { report: clone(report) })
   }
 
   if (method === 'post' && url === '/report/generate') {

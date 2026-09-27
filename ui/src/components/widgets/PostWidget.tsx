@@ -206,15 +206,20 @@ const PostWidget = () => {
         prevHead={prevHead}
       />
 
-      <div className="flex min-h-0 flex-col overflow-auto">
-        <div className="flex flex-col overflow-hidden rounded-panel bg-surface shadow-card">
+      {/* Панель центрируется по вертикали относительно окна снимка.
+          my-auto вместо justify-center: центрирует, когда есть запас высоты.
+          max-h-full не даёт панели вылезти за экран — вместо этого
+          прокручивается только список критериев, а вердикт и кнопки
+          остаются на месте. Экран лаборанта не листается целиком. */}
+      <div className="flex min-h-0 flex-col">
+        <div className="my-auto flex max-h-full min-h-0 flex-col overflow-hidden rounded-panel bg-surface shadow-card">
           {showPrev ? (
-            <div className="bg-brand-050 px-[22px] py-2.5 small-regular font-medium text-brand-700">
+            <div className="shrink-0 bg-brand-050 px-[22px] py-2.5 small-regular font-medium text-brand-700">
               Разбор предыдущей попытки, {timeOf(shown.created_at)}
             </div>
           ) : null}
 
-          <div className={cn('flex items-center gap-4.5 border-b px-6 py-6', tone.box)}>
+          <div className={cn('flex shrink-0 items-center gap-4.5 border-b px-6 py-6', tone.box)}>
             <span className={cn('flex-center h-15 w-15 flex-none rounded-full border-2', tone.icon)}>
               <Icon size={32} strokeWidth={2.4} />
             </span>
@@ -231,18 +236,20 @@ const PostWidget = () => {
             </div>
           </div>
 
-          {shown.status === 'failed' ? (
-            <div className="p-[22px]">
-              <p className="m-0 base-regular">
-                Переснимите исследование. Если ошибка повторится, сообщите в центр обработки.
-              </p>
-              <p className="mt-2.5 mb-0 base-regular text-ink-2">{shown.error}</p>
-            </div>
-          ) : (
-            <CriteriaList job={shown} />
-          )}
+          <div className="min-h-0 overflow-auto">
+            {shown.status === 'failed' ? (
+              <div className="p-[22px]">
+                <p className="m-0 base-regular">
+                  Переснимите исследование. Если ошибка повторится, сообщите в центр обработки.
+                </p>
+                <p className="mt-2.5 mb-0 base-regular text-ink-2">{shown.error}</p>
+              </div>
+            ) : (
+              <CriteriaList job={shown} />
+            )}
+          </div>
 
-          <div className="mt-auto border-t border-line p-4.5">
+          <div className="shrink-0 border-t border-line p-4.5">
             <div className="grid grid-cols-2 gap-2.5">{actions}</div>
           </div>
         </div>
