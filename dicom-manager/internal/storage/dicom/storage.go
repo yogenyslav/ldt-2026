@@ -46,7 +46,7 @@ func (s *Storage) SaveDicomFiles(ctx context.Context, dicoms []Dicom) error {
 func (s *Storage) GetByID(ctx context.Context, id string) (Dicom, error) {
 	const query = `select 
 						id, file_name, series_id, study_id, dicom_series_uid, dicom_study_uid, dicom_image_uid, 
-						creator_id, organization_id, created_at, updated_at
+						creator_id, organization_id, created_at
 					from dicom_file where id = $1;`
 
 	var dicom Dicom
