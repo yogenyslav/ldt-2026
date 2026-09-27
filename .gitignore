@@ -32,9 +32,26 @@ go.work.sum
 .vscode/
 
 .DS_Store
-data/
+
+# Python
+__pycache__/
 .mypy_cache/
+*.pyc
 venv/
+.venv/
+
+# Datasets and medical images: never in the repository
+/data/
+dicom-analyzer/examples/
+dicom-analyzer/out/
+
+# Model weights: too large for git, delivered separately
+dicom-analyzer/models/*.pt
+
+# Frontend build artifacts
+node_modules/
+dist/
+.vite/
+
 context/
 qc_prototype
-ui/node_modules
