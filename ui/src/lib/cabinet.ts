@@ -23,21 +23,43 @@ export interface ICabinet {
   software: string
 }
 
-export const EMPTY_CABINET: ICabinet = {
+/* Filled in at installation: the organisation of the account and the one
+   densitometer the service works with. Only the room number is left for the
+   technologist — that is the single field nobody can know in advance. */
+export const DEFAULT_CABINET: ICabinet = {
   intake: 'device',
-  clinic: '',
+  clinic: 'Городская поликлиника № 218',
   room: '',
-  device: '',
-  software: '',
+  device: 'GE Lunar Prodigy Advance',
+  software: 'enCORE 18.41.005',
+}
+
+const TEXT_FIELDS = ['clinic', 'room', 'device', 'software'] as const
+
+/* An empty stored string means "never filled in", not "deliberately blank", so
+   it does not shadow the installation value. Without this an early version of
+   the card, which saved on every keystroke, could leave the station with four
+   empty fields for good. */
+function merge(saved: Partial<ICabinet>): ICabinet {
+  const cabinet = { ...DEFAULT_CABINET }
+
+  if (saved.intake === 'device' || saved.intake === 'upload') cabinet.intake = saved.intake
+
+  for (const field of TEXT_FIELDS) {
+    const value = saved[field]
+    if (typeof value === 'string' && value.trim()) cabinet[field] = value
+  }
+
+  return cabinet
 }
 
 export function readCabinet(): ICabinet {
   try {
     const raw = window.localStorage.getItem(KEY)
-    if (!raw) return EMPTY_CABINET
-    return { ...EMPTY_CABINET, ...(JSON.parse(raw) as Partial<ICabinet>) }
+    if (!raw) return DEFAULT_CABINET
+    return merge(JSON.parse(raw) as Partial<ICabinet>)
   } catch {
-    return EMPTY_CABINET
+    return DEFAULT_CABINET
   }
 }
 
@@ -49,6 +71,6 @@ export function writeCabinet(cabinet: ICabinet) {
   }
 }
 
-/* Until the room is filled in, the header says so instead of showing the name
-   of somebody else's clinic. */
-export const isConfigured = (cabinet: ICabinet) => !!cabinet.clinic.trim()
+/* Until the room is named, the header asks for it instead of pretending the
+   station is set up. */
+export const isConfigured = (cabinet: ICabinet) => !!cabinet.room.trim()

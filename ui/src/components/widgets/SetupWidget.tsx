@@ -16,15 +16,13 @@ const SetupWidget = () => {
           <span className="small-regular text-muted">режим приёма, смена, статистика</span>
         </div>
 
-        <div className="grid grid-cols-[minmax(420px,1fr)_minmax(420px,1fr)] items-start gap-5">
-          <div className="flex flex-col gap-5">
-            <IntakeCard />
-            <CabinetCard />
-          </div>
-          <div className="flex flex-col gap-5">
-            <StatsCard />
-            <JournalCard />
-          </div>
+        {/* Two rows: what the room works by on top, the calmer things below.
+            items-stretch keeps the pair of panels in a row the same height. */}
+        <div className="grid grid-cols-2 items-stretch gap-4.5">
+          <IntakeCard />
+          <StatsCard />
+          <CabinetCard />
+          <JournalCard />
         </div>
       </div>
     </div>

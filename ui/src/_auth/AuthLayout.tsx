@@ -32,7 +32,7 @@ const AuthLayout = () => {
           </p>
         </div>
 
-        <div className="text-[13px] text-white/40">Прототип. Данные синтетические.</div>
+        <div className="text-[13px] text-white/40">Доступ только для сотрудников</div>
       </aside>
 
       <div className="flex-center bg-surface px-6 py-11">

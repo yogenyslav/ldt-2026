@@ -1,16 +1,21 @@
+import { useState } from 'react'
+import { Check, Pencil, X } from 'lucide-react'
+import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Input from '@/components/ui/input'
 import Label from '@/components/ui/label'
+import { useToast } from '@/components/ui/toast'
 import { useCabinet } from '@/context/CabinetContext'
-import { useCurrentUser, useOrgId } from '@/hooks/useUser'
+import { useCurrentUser } from '@/hooks/useUser'
 import type { ICabinet } from '@/lib/cabinet'
 
-/* Where we are and who is working. The specialist comes from the backend; the
-   room does not — the organisation table has a name, but no endpoint exposes it,
-   so the four fields below are filled in once during setup.
-   context/backend_requests.md */
+/* Where we are and who is working. Read-only by default: the data is filled in
+   once at installation, and a value that can be overwritten by a stray click is
+   worse than no value at all. */
 
-const FIELDS: Array<{ key: keyof ICabinet; label: string; placeholder: string }> = [
+type Field = 'clinic' | 'room' | 'device' | 'software'
+
+const FIELDS: Array<{ key: Field; label: string; placeholder: string }> = [
   { key: 'clinic', label: 'Организация', placeholder: 'Городская поликлиника № 218' },
   { key: 'room', label: 'Кабинет', placeholder: 'Кабинет 3 · денситометрия' },
   { key: 'device', label: 'Аппарат', placeholder: 'GE Lunar Prodigy Advance' },
@@ -20,35 +25,89 @@ const FIELDS: Array<{ key: keyof ICabinet; label: string; placeholder: string }>
 const CabinetCard = () => {
   const { cabinet, update } = useCabinet()
   const { data: user } = useCurrentUser()
-  const orgId = useOrgId()
+  const { toast } = useToast()
+
+  const [draft, setDraft] = useState<ICabinet | null>(null)
+
+  const save = () => {
+    if (!draft) return
+    update({
+      clinic: draft.clinic.trim(),
+      room: draft.room.trim(),
+      device: draft.device.trim(),
+      software: draft.software.trim(),
+    })
+    setDraft(null)
+    toast({ title: 'Данные кабинета сохранены' })
+  }
 
   return (
     <Card>
       <CardHead>
         <span className="h3-bold">Кабинет и специалист</span>
+        <span className="flex-1" />
+        <span className="small-regular text-muted">{user?.full_name ?? '—'}</span>
       </CardHead>
 
-      <CardBody className="grid grid-cols-2 gap-3.5 pt-0">
-        {FIELDS.map((field) => (
-          <div key={field.key}>
-            <Label htmlFor={field.key}>{field.label}</Label>
-            <Input
-              id={field.key}
-              placeholder={field.placeholder}
-              value={String(cabinet[field.key])}
-              onChange={(event) => update({ [field.key]: event.target.value })}
-            />
+      <CardBody className="flex-1 pt-0">
+        {draft ? (
+          <div className="grid grid-cols-2 gap-3.5">
+            {FIELDS.map((field) => (
+              <div key={field.key}>
+                <Label htmlFor={field.key}>{field.label}</Label>
+                <Input
+                  id={field.key}
+                  placeholder={field.placeholder}
+                  value={draft[field.key]}
+                  autoFocus={field.key === 'room'}
+                  onChange={(event) => setDraft({ ...draft, [field.key]: event.target.value })}
+                />
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-soft border border-line bg-line">
+            {FIELDS.map((field) => (
+              <div key={field.key} className="bg-surface px-4 py-3">
+                <div className="text-[13px] text-muted">{field.label}</div>
+                <div
+                  className={
+                    cabinet[field.key]
+                      ? 'mt-0.5 base-semibold'
+                      : 'mt-0.5 base-regular text-muted'
+                  }
+                >
+                  {cabinet[field.key] || 'не указан'}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
       </CardBody>
 
       <CardFoot className="bg-surface-2">
-        <span className="small-regular text-muted">
-          Смена: <b className="font-medium text-ink-2">{user?.full_name ?? '—'}</b>
-          {', '}
-          {user?.role === 'admin' ? 'врач-рентгенолог' : 'рентгенолаборант'}
-          {orgId ? `, организация № ${orgId}` : ''}
-        </span>
+        {draft ? (
+          <>
+            <Button variant="primary" onClick={save}>
+              <Check size={16} />
+              Сохранить
+            </Button>
+            <Button variant="quiet" onClick={() => setDraft(null)}>
+              <X size={16} />
+              Отмена
+            </Button>
+          </>
+        ) : (
+          <>
+            <Button onClick={() => setDraft({ ...cabinet })}>
+              <Pencil size={16} />
+              Изменить
+            </Button>
+            <span className="small-regular text-muted">
+              смена: {user?.role === 'admin' ? 'врач-рентгенолог' : 'рентгенолаборант'}
+            </span>
+          </>
+        )}
       </CardFoot>
     </Card>
   )

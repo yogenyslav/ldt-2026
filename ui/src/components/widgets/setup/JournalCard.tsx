@@ -77,10 +77,10 @@ const JournalCard = () => {
       <CardHead>
         <span className="h3-bold">Журнал сбоев и пожеланий</span>
         <span className="flex-1" />
-        <span className="small-regular text-muted">хранится на этом рабочем месте</span>
+        <span className="small-regular text-muted">записи этого кабинета</span>
       </CardHead>
 
-      <CardBody className="pt-0">
+      <CardBody className="flex-1 pt-0">
         <div className="mb-3.5 flex gap-2">
           {KINDS.map((value) => (
             <button
@@ -181,8 +181,8 @@ const JournalCard = () => {
           Скачать файлом
         </a>
         <span className="small-regular text-muted">
-          Отдельной ручки для журнала у бекенда пока нет. Замечание по конкретному снимку лучше
-          писать в комментарий к решению — он уходит в центр обработки.
+          Замечание по конкретному снимку лучше оставить в комментарии к решению — его увидит центр
+          обработки.
         </span>
       </CardFoot>
     </Card>

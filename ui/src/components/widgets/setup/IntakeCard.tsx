@@ -115,7 +115,7 @@ const IntakeCard = () => {
         <span className="small-regular text-muted">настройка этого рабочего места</span>
       </CardHead>
 
-      <CardBody className="grid grid-cols-2 gap-3 pt-0">
+      <CardBody className="flex-1 grid grid-cols-2 gap-3 pt-0 content-start">
         {OPTIONS.map((option) => {
           const active = cabinet.intake === option.value
           const Icon = option.icon

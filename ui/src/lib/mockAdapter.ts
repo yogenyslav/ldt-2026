@@ -12,16 +12,20 @@ import type { Decision } from '@/types'
    Needed while the handlers of dicom-manager return 501. This file is only
    routing and request parsing; the state lives in services/mock/store.ts. */
 
+/* Two accounts, one per contour. The password is checked like a real service
+   would check it: a wrong one answers 401 and the sign-in screen says so. */
 const ACCOUNTS = [
   {
-    username: 'ivanova',
+    username: 'ivanova.a.p',
+    password: 'laborant2026',
     user_id: 42,
     org_id: 218,
     full_name: 'Иванова А. П.',
     role: 'specialist' as const,
   },
   {
-    username: 'sokolova',
+    username: 'sokolova.m.i',
+    password: 'centr2026',
     user_id: 17,
     org_id: 1,
     full_name: 'Соколова М. И.',
@@ -76,9 +80,10 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
   /* --- sign-in --- */
   if (method === 'post' && url === '/user/login') {
-    const { username } = body(config) as { username?: string }
-    const account = ACCOUNTS.find((item) =>
-      (username ?? '').toLowerCase().startsWith(item.username),
+    const { username, password } = body(config) as { username?: string; password?: string }
+    const account = ACCOUNTS.find(
+      (item) =>
+        item.username === (username ?? '').trim().toLowerCase() && item.password === password,
     )
     if (!account) return fail(config, 401, 'Неверный логин или пароль')
     /* The response carries the token and the two ids, and nothing else — the

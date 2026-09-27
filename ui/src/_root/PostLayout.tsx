@@ -4,6 +4,7 @@ import { ArrowLeft, Radio, Settings, Upload } from 'lucide-react'
 import TopBar from '@/components/widgets/TopBar'
 import CabinetProvider, { useCabinet } from '@/context/CabinetContext'
 import { useLatestJobs } from '@/hooks/useJobs'
+import { useOrgId } from '@/hooks/useUser'
 import { isConfigured } from '@/lib/cabinet'
 import { timeOf } from '@/lib/utils'
 
@@ -75,6 +76,7 @@ const Intake = () => {
 
 const PostShell = () => {
   const { cabinet } = useCabinet()
+  const orgId = useOrgId()
   const clock = useClock()
   const navigate = useNavigate()
   const { pathname } = useLocation()
@@ -84,8 +86,8 @@ const PostShell = () => {
     <div className="flex h-screen flex-col">
       <TopBar
         logo={MOS_LOGO}
-        title={isConfigured(cabinet) ? cabinet.clinic : 'Кабинет не настроен'}
-        subtitle={cabinet.room || 'укажите кабинет в настройках'}
+        title={cabinet.clinic || `Организация № ${orgId ?? '—'}`}
+        subtitle={isConfigured(cabinet) ? cabinet.room : 'Кабинет не указан — откройте настройки'}
         meta={
           cabinet.device ? (
             <>

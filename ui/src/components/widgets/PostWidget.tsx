@@ -51,14 +51,33 @@ const isBusy = (job?: IJobInfo) => job?.status === 'pending' || job?.status === 
 
 /* Device mode: nothing to do but wait. */
 const Waiting = () => (
-  <div className="flex-center h-full flex-col gap-3.5 p-10 text-center text-muted">
-    <ScanLine size={22} />
-    <div className="text-[16px] font-medium text-ink-2">Ожидание снимка с аппарата</div>
+  <div className="flex flex-col items-center gap-3.5 p-10 text-center text-scan-text">
+    <span className="flex-center h-11.5 w-11.5 rounded-control border border-scan-line">
+      <ScanLine size={22} />
+    </span>
+    <div className="text-[17px] font-semibold text-scan-text-on">Ожидание снимка с аппарата</div>
     <div className="small-regular">
       Экран обновится сам через 2–3 секунды после сканирования.
       <br />
       Загружать ничего не нужно.
     </div>
+  </div>
+)
+
+/* Manual mode: the same dark viewport, with the one action it has in it. The
+   file can be dropped anywhere on the panel. */
+const Dropping = ({ busy, onFile }: { busy: boolean; onFile: (file: File) => void }) => (
+  <div className="w-full max-w-[460px] px-6">
+    <DropZone
+      accept=".dcm,application/dicom"
+      title="Загрузите снимок"
+      hint="перетащите файл исследования в это окно или выберите его на диске"
+      action="Выбрать файл"
+      busy={busy}
+      busyLabel="Снимок загружается"
+      onFile={onFile}
+      tone="dark"
+    />
   </div>
 )
 
@@ -119,29 +138,13 @@ const PostWidget = () => {
   if (!current || !shown) {
     return (
       <div className="min-h-0 flex-1 p-5">
-        {cabinet.intake === 'device' ? (
-          <div className="h-full rounded-panel border border-scan-line bg-scan-bg">
+        <div className="flex-center h-full rounded-panel border border-scan-line bg-scan-bg">
+          {cabinet.intake === 'device' ? (
             <Waiting />
-          </div>
-        ) : (
-          <div className="flex-center h-full">
-            <div className="w-full max-w-[600px] rounded-panel bg-surface p-[22px] shadow-card">
-              <div className="mb-1 h2-bold text-[22px]">Загрузка снимка</div>
-              <p className="mt-0 mb-4.5 base-regular text-muted">
-                Кабинет работает в режиме загрузки по кнопке. Выберите файл исследования — разбор
-                появится на этом же экране через несколько секунд.
-              </p>
-              <DropZone
-                accept=".dcm,application/dicom"
-                title="Перетащите файл исследования"
-                hint="или нажмите, чтобы выбрать .dcm"
-                busy={upload.isPending}
-                busyLabel="Снимок загружается"
-                onFile={(file) => void send(file)}
-              />
-            </div>
-          </div>
-        )}
+          ) : (
+            <Dropping busy={upload.isPending} onFile={(file) => void send(file)} />
+          )}
+        </div>
       </div>
     )
   }
@@ -172,11 +175,26 @@ const PostWidget = () => {
     })
   }
 
+  /* Looking at an earlier attempt does not take the decision away: the
+     radiographer compares the two and accepts the new scan right here. The
+     second button only closes the comparison. */
   const actions = showPrev ? (
-    <Button size="lg" className="col-span-2" onClick={() => setFocus('now')}>
-      <ArrowRight size={16} />
-      Вернуться к новому снимку
-    </Button>
+    <>
+      {isBusy(current) ? null : (
+        <Button variant="ok" size="lg" onClick={() => apply('approved')}>
+          <Check size={16} />
+          Принять новый
+        </Button>
+      )}
+      <Button
+        size="lg"
+        className={isBusy(current) ? 'col-span-2' : undefined}
+        onClick={() => setFocus('now')}
+      >
+        <ArrowRight size={16} />
+        Вернуться к новому
+      </Button>
+    </>
   ) : busy ? (
     <div className="col-span-2 flex items-center justify-center gap-3 py-3.5 small-regular text-muted">
       <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />

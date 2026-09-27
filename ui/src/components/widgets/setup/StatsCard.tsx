@@ -1,16 +1,15 @@
 import { useMemo } from 'react'
-import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
+import Card, { CardBody, CardHead } from '@/components/ui/card'
 import { useJobs } from '@/hooks/useJobs'
 import { criteriaRows } from '@/lib/criteria'
 import { nm, plural } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 import type { IJobInfo } from '@/types'
 
-/* Statistics of the room. The backend has no aggregates, so everything here is
-   counted on the client over the page of jobs that has been loaded — and it is
-   not filtered by organisation yet either, because the queue is not.
-   Both points are in context/backend_requests.md; until they are done the
-   numbers are labelled with what they actually cover. */
+/* Statistics of the room, counted on the client over the loaded page of the
+   queue: the backend has no aggregates yet (context/backend_requests.md).
+   Nothing about that belongs on the screen — the technologist needs the numbers,
+   not a note about where they come from. */
 
 const Tile = ({ label, value, tone }: { label: string; value: string; tone?: string }) => (
   <div className="rounded-soft border border-line bg-surface px-4 py-3.5">
@@ -73,7 +72,7 @@ const StatsCard = () => {
         <span className="small-regular text-muted">за сегодня</span>
       </CardHead>
 
-      <CardBody className="pt-0">
+      <CardBody className="flex-1 pt-0">
         <div className="grid grid-cols-[repeat(auto-fit,minmax(132px,1fr))] gap-3">
           <Tile label="Снимков" value={String(stats.total)} />
           <Tile label="Корректных" value={String(stats.ok)} tone="ok" />
@@ -109,13 +108,6 @@ const StatsCard = () => {
           </p>
         )}
       </CardBody>
-
-      <CardFoot className="bg-surface-2">
-        <span className="small-regular text-muted">
-          Считается по загруженной странице очереди. Пока бекенд не отдаёт выборку по организации,
-          сюда попадают и снимки других кабинетов сети.
-        </span>
-      </CardFoot>
     </Card>
   )
 }

@@ -3,7 +3,7 @@ import { cn } from '@/lib/utils'
 const Card = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
   return (
     <div
-      className={cn('overflow-hidden rounded-panel bg-surface shadow-card', className)}
+      className={cn('flex flex-col overflow-hidden rounded-panel bg-surface shadow-card', className)}
       {...props}
     />
   )
