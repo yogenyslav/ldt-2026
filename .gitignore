@@ -37,3 +37,4 @@ data/
 venv/
 context/
 qc_prototype
+ui/node_modules
