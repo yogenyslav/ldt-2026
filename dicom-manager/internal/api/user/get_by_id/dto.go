@@ -9,5 +9,5 @@ type GetByIDOut struct {
 	ID             int64          `json:"id"`              // ID пользователя.
 	FullName       string         `json:"full_name"`       // Имя пользователя.
 	Role           model.UserRole `json:"role"`            // Роль пользователя (specialist, admin).
-	OrganizationID int64          `json:"organization_id"` // Список ID организаций, к которым принадлежит пользователь.
+	OrganizationID int64          `json:"organization_id"` // ID организации, к которой принадлежит пользователь.
 }

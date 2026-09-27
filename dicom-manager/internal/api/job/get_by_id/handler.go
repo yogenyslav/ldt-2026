@@ -42,7 +42,7 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 //	@Tags			job
 //	@Accept			json
 //	@Produce		json
-//	@Param			job_id	query		string		true	"ID задачи на обработку DICOM-файла"
+//	@Param			job_id	path		string		true	"ID задачи на обработку DICOM-файла"
 //	@Success		200		{object}	GetByIDOut	"Информация о задаче успешно получена."
 //	@Failure		400		string		"Некорректный запрос."
 //	@Failure		403		string		"Доступ запрещен."
@@ -56,7 +56,7 @@ func (h *Handler) GetByID(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "job_id is required")
 	}
 
-	tokenClaims := c.Locals("token_claim")
+	tokenClaims := c.Locals("tokenClaims")
 	if tokenClaims == nil {
 		h.metrics.Counter("handler.job.get_by_id.token_claim_nil").Inc()
 		h.log.Warn().Msg("token_claim is nil")
@@ -108,9 +108,11 @@ func (h *Handler) GetByID(c fiber.Ctx) error {
 
 func convertToOut(job get_by_id.Job) (GetByIDOut, error) {
 	metadata := make(map[string]any)
-	if err := json.Unmarshal(job.Metadata, &metadata); err != nil {
+	if err := json.Unmarshal(job.Metadata, &metadata); len(job.Metadata) > 0 && err != nil {
 		return GetByIDOut{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
 	}
+
+	errorMessage, _ := metadata["error"].(string)
 
 	var decision *model.Decision
 	if job.SpecialistDecision != nil {
@@ -119,9 +121,10 @@ func convertToOut(job get_by_id.Job) (GetByIDOut, error) {
 
 	return GetByIDOut{
 		Job: model.JobInfo{
+			Error:              errorMessage,
 			ID:                 job.ID,
 			DicomID:            job.DicomFileID,
-			Status:             model.JobStatus(job.Status),
+			Status:             model.ToJobStatus(job.Status),
 			AnatomicalRegion:   job.AnatomicalRegion,
 			Confidence:         job.Confidence,
 			Violations:         job.Violations,

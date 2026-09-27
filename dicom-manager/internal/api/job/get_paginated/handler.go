@@ -9,6 +9,7 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_paginated"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
 )
 
@@ -49,10 +50,16 @@ func (h *Handler) GetPaginated(c fiber.Ctx) error {
 	offset := fiber.Query[uint64](c, "offset", 0)
 	limit := fiber.Query[uint64](c, "limit", 10)
 
+	claims, ok := c.Locals("tokenClaims").(jwt.TokenClaims)
+	if !ok {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token claims")
+	}
+
 	jobs, err := h.uc.GetPaginated(
 		c.Context(), get_paginated.GetJobsRequest{
-			Offset: offset,
-			Limit:  limit,
+			CreatorID: claims.UserID,
+			Offset:    offset,
+			Limit:     limit,
 		},
 	)
 	if err != nil {
@@ -73,9 +80,11 @@ func convertToOut(jobs []get_paginated.Job) (GetInfoPaginatedOut, error) {
 	out := make([]model.JobInfo, 0, len(jobs))
 	for _, job := range jobs {
 		metadata := make(map[string]any)
-		if err := json.Unmarshal(job.Metadata, &metadata); err != nil {
+		if err := json.Unmarshal(job.Metadata, &metadata); len(job.Metadata) > 0 && err != nil {
 			return GetInfoPaginatedOut{}, fmt.Errorf("failed to unmarshal metadata: %w", err)
 		}
+
+		errorMessage, _ := metadata["error"].(string)
 
 		var decision *model.Decision
 		if job.SpecialistDecision != nil {
@@ -84,9 +93,10 @@ func convertToOut(jobs []get_paginated.Job) (GetInfoPaginatedOut, error) {
 
 		out = append(
 			out, model.JobInfo{
+				Error:              errorMessage,
 				ID:                 job.ID,
 				DicomID:            job.DicomFileID,
-				Status:             model.JobStatus(job.Status),
+				Status:             model.ToJobStatus(job.Status),
 				AnatomicalRegion:   job.AnatomicalRegion,
 				Confidence:         job.Confidence,
 				Violations:         job.Violations,

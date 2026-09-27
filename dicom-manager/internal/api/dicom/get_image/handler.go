@@ -6,7 +6,9 @@ import (
 
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/get_image"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
 )
 
@@ -52,12 +54,19 @@ func (h *Handler) GetImage(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "dicom_id is required")
 	}
 
+	claims, ok := c.Locals("tokenClaims").(jwt.TokenClaims)
+	if !ok {
+		return fiber.NewError(fiber.StatusUnauthorized, "invalid token claims")
+	}
+
 	withRaw := c.Query("raw") == "true"
 
 	imageData, err := h.uc.GetImageByID(
 		c.Context(), get_image.GetImageRequest{
-			DicomID: dicomID,
-			WithRaw: withRaw,
+			DicomID:       dicomID,
+			RequesterID:   claims.UserID,
+			RequesterRole: model.UserRole(claims.Role),
+			WithRaw:       withRaw,
 		},
 	)
 	if err != nil {

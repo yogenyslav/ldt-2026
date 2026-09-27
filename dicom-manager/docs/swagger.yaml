@@ -20,10 +20,9 @@ definitions:
         description: Если Raw=false, то возвращается base64 изображения.
         type: string
       image_data_raw:
-        description: Если Raw=true, то возвращаются байты изображения.
-        items:
-          type: integer
-        type: array
+        description: Если Raw=true, байты изображения сериализуются в JSON как base64.
+        format: byte
+        type: string
     type: object
   get_paginated.GetInfoPaginatedOut:
     properties:
@@ -86,7 +85,7 @@ definitions:
         description: ID пользователя.
         type: integer
       organization_id:
-        description: Список ID организаций, к которым принадлежит пользователь.
+        description: ID организации, к которой принадлежит пользователь.
         type: integer
       role:
         allOf:
@@ -157,6 +156,9 @@ definitions:
       duration_ms:
         description: Время обработки задачи в миллисекундах.
         type: integer
+      error:
+        description: Описание ошибки обработки.
+        type: string
       id:
         description: ID задачи на обработку.
         type: string
@@ -240,7 +242,7 @@ definitions:
       decision:
         allOf:
         - $ref: '#/definitions/model.Decision'
-        description: Решение по результатам обработки DICOM-файлов ("approved", "reject",
+        description: Решение по результатам обработки DICOM-файлов ("approved", "rejected",
           "force_approved").
       job_ids:
         description: Список ID задач на обработку DICOM-файлов, для которых необходимо
@@ -357,7 +359,7 @@ paths:
       parameters:
       - description: .zip архив с DICOM файлами для загрузки.
         in: formData
-        name: files
+        name: file
         required: true
         type: file
       produces:
@@ -419,7 +421,7 @@ paths:
       description: Получить информацию о задаче на обработку DICOM-файла по ID
       parameters:
       - description: ID задачи на обработку DICOM-файла
-        in: query
+        in: path
         name: job_id
         required: true
         type: string
@@ -606,7 +608,7 @@ paths:
       description: Получить отчет по результатам обработки DICOM-файлов по ID.
       parameters:
       - description: ID отчета по результатам обработки DICOM-файлов
-        in: query
+        in: path
         name: report_id
         required: true
         type: string

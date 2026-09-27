@@ -64,11 +64,9 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 			fileName = uuid.New().String()
 		}
 
-		err := c.Bind().Body(&data)
-		if err != nil {
-			h.metrics.Counter("handler.dicom.upload.bind_body.error").Inc()
-			h.log.Warn().Err(err).Msg("failed to bind request body")
-			return fiber.NewError(fiber.StatusBadRequest, "can't bind request body")
+		data = c.Body()
+		if len(data) == 0 {
+			return fiber.NewError(fiber.StatusBadRequest, "DICOM body is empty")
 		}
 	default:
 		h.metrics.Counter("handler.dicom.upload.invalid_content_type").Inc()

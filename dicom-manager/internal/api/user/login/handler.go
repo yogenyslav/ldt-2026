@@ -8,7 +8,6 @@ import (
 	"github.com/rs/zerolog"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/user/auth"
-	user_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/user/get_by_id"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
 )
 
@@ -63,10 +62,10 @@ func (h *Handler) Login(c fiber.Ctx) error {
 	}
 	userAuthData, err := h.uc.Login(c.Context(), loginReq)
 	if err != nil {
-		if errors.Is(err, user_get_by_id.ErrUserNotFound) {
+		if errors.Is(err, auth.ErrUserNotFound) || errors.Is(err, auth.ErrInvalidCredentials) {
 			h.log.Warn().Err(err).Msg("user not found")
 			h.metrics.Counter("handler.login.user_not_found").Inc()
-			return fiber.NewError(fiber.StatusUnauthorized, "no such user")
+			return fiber.NewError(fiber.StatusUnauthorized, "invalid credentials")
 		}
 		h.log.Error().Err(err).Msg("failed to login user")
 		h.metrics.Counter("handler.login.error").Inc()
