@@ -4,7 +4,6 @@ import (
 	"context"
 
 	sq "github.com/Masterminds/squirrel"
-	"github.com/jackc/pgx/v5"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/database"
 )
 
@@ -33,7 +32,7 @@ func (s *Storage) SaveJobs(ctx context.Context, jobToDicom map[string]string) er
 		return err
 	}
 
-	_, err = s.db.Exec(ctx, query, args...)
+	_, err = s.db.TxExec(ctx, query, args...)
 	return err
 }
 
@@ -75,54 +74,6 @@ func (s *Storage) GetJobsByCreator(
 	}
 
 	return jobs, nil
-}
-
-// UpdateJobStatus обновляет статус задачи обработки DICOM-файла в БД.
-func (s *Storage) UpdateJobStatus(ctx context.Context, jobID, status string) error {
-	const query = `update dicom_job_result set job_status = $1, updated_at = now() where job_id = $2`
-	rowsUpdated, err := s.db.Exec(ctx, query, status, jobID)
-	if err != nil {
-		return err
-	}
-
-	if rowsUpdated == 0 {
-		return pgx.ErrNoRows
-	}
-
-	return err
-}
-
-// UpdateJobDetectionProperties обновляет свойства обнаружения задачи обработки DICOM-файла в БД.
-func (s *Storage) UpdateJobDetectionProperties(
-	ctx context.Context, jobID string, detectionProps DetectionProperties,
-) error {
-	const query = `update dicom_job_result set 
-						anatomical_region = $1,
-						confidence = $2,
-						violations = $3,
-						duration_ms = $4,
-						metadata = $5,
-						updated_at = now()
-					where job_id = $6`
-
-	rowsUpdated, err := s.db.Exec(
-		ctx, query,
-		detectionProps.AnatomicalRegion,
-		detectionProps.Confidence,
-		detectionProps.Violations,
-		detectionProps.DurationMs,
-		detectionProps.Metadata,
-		jobID,
-	)
-	if err != nil {
-		return err
-	}
-
-	if rowsUpdated == 0 {
-		return pgx.ErrNoRows
-	}
-
-	return nil
 }
 
 // UpdateJobResultDecision обновляет решение специалиста по результату обработки DICOM-файла в БД.

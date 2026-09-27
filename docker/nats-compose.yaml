@@ -7,6 +7,10 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      NATS_ROUTE_1: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-1:6222
+      NATS_ROUTE_2: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-2:6222
+      NATS_ROUTE_3: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-3:6222
 
     ports:
       - "4222:4222"
@@ -31,6 +35,10 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      NATS_ROUTE_1: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-1:6222
+      NATS_ROUTE_2: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-2:6222
+      NATS_ROUTE_3: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-3:6222
 
     ports:
       - "4223:4222"
@@ -55,6 +63,10 @@ services:
     restart: unless-stopped
     env_file:
       - ../.env
+    environment:
+      NATS_ROUTE_1: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-1:6222
+      NATS_ROUTE_2: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-2:6222
+      NATS_ROUTE_3: nats://nats-route:${NATS_ROUTE_PASSWORD}@nats-3:6222
 
     ports:
       - "4224:4222"

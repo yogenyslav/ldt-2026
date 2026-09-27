@@ -23,7 +23,7 @@ func NewUnitOfWork(db DB) *unitOfWork {
 }
 
 // WithTx выполняет переданную функцию внутри транзакции.
-func (uow *unitOfWork) WithTx(ctx context.Context, level TxLevel, fn func(ctx context.Context) error) error {
+func (uow *unitOfWork) WithTx(ctx context.Context, level TxLevel, fn func(ctx context.Context) error) (err error) {
 	tx, err := uow.db.beginTx(ctx, level)
 	if err != nil {
 		return fmt.Errorf("begin transaction: %w", err)

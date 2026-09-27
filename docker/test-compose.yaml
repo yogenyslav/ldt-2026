@@ -1,0 +1,48 @@
+# Изолированный стенд интеграционных тестов с отдельными данными и учетными записями.
+name: dicom-integration
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: test
+      POSTGRES_PASSWORD: test
+      POSTGRES_DB: test
+    ports:
+      - "127.0.0.1:15432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U test -d test"]
+      interval: 1s
+      timeout: 2s
+      retries: 30
+    tmpfs:
+      - /var/lib/postgresql/data
+  nats:
+    image: nats:2.12
+    command: ["-js"]
+    ports:
+      - "127.0.0.1:14222:4222"
+  nats-auth: &nats-auth
+    image: nats:2.12
+    command: ["-c", "/etc/nats/nats.conf", "--name", "integration-1"]
+    volumes:
+      - ./nats.conf:/etc/nats/nats.conf:ro
+    environment:
+      NATS_ROUTE_PASSWORD: test
+      NATS_SYS_PASSWORD: test
+      DICOM_WORKER_PASSWORD: test
+      DICOM_MANAGER_PASSWORD: test
+      DICOM_ANALYZER_PASSWORD: test
+      NATS_ROUTE_1: nats://nats-route:test@nats-auth:6222
+      NATS_ROUTE_2: nats://nats-route:test@nats-auth-2:6222
+      NATS_ROUTE_3: nats://nats-route:test@nats-auth-3:6222
+    ports:
+      - "127.0.0.1:14223:4222"
+      - "127.0.0.1:18223:8222"
+  nats-auth-2:
+    <<: *nats-auth
+    command: ["-c", "/etc/nats/nats.conf", "--name", "integration-2"]
+    ports: []
+  nats-auth-3:
+    <<: *nats-auth
+    command: ["-c", "/etc/nats/nats.conf", "--name", "integration-3"]
+    ports: []

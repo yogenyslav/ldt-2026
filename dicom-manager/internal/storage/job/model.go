@@ -40,3 +40,9 @@ type UpdateDecisionData struct {
 	SpecialistID       int64
 	CheckCreator       bool
 }
+
+// JobState состояние задачи для проверки входящего события.
+type JobState struct {
+	DicomID string `db:"dicom_file_id"`
+	Status  string `db:"job_status"`
+}

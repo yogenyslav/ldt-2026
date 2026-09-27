@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"os"
 
 	"github.com/prometheus/client_golang/prometheus"
@@ -34,9 +35,10 @@ type TracingClient interface {
 
 // Observability клиент для работы с метриками и трассировкой.
 type Observability struct {
-	metrics MetricsClient
-	tracing TracingClient
-	logger  zerolog.Logger
+	metrics       *metrics.Metrics
+	metricsServer *http.Server
+	tracing       TracingClient
+	logger        zerolog.Logger
 }
 
 // New создает новый клиент для работы с метриками и трассировкой.
@@ -80,8 +82,10 @@ func (o *Observability) Logger() *zerolog.Logger {
 
 // Shutdown корректно завершает работу клиентов метрик и трассировки.
 func (o *Observability) Shutdown(ctx context.Context) error {
-	if err := o.tracing.Shutdown(ctx); err != nil {
-		return fmt.Errorf("shutdown tracing client: %v", err)
+	var metricsErr error
+	if o.metricsServer != nil {
+		metricsErr = o.metricsServer.Shutdown(ctx)
 	}
-	return nil
+	tracingErr := o.tracing.Shutdown(ctx)
+	return errors.Join(metricsErr, tracingErr)
 }

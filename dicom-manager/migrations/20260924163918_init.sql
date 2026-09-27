@@ -54,7 +54,7 @@ create table if not exists dicom_job_result
 create table if not exists report
 (
     id                   bigserial primary key,
-    dicom_job_result_ids text[] not null references dicom_job_result (job_id) on delete cascade,
+    dicom_job_result_ids text[] not null,
     creator_id           bigint not null references "user" (id) on delete set default,
     created_at           timestamp with time zone default now()
 );
