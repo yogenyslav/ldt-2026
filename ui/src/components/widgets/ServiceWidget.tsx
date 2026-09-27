@@ -1,7 +1,7 @@
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Loader from '@/components/shared/Loader'
 import StateIcon from '@/components/shared/StateIcon'
-import { MODEL_NAME, SETTING_NAME } from '@/constants'
+import { MODEL_NAME, SETTING_TEXT } from '@/constants'
 import { useJobs } from '@/hooks/useJobs'
 import { useCurrentUser } from '@/hooks/useUser'
 import { nm } from '@/lib/utils'
@@ -67,7 +67,7 @@ const ServiceWidget = () => {
               <span className="small-regular text-muted">
                 Пороги:{' '}
                 {Object.keys(settings)
-                  .map((key) => `${SETTING_NAME[key] ?? key} ${nm(settings[key])}`)
+                  .map((key) => SETTING_TEXT[key]?.(nm(settings[key])) ?? `${key} ${nm(settings[key])}`)
                   .join(' · ')}
               </span>
             </CardFoot>

@@ -32,4 +32,3 @@ const Button = ({ className, variant, size, ...props }: ButtonProps) => {
 }
 
 export default Button
-export { buttonVariants }

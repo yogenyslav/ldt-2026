@@ -72,10 +72,10 @@ export const MODEL_NAME: Record<string, string> = {
   foreign_seg: 'Посторонние предметы',
 }
 
-export const SETTING_NAME: Record<string, string> = {
-  trochanter_center_mm: 'центр нормы вертела, мм',
-  trochanter_tol_percent: 'допуск, %',
-  trochanter_yellow_percent: 'полоса проверки, %',
+export const SETTING_TEXT: Record<string, (value: string) => string> = {
+  trochanter_center_mm: (value) => `центр нормы вертела ${value} мм`,
+  trochanter_tol_percent: (value) => `допуск ${value}%`,
+  trochanter_yellow_percent: (value) => `полоса проверки ${value}%`,
 }
 
 export const sidebarLinks = [

@@ -53,12 +53,15 @@ const PostWidget = () => {
   const [focus, setFocus] = useState<'now' | 'prev'>('now')
   const [prevIndex, setPrevIndex] = useState(0)
 
-  /* Текущий снимок — самый свежий, по которому ещё нет решения.
-     Разобранные раньше становятся предыдущими попытками смены. */
+  /* Снимки разбираются в порядке поступления: пациента нельзя пропустить.
+     Разобранные становятся предыдущими попытками смены — их можно
+     перелистать в режиме сравнения. */
   const { current, history } = useMemo(() => {
-    const sorted = [...(jobs ?? [])].sort((a, b) => b.created_at.localeCompare(a.created_at))
-    const fresh = sorted.filter((job) => !job.specialist_decision && job.status !== 'pending')
-    const done = sorted.filter((job) => job.specialist_decision)
+    const byTime = [...(jobs ?? [])].sort((a, b) => a.created_at.localeCompare(b.created_at))
+    const fresh = byTime.filter(
+      (job) => !job.specialist_decision && (job.status === 'completed' || job.status === 'failed'),
+    )
+    const done = [...byTime].reverse().filter((job) => job.specialist_decision)
     return { current: fresh[0] as IJobInfo | undefined, history: done }
   }, [jobs])
 

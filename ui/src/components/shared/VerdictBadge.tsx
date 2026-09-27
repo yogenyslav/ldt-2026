@@ -1,3 +1,4 @@
+import { CircleAlert, CircleCheck, CircleHelp, Clock, TriangleAlert, X } from 'lucide-react'
 import { VERDICT_LIST } from '@/constants'
 import { cn } from '@/lib/utils'
 import type { VerdictKind } from '@/types'
@@ -11,12 +12,23 @@ const TONE: Record<string, string> = {
   wait: 'border-dead-line bg-dead-bg text-dead',
 }
 
+/* Статус читается формой, а не одним лишь цветом. */
+const ICON: Record<VerdictKind, React.ComponentType<{ size?: number }>> = {
+  ok: CircleCheck,
+  warn: TriangleAlert,
+  bad: X,
+  failed: CircleAlert,
+  none: CircleHelp,
+  wait: Clock,
+}
+
 interface VerdictBadgeProps {
   level: VerdictKind
   className?: string
 }
 
 const VerdictBadge = ({ level, className }: VerdictBadgeProps) => {
+  const Icon = ICON[level]
   return (
     <span
       className={cn(
@@ -25,6 +37,7 @@ const VerdictBadge = ({ level, className }: VerdictBadgeProps) => {
         className,
       )}
     >
+      <Icon size={14} />
       {VERDICT_LIST[level].title}
     </span>
   )

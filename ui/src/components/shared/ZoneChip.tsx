@@ -1,7 +1,16 @@
-import { REGION_SHORT, STATUS } from '@/constants'
-import { cn } from '@/lib/utils'
+import { CircleAlert, CircleCheck, CircleHelp, Clock, TriangleAlert, X } from 'lucide-react'
+import { cn, zoneLabel } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
-import type { IJobInfo } from '@/types'
+import type { IJobInfo, VerdictKind } from '@/types'
+
+const ICON: Record<VerdictKind, React.ComponentType<{ size?: number }>> = {
+  ok: CircleCheck,
+  warn: TriangleAlert,
+  bad: X,
+  failed: CircleAlert,
+  none: CircleHelp,
+  wait: Clock,
+}
 
 const TONE: Record<string, string> = {
   ok: 'bg-ok-bg text-ok',
@@ -12,10 +21,6 @@ const TONE: Record<string, string> = {
   wait: 'bg-dead-bg text-dead',
 }
 
-/* Пока снимок не обработан, вместо области показываем состояние. */
-export const zoneLabel = (job: IJobInfo) =>
-  job.anatomical_region ? REGION_SHORT[job.anatomical_region] : STATUS[job.status]
-
 interface ZoneChipProps {
   job: IJobInfo
   active?: boolean
@@ -24,6 +29,7 @@ interface ZoneChipProps {
 
 const ZoneChip = ({ job, active, onClick }: ZoneChipProps) => {
   const level = verdictOf(job)
+  const Icon = ICON[level]
   return (
     <span
       onClick={onClick}
@@ -34,6 +40,7 @@ const ZoneChip = ({ job, active, onClick }: ZoneChipProps) => {
         onClick && 'cursor-pointer',
       )}
     >
+      <Icon size={14} />
       {zoneLabel(job)}
     </span>
   )

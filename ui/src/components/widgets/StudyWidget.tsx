@@ -59,17 +59,6 @@ const DecisionBlock = ({ job }: { job: IJobInfo }) => {
             ) : null}
           </div>
         </div>
-        <div className="mt-3">
-          <Button
-            onClick={() =>
-              decide.mutate({ jobIds: [job.id], decision: null as unknown as Decision })
-            }
-            disabled
-            title="Изменение решения появится, когда бекенд научится его отзывать"
-          >
-            Изменить решение
-          </Button>
-        </div>
       </>
     )
   }

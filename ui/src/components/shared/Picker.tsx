@@ -1,9 +1,8 @@
 import { useEffect, useRef, useState } from 'react'
 import { ChevronDown } from 'lucide-react'
 import StateIcon from '@/components/shared/StateIcon'
-import { zoneLabel } from '@/components/shared/ZoneChip'
 import { VERDICT_LIST } from '@/constants'
-import { cn, timeOf } from '@/lib/utils'
+import { cn, timeOf, zoneLabel } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 import type { IJobInfo } from '@/types'
 

@@ -21,11 +21,20 @@ const PostLayout = () => {
     <div className="flex h-screen flex-col">
       <TopBar
         logo={
-          <img
-            className="h-11 w-11 object-contain"
-            style={{ filter: 'brightness(0) saturate(100%) invert(78%) sepia(38%) saturate(628%) hue-rotate(134deg) brightness(97%) contrast(92%)' }}
-            src="/assets/logo-mos.svg"
-            alt=""
+          <span
+            role="img"
+            aria-label="Городская поликлиника"
+            className="block h-11 w-11 bg-[#5fd6dc]"
+            style={{
+              maskImage: 'url(/assets/logo-mos.svg)',
+              WebkitMaskImage: 'url(/assets/logo-mos.svg)',
+              maskRepeat: 'no-repeat',
+              WebkitMaskRepeat: 'no-repeat',
+              maskPosition: 'center',
+              WebkitMaskPosition: 'center',
+              maskSize: 'contain',
+              WebkitMaskSize: 'contain',
+            }}
           />
         }
         title="Городская поликлиника № 218"
