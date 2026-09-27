@@ -8,3 +8,9 @@ services:
     restart: unless-stopped
     ports:
       - "${UI_PORT:-8080}:80"
+    networks:
+        - dicom-network
+
+networks:
+  dicom-network:
+    external: true
