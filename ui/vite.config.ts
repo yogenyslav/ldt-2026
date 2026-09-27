@@ -14,4 +14,17 @@ export default defineConfig({
       '@': path.resolve(__dirname, './src'),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        /* библиотеки меняются редко — держим их отдельным файлом,
+           чтобы правки интерфейса не сбрасывали кеш целиком */
+        manualChunks: {
+          react: ['react', 'react-dom', 'react-router-dom'],
+          query: ['@tanstack/react-query', 'axios'],
+          forms: ['react-hook-form', 'zod', '@hookform/resolvers/zod'],
+        },
+      },
+    },
+  },
 })
