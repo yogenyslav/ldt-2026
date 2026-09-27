@@ -1,4 +1,5 @@
 import { useMemo } from 'react'
+import { BarChart3 } from 'lucide-react'
 import Card, { CardBody, CardHead } from '@/components/ui/card'
 import { useJobs } from '@/hooks/useJobs'
 import { criteriaRows } from '@/lib/criteria'
@@ -12,7 +13,7 @@ import type { IJobInfo } from '@/types'
    not a note about where they come from. */
 
 const Tile = ({ label, value, tone }: { label: string; value: string; tone?: string }) => (
-  <div className="rounded-soft border border-line bg-surface px-4 py-3.5">
+  <div className="rounded-control border border-line bg-surface px-4 py-3.5">
     <div className="text-[13px] text-muted">{label}</div>
     <div
       className={
@@ -65,8 +66,9 @@ const StatsCard = () => {
   )
 
   return (
-    <Card>
+    <Card mark>
       <CardHead>
+        <BarChart3 size={20} className="text-brand" />
         <span className="h3-bold">Статистика кабинета</span>
         <span className="flex-1" />
         <span className="small-regular text-muted">за сегодня</span>

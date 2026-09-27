@@ -298,7 +298,7 @@ const PostWidget = () => {
           criteria list scrolls, while the verdict and the actions stay put.
           The station screen itself never scrolls. */}
       <div className="flex min-h-0 flex-col">
-        <div className="my-auto flex max-h-full min-h-0 flex-col overflow-hidden rounded-panel bg-surface shadow-card">
+        <div className="my-auto flex max-h-full min-h-0 flex-col overflow-hidden rounded-panel border border-line bg-surface">
           {showPrev ? (
             <div className="shrink-0 bg-brand-050 px-[22px] py-2.5 small-regular font-medium text-brand-700">
               Разбор предыдущей попытки, {timeOf(shown.created_at)}
@@ -306,8 +306,10 @@ const PostWidget = () => {
           ) : null}
 
           <div className={cn('flex shrink-0 items-center gap-4.5 border-b px-6 py-6', tone.box)}>
-            <span className={cn('flex-center h-15 w-15 flex-none rounded-full border-2', tone.icon)}>
-              <Icon size={32} strokeWidth={2.4} />
+            {/* a rounded square on white instead of a ringed circle: the same
+                weight on the screen, without the badge look */}
+            <span className={cn('flex-center h-14 w-14 flex-none rounded-[18px] bg-surface', tone.icon)}>
+              <Icon size={30} strokeWidth={2.3} />
             </span>
             <div className="min-w-0">
               <div

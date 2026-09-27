@@ -54,7 +54,7 @@ const IntakeCheck = () => {
 
   if (arrived) {
     return (
-      <div className="flex items-center gap-3 rounded-soft border border-ok-line bg-ok-bg px-4 py-3.5">
+      <div className="flex items-center gap-3 rounded-control border border-ok-line bg-ok-bg px-4 py-3.5">
         <Check size={18} className="text-ok" />
         <span className="flex-1 base-semibold text-ok">
           Снимок получен в {timeOf(arrived.created_at)}
@@ -68,7 +68,7 @@ const IntakeCheck = () => {
 
   if (startedAt !== null) {
     return (
-      <div className="flex items-center gap-3 rounded-soft border border-line bg-surface-2 px-4 py-3.5">
+      <div className="flex items-center gap-3 rounded-control border border-line bg-surface-2 px-4 py-3.5">
         <span className="h-5 w-5 animate-spin rounded-full border-[2.5px] border-line border-t-brand" />
         <span className="flex-1 base-regular text-ink-2">
           Ждём снимок с аппарата — отправьте тестовое исследование в архив
@@ -108,8 +108,9 @@ const IntakeCard = () => {
   const { cabinet, update } = useCabinet()
 
   return (
-    <Card>
+    <Card mark>
       <CardHead>
+        <Radio size={20} className="text-brand" />
         <span className="h3-bold">Режим приёма</span>
         <span className="flex-1" />
         <span className="small-regular text-muted">настройка этого рабочего места</span>
@@ -125,16 +126,16 @@ const IntakeCard = () => {
               type="button"
               onClick={() => update({ intake: option.value })}
               className={cn(
-                'cursor-pointer rounded-soft border-[1.5px] p-4 text-left transition-colors',
+                'cursor-pointer rounded-control border-[1.5px] p-4 text-left transition-colors',
                 active
                   ? 'border-brand bg-brand-050'
-                  : 'border-line-2 bg-surface hover:border-brand-400 hover:bg-brand-050',
+                  : 'border-line-2 bg-surface hover:border-brand-400 hover:bg-hover',
               )}
             >
               <span className="flex items-center gap-2.5">
                 <span
                   className={cn(
-                    'flex-center h-9 w-9 flex-none rounded-xl',
+                    'flex-center h-9 w-9 flex-none rounded-control',
                     active ? 'bg-brand text-white' : 'bg-surface-3 text-muted',
                   )}
                 >

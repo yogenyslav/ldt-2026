@@ -70,7 +70,7 @@ const DropZone = ({
           'flex w-full cursor-pointer flex-col items-center rounded-soft border-[1.5px] border-dashed text-center transition-colors disabled:cursor-progress',
           dark
             ? 'gap-3.5 rounded-control border-scan-edge bg-white/[0.02] px-7 py-8 hover:border-brand-400 hover:bg-white/[0.05]'
-            : 'gap-2.5 border-line-2 bg-surface px-6 py-13 hover:border-brand-400 hover:bg-brand-050',
+            : 'gap-2.5 rounded-panel border-line-2 bg-surface px-6 py-13 hover:border-brand-400 hover:bg-hover',
           over && (dark ? 'border-brand-400 bg-white/[0.06]' : 'border-brand bg-brand-050'),
           className,
         )}

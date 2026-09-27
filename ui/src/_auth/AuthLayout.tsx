@@ -12,7 +12,7 @@ const AuthLayout = () => {
         className="flex flex-col justify-between gap-10 px-12 py-11 text-white"
         style={{
           background:
-            'radial-gradient(760px 420px at 12% 8%, rgba(11, 99, 229, 0.42) 0%, transparent 62%), var(--color-brand-900)',
+            'radial-gradient(760px 420px at 12% 8%, rgba(46, 82, 176, 0.46) 0%, transparent 62%), var(--color-brand-900)',
         }}
       >
         <div className="flex items-center gap-3.5">

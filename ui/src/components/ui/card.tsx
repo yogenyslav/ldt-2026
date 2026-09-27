@@ -1,9 +1,19 @@
 import { cn } from '@/lib/utils'
 
-const Card = ({ className, ...props }: React.HTMLAttributes<HTMLDivElement>) => {
+interface CardProps extends React.HTMLAttributes<HTMLDivElement> {
+  /* A corner mark names a card that carries the work of the screen; calmer
+     cards below it go without one. */
+  mark?: boolean
+}
+
+const Card = ({ className, mark, ...props }: CardProps) => {
   return (
     <div
-      className={cn('flex flex-col overflow-hidden rounded-panel bg-surface shadow-card', className)}
+      className={cn(
+        'flex flex-col overflow-hidden rounded-panel border border-line bg-surface',
+        mark && 'mark-top',
+        className,
+      )}
       {...props}
     />
   )

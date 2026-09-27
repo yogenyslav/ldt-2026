@@ -40,7 +40,7 @@ const ReportsWidget = () => {
             </thead>
             <tbody>
               {reports.map((report) => (
-                <tr key={report.id} className="hover:bg-surface-2">
+                <tr key={report.id} className="hl-row">
                   <td className="tabular border-b border-line px-4 py-3.5">
                     {whenOf(report.created_at)}
                   </td>

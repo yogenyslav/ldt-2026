@@ -6,7 +6,7 @@ import ApiAuth from '@/services/apiAuth'
 
 /* Dark header with a glow — the same visual language as the sign-in screen. */
 const BACKGROUND =
-  'radial-gradient(680px 340px at 6% 0%, rgba(11, 99, 229, 0.45) 0%, transparent 62%), var(--color-brand-900)'
+  'radial-gradient(680px 340px at 6% 0%, rgba(46, 82, 176, 0.5) 0%, transparent 62%), var(--color-brand-900)'
 
 interface TopBarProps {
   logo: React.ReactNode

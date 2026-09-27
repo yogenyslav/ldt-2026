@@ -15,7 +15,7 @@ import { cn, plural } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 
 const Tile = ({ label, value, tone }: { label: string; value: number; tone?: string }) => (
-  <div className="rounded-panel bg-surface px-5.5 py-5 shadow-card">
+  <div className="rounded-panel border border-line bg-surface px-5.5 py-5">
     <div className="small-regular text-muted">{label}</div>
     <div
       className={cn(
@@ -108,7 +108,7 @@ const BatchWidget = () => {
         <Tile label="Ошибки" value={failed.length} tone={failed.length ? 'warn' : undefined} />
       </div>
 
-      <Card>
+      <Card mark>
         <div className="flex items-center gap-3 px-5.5 pt-4.5 pb-3.5">
           <span className="h3-bold">Ход обработки</span>
           <span className="flex-1" />
@@ -134,7 +134,7 @@ const BatchWidget = () => {
               <tr
                 key={job.id}
                 onClick={() => navigate(`/study/${job.id}`)}
-                className="cursor-pointer hover:bg-surface-2"
+                className="hl-row cursor-pointer"
               >
                 <td className="border-b border-line px-4 py-3.5 font-semibold">
                   {job.file_name ?? job.id}

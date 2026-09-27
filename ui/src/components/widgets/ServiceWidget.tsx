@@ -1,5 +1,5 @@
 import { useQueryClient } from '@tanstack/react-query'
-import { Database, Trash2 } from 'lucide-react'
+import { Cpu, Database, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Loader from '@/components/shared/Loader'
@@ -100,8 +100,9 @@ const ServiceWidget = () => {
           {USE_MOCKS ? <DemoData /> : null}
         </div>
 
-        <Card>
+        <Card mark>
           <CardHead>
+            <Cpu size={20} className="text-brand" />
             <span className="h3-bold">Модели анализа</span>
           </CardHead>
           <CardBody className="pt-0">

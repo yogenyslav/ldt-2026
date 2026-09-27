@@ -35,7 +35,7 @@ const Select = ({
   <select
     value={value}
     onChange={(event) => onChange(event.target.value)}
-    className="h-11 cursor-pointer appearance-none rounded-control border border-line-2 bg-surface bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%230b63e5%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-[position:right_14px_center] bg-no-repeat pr-9 pl-4 text-[14.5px] text-ink"
+    className="h-11 cursor-pointer appearance-none rounded-control border-[1.5px] border-line-2 bg-surface bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%231e3f93%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-[position:right_14px_center] bg-no-repeat pr-9 pl-4 text-[14.5px] text-ink"
   >
     {options.map(([key, label]) => (
       <option key={key} value={key}>
@@ -171,7 +171,7 @@ const QueueWidget = () => {
             ['force_approved', 'Принято вопреки'],
           ]}
         />
-        <span className="flex h-11 items-center gap-2.5 rounded-control border border-line-2 bg-surface px-4 text-brand">
+        <span className="flex h-11 items-center gap-2.5 rounded-control border-[1.5px] border-line-2 bg-surface px-4 text-brand">
           <Search size={16} />
           <input
             className="w-[210px] border-none bg-transparent text-[14.5px] text-ink outline-none placeholder:text-muted"
@@ -217,7 +217,7 @@ const QueueWidget = () => {
       </div>
 
       {shown.length ? (
-        <div className="overflow-hidden rounded-panel bg-surface shadow-card">
+        <div className="overflow-hidden rounded-panel border border-line bg-surface">
           {shown.map((study) => {
             const level: VerdictKind = studyVerdict(study)
             const decided = study.jobs.filter((job) => job.specialist_decision).length
@@ -236,9 +236,8 @@ const QueueWidget = () => {
                 onClick={() => open()}
                 className={cn(
                   COLUMNS,
-                  'group cursor-pointer border-b border-line px-5 py-3.5 transition-colors last:border-b-0',
-                  'hover:bg-brand-050 hover:ring-[1.5px] hover:ring-brand-400 hover:ring-inset',
-                  picked[study.study_id] && 'bg-brand-050 ring-[1.5px] ring-brand ring-inset',
+                  'hl-row group cursor-pointer border-b border-line px-5 py-3.5 last:border-b-0',
+                  picked[study.study_id] && 'is-on',
                 )}
               >
                 <label className="flex-center cursor-pointer" onClick={(event) => event.stopPropagation()}>

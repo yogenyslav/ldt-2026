@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { ClipboardCopy, Download, Trash2 } from 'lucide-react'
+import { ClipboardCopy, ClipboardList, Download, Trash2 } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Label from '@/components/ui/label'
@@ -75,6 +75,7 @@ const JournalCard = () => {
   return (
     <Card>
       <CardHead>
+        <ClipboardList size={20} className="text-muted" />
         <span className="h3-bold">Журнал сбоев и пожеланий</span>
         <span className="flex-1" />
         <span className="small-regular text-muted">записи этого кабинета</span>
@@ -88,10 +89,10 @@ const JournalCard = () => {
               type="button"
               onClick={() => setKind(value)}
               className={cn(
-                'h-9 cursor-pointer rounded-control border px-4 small-regular font-medium transition-colors',
+                'h-9 cursor-pointer rounded-control border-[1.5px] px-4 small-regular font-medium transition-colors',
                 kind === value
-                  ? 'border-brand bg-brand text-white'
-                  : 'border-line-2 bg-surface text-ink-2 hover:border-brand-400',
+                  ? 'border-brand bg-brand-050 font-semibold text-brand-700'
+                  : 'border-line-2 bg-surface text-ink-2 hover:border-brand-400 hover:bg-hover',
               )}
             >
               {KIND_LABEL[value]}
@@ -115,7 +116,7 @@ const JournalCard = () => {
             id="journal-job"
             value={jobId}
             onChange={(event) => setJobId(event.target.value)}
-            className="h-11 w-full cursor-pointer rounded-control border border-line-2 bg-surface px-4 text-[14.5px] text-ink"
+            className="h-11 w-full cursor-pointer rounded-control border-[1.5px] border-line-2 bg-surface px-4 text-[14.5px] text-ink"
           >
             <option value="">без ссылки</option>
             {recent.map((job) => (
@@ -171,7 +172,7 @@ const JournalCard = () => {
         </Button>
         <a
           className={cn(
-            'inline-flex h-10 items-center justify-center gap-2 rounded-control border border-line-2 bg-surface px-[18px] base-semibold text-ink transition-colors hover:border-muted hover:bg-surface-3',
+            'inline-flex h-10 items-center justify-center gap-2 rounded-control border border-line-2 bg-surface px-[18px] base-semibold text-ink transition-colors hover:border-muted hover:bg-hover',
             !entries.length && 'pointer-events-none opacity-45',
           )}
           href={`data:text/plain;charset=utf-8,${encodeURIComponent(exportText())}`}

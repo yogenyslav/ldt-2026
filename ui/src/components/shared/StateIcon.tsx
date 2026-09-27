@@ -32,7 +32,7 @@ const StateIcon = ({ level, size = 'md', className }: StateIconProps) => {
     <span
       className={cn(
         'flex-center flex-none rounded-soft font-bold',
-        size === 'sm' ? 'h-7 w-7 text-[13px]' : 'h-10 w-10 rounded-xl text-[16px]',
+        size === 'sm' ? 'h-7 w-7 text-[13px]' : 'h-10 w-10 rounded-control text-[16px]',
         TONE[level] ?? TONE[''],
         className,
       )}

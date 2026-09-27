@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Check, Pencil, X } from 'lucide-react'
+import { Check, Pencil, User, X } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Input from '@/components/ui/input'
@@ -44,6 +44,7 @@ const CabinetCard = () => {
   return (
     <Card>
       <CardHead>
+        <User size={20} className="text-muted" />
         <span className="h3-bold">Кабинет и специалист</span>
         <span className="flex-1" />
         <span className="small-regular text-muted">{user?.full_name ?? '—'}</span>
@@ -66,7 +67,7 @@ const CabinetCard = () => {
             ))}
           </div>
         ) : (
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-soft border border-line bg-line">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-control border border-line bg-line">
             {FIELDS.map((field) => (
               <div key={field.key} className="bg-surface px-4 py-3">
                 <div className="text-[13px] text-muted">{field.label}</div>

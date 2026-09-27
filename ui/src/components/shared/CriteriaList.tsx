@@ -3,13 +3,24 @@ import { ChevronRight } from 'lucide-react'
 import StateIcon from '@/components/shared/StateIcon'
 import { criteriaRows } from '@/lib/criteria'
 import { cn } from '@/lib/utils'
-import type { IJobInfo } from '@/types'
+import type { IJobInfo, VerdictKind } from '@/types'
 
-/* A criterion row follows the same rules as the role picker on the sign-in
-   screen: its own surface, a blue outline on hover and an arrow that turns blue.
-   The explanation expands as an inset panel. */
+/* A criterion row and its explanation are one rounded block, coloured by the
+   state of the criterion: hovering tints it in its own colour and expanding
+   deepens the same colour, so nothing recolours under the hand.
+   The rules live in globals.css — see .crit-item. */
 
-const COLUMNS = 'grid grid-cols-[40px_1fr_128px_100px_20px] items-center gap-3.5'
+const COLUMNS = 'grid grid-cols-[30px_1fr_124px_88px_18px] items-center gap-3.5'
+
+const STATE: Record<VerdictKind | '', string> = {
+  ok: 'crit-ok',
+  warn: 'crit-warn',
+  bad: 'crit-bad',
+  failed: 'crit-bad',
+  none: 'crit-dead',
+  wait: 'crit-dead',
+  '': 'crit-dead',
+}
 
 interface CriteriaListProps {
   job: IJobInfo
@@ -22,8 +33,8 @@ const CriteriaList = ({ job, className }: CriteriaListProps) => {
   if (!rows.length) return null
 
   return (
-    <div className={cn('overflow-hidden', className)}>
-      <div className={cn(COLUMNS, 'px-5 pt-4 pb-2.5 text-[13.5px] text-muted')}>
+    <div className={cn('px-3 pb-2.5', className)}>
+      <div className={cn(COLUMNS, 'px-3 pt-3.5 pb-2 text-[13.5px] text-muted')}>
         <span />
         <span>Критерий</span>
         <span className="text-right">Значение</span>
@@ -34,15 +45,13 @@ const CriteriaList = ({ job, className }: CriteriaListProps) => {
       {rows.map((row) => {
         const isOpen = !!open[row.key]
         return (
-          <div key={row.key}>
+          <div
+            key={row.key}
+            className={cn('crit-item mt-[3px] first:mt-0', STATE[row.level], isOpen && 'is-open')}
+          >
             <div
               onClick={() => setOpen((current) => ({ ...current, [row.key]: !current[row.key] }))}
-              className={cn(
-                COLUMNS,
-                'group cursor-pointer border-t border-line px-5 py-3.5 transition-colors',
-                'hover:bg-brand-050 hover:ring-[1.5px] hover:ring-brand-400 hover:ring-inset',
-                isOpen && 'bg-brand-050',
-              )}
+              className={cn(COLUMNS, 'crit-row group cursor-pointer px-3 py-2.5')}
             >
               <StateIcon level={row.level} />
               <span className="base-semibold">{row.name}</span>
@@ -51,10 +60,10 @@ const CriteriaList = ({ job, className }: CriteriaListProps) => {
                 {row.norm}
               </span>
               <ChevronRight
-                size={20}
+                size={18}
                 className={cn(
-                  'text-line-2 transition-transform group-hover:text-brand',
-                  isOpen && 'rotate-90 text-brand',
+                  'text-line-2 transition-transform group-hover:text-[var(--state)]',
+                  isOpen && 'rotate-90 text-[var(--state)]',
                 )}
               />
             </div>
@@ -68,9 +77,7 @@ const CriteriaList = ({ job, className }: CriteriaListProps) => {
               )}
             >
               <div className="overflow-hidden">
-                <p className="m-0 bg-surface-3 px-[22px] py-[18px] base-regular text-ink shadow-[inset_0_2px_4px_-2px_rgba(20,22,31,0.18)]">
-                  {row.detail}
-                </p>
+                <p className="m-0 px-3 pt-0.5 pb-3.5 pl-[57px] base-regular text-ink">{row.detail}</p>
               </div>
             </div>
           </div>

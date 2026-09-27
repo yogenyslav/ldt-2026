@@ -43,7 +43,7 @@ const Picker = ({ current, items, onPick, label, count, dark }: PickerProps) => 
           'flex cursor-pointer items-center gap-2.5 rounded-control border transition-colors',
           dark
             ? 'h-9 min-w-[190px] flex-1 border-scan-edge bg-white/5 px-3 text-[13.5px] text-scan-text-on hover:border-brand-400 hover:bg-brand/25'
-            : 'h-12 min-w-[260px] border-line-2 bg-surface px-3.5 text-[15px] text-ink hover:border-brand-400 hover:bg-brand-050',
+            : 'h-12 min-w-[260px] border-[1.5px] border-line-2 bg-surface px-3.5 text-[15px] text-ink hover:border-brand-400 hover:bg-hover',
           open && (dark ? 'border-brand-400 bg-brand/25' : 'border-brand bg-brand-050'),
         )}
       >
@@ -71,8 +71,8 @@ const Picker = ({ current, items, onPick, label, count, dark }: PickerProps) => 
                 onPick(item)
               }}
               className={cn(
-                'flex w-full cursor-pointer items-center gap-2.5 rounded-soft px-2.5 py-2.5 text-left hover:bg-brand-050',
-                item.id === current.id && 'bg-brand-050 ring-[1.5px] ring-brand-400 ring-inset',
+                'hl-row flex w-full cursor-pointer items-center gap-2.5 rounded-soft px-2.5 py-2.5 text-left',
+                item.id === current.id && 'is-on',
               )}
             >
               <StateIcon level={verdictOf(item)} size="sm" />

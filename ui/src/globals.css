@@ -6,19 +6,28 @@
    Principles:
    · colour carries meaning only — verdict and action; everything else neutral
    · status is readable by shape (an icon), not by colour alone
-   · large surfaces are barely rounded, controls stay soft
+   · flat: surfaces are separated by a hairline border, never by a shadow
+   · one selection rule everywhere — a 1.5px contour plus a faint fill
    · the scan is a dark window in a light frame, like a PACS viewer
+
+   Settled in prototype/panels.html, which keeps the alternatives switchable.
    ============================================================ */
 
 @theme {
-  /* corporate blue of the diagnostics centre */
-  --color-brand-900: #07182e;
-  --color-brand-800: #0b2547;
-  --color-brand-700: #0a4fb4;
-  --color-brand: #0b63e5;
-  --color-brand-400: #4c93ff;
-  --color-brand-100: #d6e6ff;
-  --color-brand-050: #eff5ff;
+  /* Deep blue-violet of the diagnostics centre. Pulled away from the bright
+     blue of the city health apps on purpose: the dark end reads navy, the mid
+     tone is kept at 224° so that buttons do not drift into violet on white. */
+  --color-brand-900: #0b1440;
+  --color-brand-800: #14215c;
+  --color-brand-700: #16306f;
+  --color-brand: #1e3f93;
+  --color-brand-400: #9aa9ce;
+  --color-brand-100: #d2dcf1;
+  --color-brand-050: #eef2fa;
+
+  /* Fill under the pointer: half the strength of brand-050 and translucent, so
+     it lies on white surfaces and on muted ones alike. */
+  --color-hover: color-mix(in srgb, var(--color-brand) 5%, transparent);
 
   /* neutrals */
   --color-bg: #f1f3f7;
@@ -60,15 +69,13 @@
 
   --font-sans: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
 
-  --radius-panel: 8px;
-  --radius-control: 14px;
+  --radius-panel: 16px;
+  --radius-control: 12px;
   --radius-soft: 10px;
 
-  --shadow-card:
-    0 1px 2px rgba(20, 22, 31, 0.05),
-    0 6px 14px -6px rgba(20, 22, 31, 0.1),
-    0 28px 52px -26px rgba(20, 22, 31, 0.38);
-  --shadow-menu: 0 2px 6px rgba(20, 22, 31, 0.08), 0 20px 40px -20px rgba(20, 22, 31, 0.45);
+  /* The only elevation left in the interface: a menu floats above the page and
+     has to say so. Everything else is flat. */
+  --shadow-menu: 0 1px 2px rgba(20, 22, 31, 0.06), 0 12px 28px -14px rgba(20, 22, 31, 0.45);
 }
 
 @layer base {
@@ -219,4 +226,103 @@
   stroke: rgba(4, 9, 15, 0.9);
   stroke-width: 2.8px;
   stroke-linejoin: round;
+}
+
+/* ============================================================
+   Selection and hover. One rule for rows, chips and fields:
+   a 1.5px contour in the accent plus a faint fill. Hover is the
+   same contour with the fill at half strength.
+   ============================================================ */
+
+@layer components {
+  /* Corner mark instead of a pastel tile under an icon: it names the card
+     without painting a whole strip. */
+  .mark-top {
+    position: relative;
+  }
+
+  .mark-top::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 34px;
+    height: 3px;
+    background: var(--color-brand);
+  }
+
+  .hl-row {
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .hl-row:hover {
+    background: var(--color-hover);
+    box-shadow: inset 0 0 0 1.5px var(--color-brand-400);
+  }
+
+  .hl-row.is-on {
+    background: var(--color-brand-050);
+    box-shadow: inset 0 0 0 1.5px var(--color-brand);
+  }
+
+  /* ---- criteria table ----
+     A row and its explanation are one block, coloured by the state of the
+     criterion itself: hovering must not paint it blue first and then recolour
+     it on expand. The state supplies three values, the rules below use them. */
+
+  .crit-ok {
+    --state: var(--color-ok);
+    --tint: var(--color-ok-bg);
+    --edge: var(--color-ok-line);
+  }
+
+  .crit-warn {
+    --state: var(--color-warn);
+    --tint: var(--color-warn-bg);
+    --edge: var(--color-warn-line);
+  }
+
+  .crit-bad {
+    --state: var(--color-bad);
+    --tint: var(--color-bad-bg);
+    --edge: var(--color-bad-line);
+  }
+
+  .crit-dead {
+    --state: var(--color-dead);
+    --tint: var(--color-dead-bg);
+    --edge: var(--color-dead-line);
+  }
+
+  .crit-item {
+    border-radius: 12px;
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .crit-row {
+    border-radius: 12px;
+    transition:
+      background 0.15s,
+      box-shadow 0.15s;
+  }
+
+  .crit-row:hover {
+    background: color-mix(in srgb, var(--state) 6%, transparent);
+    box-shadow: inset 0 0 0 1.5px color-mix(in srgb, var(--state) 40%, #fff);
+  }
+
+  .crit-item.is-open {
+    background: var(--tint);
+    box-shadow: inset 0 0 0 1.5px var(--edge);
+  }
+
+  /* already filled — hovering an open row must not flicker on top of it */
+  .crit-item.is-open .crit-row:hover {
+    background: transparent;
+    box-shadow: none;
+  }
 }

@@ -161,7 +161,7 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
         <Viewer job={job} className="h-[520px]" />
 
         <div className="flex flex-col gap-3.5">
-          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel bg-line shadow-card">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-line bg-line">
             <Cell label="Пациент" value={job.patient_ref ?? '—'} />
             <Cell label="Поступило" value={whenOf(job.created_at)} />
             <Cell label="Область" value={job.anatomical_region ? REGION[job.anatomical_region] : '—'} />

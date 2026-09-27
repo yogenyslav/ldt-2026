@@ -34,8 +34,8 @@ const SideNav = ({ queueCount, todayCount }: SideNavProps) => {
                   end={item.route === '/'}
                   className={({ isActive }) =>
                     cn(
-                      'flex h-11 items-center gap-2.5 rounded-xl px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors',
-                      isActive ? 'bg-brand text-white' : 'text-ink hover:bg-surface-3',
+                      'flex h-11 items-center gap-2.5 rounded-control px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors',
+                      isActive ? 'bg-brand text-white' : 'text-ink hover:bg-hover',
                     )
                   }
                 >
