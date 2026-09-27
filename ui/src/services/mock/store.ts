@@ -192,15 +192,6 @@ const store = {
     return createJob(fileName, source)
   },
 
-  /* What the densitometer does by itself: sends a study to the PACS, and a job
-     shows up in the queue that this interface did not create. Demo only — the
-     setup check on the station uses it to exercise the device mode. */
-  arrive() {
-    const region = REGIONS[state.counter % REGIONS.length]
-    const key = `CR${String(1000 + state.counter).padStart(6, '0')}`
-    return createJob(`${key}_${SHORT[region]}.dcm`, 'device')
-  },
-
   decide(jobIds: string[], decision: Decision, comment: string, specialist: string) {
     for (const job of state.jobs) {
       if (!jobIds.includes(job.id)) continue

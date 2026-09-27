@@ -1,12 +1,9 @@
 import { useEffect, useState } from 'react'
-import { useQueryClient } from '@tanstack/react-query'
 import { Check, Radio, Upload } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
-import { USE_MOCKS } from '@/config'
 import { useCabinet } from '@/context/CabinetContext'
 import { useLatestJobs } from '@/hooks/useJobs'
-import store from '@/services/mock/store'
 import { cn, timeOf } from '@/lib/utils'
 import type { Intake } from '@/lib/cabinet'
 
@@ -39,7 +36,6 @@ const OPTIONS: Array<{
 const WINDOW_MS = 90_000
 
 const IntakeCheck = () => {
-  const queryClient = useQueryClient()
   const [startedAt, setStartedAt] = useState<number | null>(null)
   const { data: jobs } = useLatestJobs(startedAt !== null)
 
@@ -84,23 +80,7 @@ const IntakeCheck = () => {
   return (
     <div className="flex w-full flex-wrap items-center gap-x-3 gap-y-2.5">
       <Button onClick={() => setStartedAt(Date.now())}>Ждать снимок</Button>
-      {/* Demo mode: there is no densitometer on the other end, so the check has
-          to be given something to catch. */}
-      {USE_MOCKS ? (
-        <Button
-          variant="quiet"
-          onClick={() => {
-            setStartedAt(Date.now() - 1000)
-            store.arrive()
-            void queryClient.invalidateQueries({ queryKey: ['jobs'] })
-          }}
-        >
-          Эмулировать снимок с аппарата
-        </Button>
-      ) : null}
-      <span className="small-regular text-muted">
-        первичная настройка кабинета: полторы минуты на тестовый снимок с аппарата
-      </span>
+      <span className="small-regular text-muted">проверка приёма с аппарата</span>
     </div>
   )
 }

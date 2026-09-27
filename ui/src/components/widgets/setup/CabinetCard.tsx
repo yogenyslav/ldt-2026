@@ -13,8 +13,7 @@ import type { ICabinet } from '@/lib/cabinet'
    once at installation, and a value that can be overwritten by a stray click is
    worse than no value at all.
 
-   The four cells fill the card, two by two, so the table reads as the body of
-   the card rather than as a block dropped into its top corner. */
+   The four cells sit two by two across the full width of the card. */
 
 type Field = 'clinic' | 'room' | 'device' | 'software'
 
@@ -70,9 +69,9 @@ const CabinetCard = () => {
             ))}
           </div>
         ) : (
-          <div className="grid h-full grid-cols-2 grid-rows-2 gap-px overflow-hidden rounded-control border border-line bg-line">
+          <div className="grid grid-cols-2 gap-px overflow-hidden rounded-control border border-line bg-line">
             {FIELDS.map((field) => (
-              <div key={field.key} className="flex flex-col justify-center bg-surface px-4 py-3">
+              <div key={field.key} className="bg-surface px-4 py-3.5">
                 <div className="text-[13px] text-muted">{field.label}</div>
                 <div
                   className={
