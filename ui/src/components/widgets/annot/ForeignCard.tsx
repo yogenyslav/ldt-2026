@@ -13,7 +13,7 @@ import type { IAnnotPolygon, Point } from '@/types'
    Посторонние предметы. There is no region to stay inside of here:
    an object anywhere on the frame is worth having, even where the
    model does not look today — which is a question left with ML
-   (context/backend_requests.md).
+   (context/back_annotations.md).
 
    Picking what is being outlined arms the pencil: press on the scan,
    lead the pointer around the object and release — the shape closes

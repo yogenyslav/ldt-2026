@@ -60,7 +60,7 @@ export function rotationSettings(value?: Record<string, number>): IRotationSetti
 
 /* The settings the service is running right now, as the last result reports
    them. There is no endpoint for reading them on their own — see
-   context/backend_requests.md. */
+   context/back_annotations.md. */
 export function settingsOf(jobs?: IJobInfo[]): IRotationSettings | null {
   for (const job of jobs ?? []) {
     const found = rotationSettings(job.metadata?.settings)
@@ -130,7 +130,7 @@ export function normText(settings: IRotationSettings): string {
 /* ---------- which models the service is running ----------
    Reported with every result in `metadata.models`: the name the contract uses
    and whether it is connected. There is no endpoint that lists them on their
-   own, so the last result is the source — see context/backend_requests.md. */
+   own, so the last result is the source — see context/back_annotations.md. */
 
 export interface IModelState {
   id: string

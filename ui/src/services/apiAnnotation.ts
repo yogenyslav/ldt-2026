@@ -10,7 +10,7 @@ import type { AnnotTask, IModelVersion, ITrainTarget, Point, Region } from '@/ty
    is immutable — a correction is a new one with `supersedes`.
 
    Neither of these routes exists on the server yet. They are listed
-   in context/backend_requests.md; until they are there the call fails
+   in context/back_annotations.md; until they are there the call fails
    and the screen says so, which is the truth.
    ============================================================ */
 
