@@ -39,6 +39,7 @@ import {
   withEdits,
   type PointEdits,
 } from '@/lib/annotation'
+import { isStrokeWorthKeeping, outlineOf, simplifyOutline } from '@/lib/annotation'
 import { annotTasks, caseOf, clampToBox, hasZones } from '@/lib/annotQueue'
 import { delta } from '@/lib/tune'
 import {
@@ -52,7 +53,7 @@ import {
   rotationFrames,
   settingsOf,
 } from '@/lib/settings'
-import type { IAnnotCase, IJobInfo } from '@/types'
+import type { IAnnotCase, IJobInfo, Point } from '@/types'
 
 let passed = 0
 const failures: string[] = []
@@ -225,6 +226,45 @@ eq(
   withEdits(foreignCase, {}, [{ cls: 'wire', points: [[0, 0], [5, 0], [5, 5]] }]).polygons!.length,
   1,
 )
+
+/* ---- след от мыши прореживается, но форму сохраняет ---- */
+
+/* прямая, размеченная сотней точек, — это две точки */
+const straight: Point[] = Array.from({ length: 100 }, (_, i) => [i, 0] as Point)
+eq('точки на прямой выкидываются', simplifyOutline(straight).length, 2)
+
+/* угол терять нельзя */
+const corner: Point[] = [
+  ...Array.from({ length: 50 }, (_, i) => [i, 0] as Point),
+  ...Array.from({ length: 50 }, (_, i) => [49, i] as Point),
+]
+const thinnedCorner = simplifyOutline(corner)
+ok('угол сохраняется', thinnedCorner.length >= 3 && thinnedCorner.length < 10)
+ok(
+  'вершина угла осталась на месте',
+  thinnedCorner.some(([x, y]) => x === 49 && y === 0),
+)
+
+/* окружность: точек становится меньше, но контур не съезжает */
+const circle: Point[] = Array.from({ length: 360 }, (_, degree) => {
+  const angle = (degree * Math.PI) / 180
+  return [100 + 30 * Math.cos(angle), 100 + 30 * Math.sin(angle)] as Point
+})
+const thinnedCircle = simplifyOutline(circle)
+ok('окружность прорежена', thinnedCircle.length < circle.length / 4)
+ok(
+  'и осталась окружностью',
+  thinnedCircle.every(([x, y]) => Math.abs(Math.hypot(x - 100, y - 100) - 30) < 1.5),
+)
+ok(
+  'прореженные точки — подмножество исходных',
+  thinnedCircle.every(([x, y]) => circle.some(([cx, cy]) => cx === x && cy === y)),
+)
+
+eq('контур не повторяет первую точку в конце', outlineOf([...circle, circle[0]]).at(-1)?.[0] !== circle[0][0] || outlineOf([...circle, circle[0]]).length < 4, true)
+eq('случайный клик контуром не становится', isStrokeWorthKeeping([[10, 10], [10.5, 10], [10, 10.5]]), false)
+eq('настоящая обводка сохраняется', isStrokeWorthKeeping(circle), true)
+eq('двух точек мало в любом случае', isStrokeWorthKeeping([[0, 0], [50, 50]]), false)
 
 /* ---------- 4. подбор параметров: настоящие настройки анализатора ---------- */
 

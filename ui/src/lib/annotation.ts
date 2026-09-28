@@ -183,13 +183,75 @@ export function nextPoint(item: IAnnotCase, from: number): number {
 }
 
 /* ---------- drawing a foreign object ----------
-   The outline is closed by hand, so a stray double-click must not leave a
-   two-point «polygon» behind. */
+   The outline is drawn the way a pencil draws: press, lead the pointer around
+   the object, release. What that produces is a stroke of hundreds of points a
+   couple of pixels apart, which is not an outline anybody wants to store or
+   train on — so the stroke is thinned before it becomes a polygon. */
 
 export const MIN_POLYGON = 3
 
 export function canClose(points: Point[]): boolean {
   return points.length >= MIN_POLYGON
+}
+
+/* A stray click while the pencil is armed must not leave a speck behind. */
+const MIN_SPAN_PX = 4
+
+export function isStrokeWorthKeeping(points: Point[]): boolean {
+  if (points.length < MIN_POLYGON) return false
+  const xs = points.map(([x]) => x)
+  const ys = points.map(([, y]) => y)
+  const width = Math.max(...xs) - Math.min(...xs)
+  const height = Math.max(...ys) - Math.min(...ys)
+  return width >= MIN_SPAN_PX || height >= MIN_SPAN_PX
+}
+
+/* Perpendicular distance from a point to the line through two others. */
+function distanceToLine(point: Point, from: Point, to: Point): number {
+  const dx = to[0] - from[0]
+  const dy = to[1] - from[1]
+  if (dx === 0 && dy === 0) return Math.hypot(point[0] - from[0], point[1] - from[1])
+  const across = Math.abs(dy * point[0] - dx * point[1] + to[0] * from[1] - to[1] * from[0])
+  return across / Math.hypot(dx, dy)
+}
+
+/* Ramer–Douglas–Peucker: drop every point that lies within `tolerance` of the
+   line between the ones that survive. The shape stays where it was drawn; only
+   the points that said nothing go away. Tolerance is in frame pixels, so the
+   outline is thinned by the same amount however far the frame was zoomed. */
+export function simplifyOutline(points: Point[], tolerance = 0.6): Point[] {
+  if (points.length <= 2) return points.slice()
+
+  const first = points[0]
+  const last = points[points.length - 1]
+
+  let worst = 0
+  let at = 0
+  for (let index = 1; index < points.length - 1; index += 1) {
+    const distance = distanceToLine(points[index], first, last)
+    if (distance > worst) {
+      worst = distance
+      at = index
+    }
+  }
+
+  if (worst <= tolerance) return [first, last]
+
+  const left = simplifyOutline(points.slice(0, at + 1), tolerance)
+  const right = simplifyOutline(points.slice(at), tolerance)
+  return [...left.slice(0, -1), ...right]
+}
+
+/* The stroke as it goes into a submission: thinned, and without the closing
+   point — a polygon closes itself. */
+export function outlineOf(stroke: Point[], tolerance = 0.6): Point[] {
+  const thin = simplifyOutline(stroke, tolerance)
+  if (thin.length > 3) {
+    const [firstX, firstY] = thin[0]
+    const [lastX, lastY] = thin[thin.length - 1]
+    if (Math.hypot(lastX - firstX, lastY - firstY) < 1) thin.pop()
+  }
+  return thin
 }
 
 /* What the annotator did to each point, in the words of the contract:

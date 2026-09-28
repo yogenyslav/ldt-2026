@@ -6,7 +6,6 @@ import Kbd from '@/components/ui/kbd'
 import Tag from '@/components/ui/tag'
 import Hint from '@/components/shared/Hint'
 import { FOREIGN_ANSWER, FOREIGN_KIND } from '@/constants'
-import { canClose } from '@/lib/annotation'
 import { cn } from '@/lib/utils'
 import type { IAnnotPolygon, Point } from '@/types'
 
@@ -16,8 +15,9 @@ import type { IAnnotPolygon, Point } from '@/types'
    model does not look today — which is a question left with ML
    (context/backend_requests.md).
 
-   Picking what is being outlined arms the scan: clicks lay down the
-   corners, Enter or a double-click closes the shape.
+   Picking what is being outlined arms the pencil: press on the scan,
+   lead the pointer around the object and release — the shape closes
+   itself. Esc drops a stroke half-drawn.
 
    A clean frame is just as needed an answer as a dirty one, so it
    is a button of its own and not the absence of one.
@@ -34,8 +34,6 @@ interface ForeignCardProps {
   drawing: Point[] | null
   answer: string | null
   onKind: (kind: 'wire' | 'object' | null) => void
-  onClose: () => void
-  onDropVertex: () => void
   onRemove: (index: number) => void
   onAnswer: (id: string) => void
 }
@@ -46,12 +44,10 @@ const ForeignCard = ({
   drawing,
   answer,
   onKind,
-  onClose,
-  onDropVertex,
   onRemove,
   onAnswer,
 }: ForeignCardProps) => {
-  const laying = drawing?.length ?? 0
+  const drawingNow = !!drawing?.length
 
   return (
     <Card>
@@ -97,25 +93,10 @@ const ForeignCard = ({
               {on ? (
                 <div className="mt-2.5 ml-[31px] flex flex-wrap items-center gap-2.5">
                   <span className="text-[13px] text-ink-2">
-                    {laying
-                      ? `поставлено углов: ${laying}`
-                      : 'кликайте по снимку — по углу за клик'}
+                    {drawingNow
+                      ? 'ведите вокруг предмета, отпустите — контур замкнётся'
+                      : 'обведите предмет на снимке, удерживая кнопку мыши'}
                   </span>
-                  <Button
-                    className="h-8 px-3 text-[14px]"
-                    disabled={!drawing || !canClose(drawing)}
-                    onClick={onClose}
-                  >
-                    замкнуть <Kbd>Enter</Kbd>
-                  </Button>
-                  <Button
-                    variant="quiet"
-                    className="h-8 px-3 text-[14px]"
-                    disabled={!laying}
-                    onClick={onDropVertex}
-                  >
-                    убрать угол
-                  </Button>
                 </div>
               ) : null}
             </div>
@@ -141,7 +122,7 @@ const ForeignCard = ({
                     {FOREIGN_KIND.find((item) => item.id === polygon.cls)?.title ?? polygon.cls}
                   </span>
                   <span className="text-[12.5px] text-muted tabular">
-                    {polygon.points.length} углов
+                    {polygon.points.length} точек
                   </span>
                   <button
                     type="button"

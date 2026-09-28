@@ -18,12 +18,13 @@ import { useAnnotQueue, useAnnotTask, useSubmitAnnot } from '@/hooks/useAnnotati
 import { useDicomImage } from '@/hooks/useDicomImage'
 import {
   activeIndex,
-  canClose,
   clearPoint,
   confirmPoint,
+  isStrokeWorthKeeping,
   nextKey,
   nextPoint,
   originOf,
+  outlineOf,
   placeInQueue,
   placePoint,
   pointStates,
@@ -64,11 +65,20 @@ const AnnotDeskWidget = () => {
   const { toast } = useToast()
   const navigate = useNavigate()
 
+  /* Frames put aside for now. «Пропустить» is not an answer and is not sent
+     anywhere: it means «не сейчас», so the frame stays in the queue and the
+     conveyor simply walks past it until the screen is left. */
+  const [skipped, setSkipped] = useState<string[]>([])
+
   /* The desk walks the frames that still need work; a correction is opened
      from the second list and stays on its own frame. */
   const keys = useMemo(() => pending.map((item) => item.key), [pending])
   const correcting = !!current && done.some((item) => item.key === current)
-  const key = current && (keys.includes(current) || correcting) ? current : (keys[0] ?? null)
+  const waiting = keys.filter((item) => !skipped.includes(item))
+  const key =
+    current && (keys.includes(current) || correcting)
+      ? current
+      : (waiting[0] ?? keys[0] ?? null)
 
   const { data: job } = useAnnotTask(key ?? undefined)
   const { src } = useDicomImage(job?.dicom_id)
@@ -158,19 +168,35 @@ const AnnotDeskWidget = () => {
     setEdits((current) => clearPoint(current, index))
   }, [])
 
-  const addVertex = useCallback((x: number, y: number) => {
-    setDrawing((current) => [...(current ?? []), [x, y] as Point])
+  /* ---- the pencil ----
+     Points arrive as fast as the pointer moves, so only a step of real length
+     is kept: a stroke of a thousand points a tenth of a pixel apart is the
+     same outline, only heavier. What survives is thinned again on release. */
+  const STEP_PX = 1.2
+
+  const strokeStart = useCallback((x: number, y: number) => {
+    setDrawing([[x, y]])
   }, [])
 
-  const closeOutline = useCallback(() => {
-    if (!drawing || !canClose(drawing) || !drawingKind) return
-    setDrawn((list) => [...(list ?? base?.polygons ?? []), { cls: drawingKind, points: drawing }])
-    setDrawing([])
-  }, [drawing, drawingKind, base])
-
-  const dropVertex = useCallback(() => {
-    setDrawing((current) => (current?.length ? current.slice(0, -1) : current))
+  const strokeMove = useCallback((x: number, y: number) => {
+    setDrawing((current) => {
+      if (!current?.length) return current
+      const [lastX, lastY] = current[current.length - 1]
+      if (Math.hypot(x - lastX, y - lastY) < STEP_PX) return current
+      return [...current, [x, y] as Point]
+    })
   }, [])
+
+  const strokeEnd = useCallback(() => {
+    setDrawing((stroke) => {
+      if (!stroke || !drawingKind) return null
+      /* a stray click while the pencil is armed must not leave a speck */
+      if (!isStrokeWorthKeeping(stroke)) return null
+      const outline = outlineOf(stroke)
+      setDrawn((list) => [...(list ?? base?.polygons ?? []), { cls: drawingKind, points: outline }])
+      return null
+    })
+  }, [drawingKind, base])
 
   const removePolygon = useCallback(
     (index: number) => {
@@ -179,13 +205,22 @@ const AnnotDeskWidget = () => {
     [base],
   )
 
+  /* Put aside and move on. Nothing is sent: the frame keeps its place in the
+     queue and comes back on the next visit. */
+  const skip = useCallback(() => {
+    if (!key) return
+    const rest = waiting.filter((item) => item !== key)
+    setSkipped((list) => [...list, key])
+    if (rest.length) open(rest[0])
+  }, [key, waiting, open])
+
   /* ---- sending the frame on ---- */
 
   const finish = useCallback(
     async (status: SubmissionStatus) => {
       if (!key || !work || !job) return
 
-      if (status !== 'done' && !comment.trim()) {
+      if (status === 'uncertain' && !comment.trim()) {
         toast({
           variant: 'destructive',
           title: 'Напишите в комментарии, что именно смутило — без этого снимок не отправить',
@@ -236,11 +271,9 @@ const AnnotDeskWidget = () => {
         toast({
           title: warnings.length
             ? 'Разметка отправлена. Одна из точек лежит вне кости — проверьте, если это ошибка'
-            : status === 'done'
-              ? 'Разметка отправлена'
-              : status === 'uncertain'
-                ? 'Снимок уйдёт на второй взгляд'
-                : 'Снимок пропущен',
+            : status === 'uncertain'
+              ? 'Снимок уйдёт на второй взгляд'
+              : 'Разметка отправлена',
         })
 
         const after = nextKey(keys, key)
@@ -267,19 +300,6 @@ const AnnotDeskWidget = () => {
         setDrawing(null)
         setDrawingKind(null)
         return
-      }
-
-      if (work.task === 'foreign_seg') {
-        if (event.key === 'Backspace' && drawing?.length) {
-          event.preventDefault()
-          dropVertex()
-          return
-        }
-        if (event.key === 'Enter' && drawing && canClose(drawing)) {
-          event.preventDefault()
-          closeOutline()
-          return
-        }
       }
 
       if (event.key === 'Enter') {
@@ -315,7 +335,7 @@ const AnnotDeskWidget = () => {
 
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [work, total, active, drawing, finish, absent, dropVertex, closeOutline])
+  }, [work, total, active, finish, absent])
 
   if (isLoading) return <Loader />
 
@@ -330,8 +350,13 @@ const AnnotDeskWidget = () => {
         <span className="text-[13px] text-muted">
           {correcting
             ? 'Разметка этого снимка уже отправлена — правка заменит её'
-            : `Ждут разметки: ${pending.length}`}
+            : `Ждут разметки: ${waiting.length}`}
         </span>
+        {skipped.length ? (
+          <Button variant="quiet" className="h-8 px-3 text-[14px]" onClick={() => setSkipped([])}>
+            Вернуть отложенные ({skipped.length})
+          </Button>
+        ) : null}
         <span className="flex-1" />
         <Button variant="quiet" className="h-8 px-3 text-[14px]" onClick={() => navigate('/markup')}>
           Открыть очередь
@@ -347,19 +372,20 @@ const AnnotDeskWidget = () => {
             drawingKind={drawingKind}
             onPlace={place}
             onPickPoint={setPick}
-            onVertex={addVertex}
-            onCloseOutline={closeOutline}
+            onStrokeStart={strokeStart}
+            onStrokeMove={strokeMove}
+            onStrokeEnd={strokeEnd}
             onRemovePolygon={removePolygon}
           />
 
           <div className="flex min-w-0 flex-col gap-4.5">
             <ActionBar
               item={work}
-              place={correcting ? '' : placeInQueue(keys, key)}
+              place={correcting ? '' : placeInQueue(waiting, key)}
               busy={submit.isPending}
               onDone={() => void finish('done')}
               onDoubt={() => void finish('uncertain')}
-              onSkip={() => void finish('skipped')}
+              onSkip={skip}
             />
 
             {work.task === 'foreign_seg' ? (
@@ -372,8 +398,6 @@ const AnnotDeskWidget = () => {
                   setDrawingKind(value)
                   setDrawing(value ? [] : null)
                 }}
-                onClose={closeOutline}
-                onDropVertex={dropVertex}
                 onRemove={removePolygon}
                 onAnswer={setAnswer}
               />

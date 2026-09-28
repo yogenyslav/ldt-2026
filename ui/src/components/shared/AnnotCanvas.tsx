@@ -18,9 +18,10 @@ import type { IAnnotCase, Point } from '@/types'
    the finger is lifted. An existing marker is picked up by its own
    handle — that neither moves another point nor adds a stray one.
 
-   Objects: clicks lay down the outline, a double-click closes it.
-   There is no restricted area here — a foreign object anywhere on
-   the frame is worth having.
+   Objects: the outline is drawn like a pencil draws — press, lead
+   the pointer around the object, release, and the shape closes
+   itself. There is no restricted area here: a foreign object
+   anywhere on the frame is worth having.
 
    Only the region of the point in hand is lit, and softly: it is a
    hint about where to look, not a button to press.
@@ -36,8 +37,10 @@ interface AnnotCanvasProps {
   drawingKind: 'wire' | 'object' | null
   onPlace: (index: number, x: number, y: number) => void
   onPickPoint: (index: number) => void
-  onVertex: (x: number, y: number) => void
-  onCloseOutline: () => void
+  /* the pencil: one call to start the stroke, one per step, one to finish */
+  onStrokeStart: (x: number, y: number) => void
+  onStrokeMove: (x: number, y: number) => void
+  onStrokeEnd: () => void
   onRemovePolygon: (index: number) => void
 }
 
@@ -48,13 +51,16 @@ const AnnotCanvas = ({
   drawingKind,
   onPlace,
   onPickPoint,
-  onVertex,
-  onCloseOutline,
+  onStrokeStart,
+  onStrokeMove,
+  onStrokeEnd,
   onRemovePolygon,
 }: AnnotCanvasProps) => {
   const svg = useRef<SVGSVGElement>(null)
   /* Which point the pointer is currently carrying, if any. */
   const held = useRef<number | null>(null)
+  /* Whether the pencil is down right now. */
+  const drawingNow = useRef(false)
 
   const points = item.items ?? []
   const drawable = item.task === 'foreign_seg'
@@ -83,7 +89,11 @@ const AnnotCanvas = ({
     if (!at) return
 
     if (drawable) {
-      if (drawingKind) onVertex(at[0], at[1])
+      if (!drawingKind) return
+      event.preventDefault()
+      drawingNow.current = true
+      svg.current?.setPointerCapture(event.pointerId)
+      onStrokeStart(at[0], at[1])
       return
     }
     if (active < 0 || !points.length) return
@@ -106,12 +116,24 @@ const AnnotCanvas = ({
   }
 
   const onMove = (event: React.PointerEvent) => {
-    if (held.current === null) return
     const at = toFrame(event.clientX, event.clientY)
-    if (at) onPlace(held.current, at[0], at[1])
+    if (!at) return
+
+    if (drawingNow.current) {
+      onStrokeMove(at[0], at[1])
+      return
+    }
+    if (held.current === null) return
+    onPlace(held.current, at[0], at[1])
   }
 
   const onUp = (event: React.PointerEvent) => {
+    if (drawingNow.current) {
+      drawingNow.current = false
+      svg.current?.releasePointerCapture(event.pointerId)
+      onStrokeEnd()
+      return
+    }
     if (held.current === null) return
     held.current = null
     svg.current?.releasePointerCapture(event.pointerId)
@@ -176,7 +198,6 @@ const AnnotCanvas = ({
             onPointerMove={onMove}
             onPointerUp={onUp}
             onPointerCancel={onUp}
-            onDoubleClick={() => drawable && onCloseOutline()}
           >
             {/* The hit area. SVG has no background of its own, and this must
                 be the only thing that takes a press: a shape drawn on top of
@@ -228,15 +249,16 @@ const AnnotCanvas = ({
             ))}
 
             {/* The outline being laid down: the line so far and its corners. */}
-            {drawing?.length ? (
+            {drawing && drawing.length > 1 ? (
               <g pointerEvents="none">
+                <polygon
+                  className={drawingKind === 'wire' ? 'draft-fill-wire' : 'draft-fill-object'}
+                  points={path(drawing)}
+                />
                 <polyline
                   className={drawingKind === 'wire' ? 'draft-wire' : 'draft-object'}
                   points={path(drawing)}
                 />
-                {drawing.map(([x, y], index) => (
-                  <circle key={index} className="draft-dot" cx={x} cy={y} r={2} />
-                ))}
               </g>
             ) : null}
 
