@@ -1,10 +1,24 @@
-import { Navigate, Route, Routes } from 'react-router-dom'
+import { Navigate, Outlet, Route, Routes } from 'react-router-dom'
 import SigninForm from './_auth/forms/SigninForm'
 import AuthLayout from './_auth/AuthLayout'
 import RootLayout from './_root/RootLayout'
 import PostLayout from './_root/PostLayout'
 import PrivateRoute from './routes/PrivateRoute'
-import { Queue, Study, Batch, Reports, Service, Soon, Post, Setup } from './_root/pages'
+import AnnotProvider from './context/AnnotContext'
+import {
+  Queue,
+  Study,
+  Batch,
+  Reports,
+  Service,
+  Soon,
+  Post,
+  Setup,
+  AnnotQueue,
+  Annot,
+  Training,
+  Tuning,
+} from './_root/pages'
 
 const App = () => {
   return (
@@ -32,7 +46,20 @@ const App = () => {
             <Route path="/batch" element={<Batch />} />
             <Route path="/reports" element={<Reports />} />
             <Route path="/service" element={<Service />} />
-            <Route path="/markup" element={<Soon section="markup" />} />
+            {/* The annotation contour: the source filter is one thing across
+                the queue and the desk, so both sit inside one provider. */}
+            <Route
+              element={
+                <AnnotProvider>
+                  <Outlet />
+                </AnnotProvider>
+              }
+            >
+              <Route path="/markup" element={<AnnotQueue />} />
+              <Route path="/markup/frame" element={<Annot />} />
+            </Route>
+            <Route path="/training" element={<Training />} />
+            <Route path="/tuning" element={<Tuning />} />
             <Route path="/analytics" element={<Soon section="analytics" />} />
             <Route path="/cases" element={<Soon section="cases" />} />
           </Route>

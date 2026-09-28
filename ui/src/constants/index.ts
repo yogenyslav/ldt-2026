@@ -125,10 +125,6 @@ export const sidebarLinks = [
 
 /* Sections the backend has no endpoints for yet. */
 export const SOON: Record<string, { title: string; text: string }> = {
-  markup: {
-    title: 'Разметка',
-    text: 'Ручная правка найденной оси позвоночника и ключевых точек бедра с сохранением исправленной геометрии.',
-  },
   analytics: {
     title: 'Аналитика качества',
     text: 'Доля брака по сети, разбивка по аппаратам, зонам и типам нарушений, динамика по неделям.',
@@ -158,9 +154,9 @@ export const ANNOT_POINT_NAME: Record<string, string> = {
 /* What the queue is asking for on a given frame. The fourth task has no card of
    its own: its answer is the same checkbox as in the third. */
 export const ANNOT_TASK: Record<AnnotTask, string> = {
-  hip_keypoints: 'Точки бедра',
-  pelvis_crest: 'Гребни и окна',
-  foreign_seg: 'Посторонний предмет',
+  hip_keypoints: '2 · точки бедра',
+  pelvis_crest: '3 + 4 · гребни и окна',
+  foreign_seg: '5 · посторонний предмет',
 }
 
 export const ANNOT_CASE_TITLE: Record<string, string> = {

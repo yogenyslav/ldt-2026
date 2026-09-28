@@ -115,6 +115,8 @@ const SEED_TARGETS: ITrainTarget[] = [
     hard: 'чистых снимков для сравнения: 61 из 60',
     ready: true,
     busy: true,
+    done: 0.34,
+    left_minutes: 22,
   },
 ]
 

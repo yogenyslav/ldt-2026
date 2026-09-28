@@ -1,10 +1,9 @@
-import { BarChart3, FolderClosed, PenLine } from 'lucide-react'
+import { BarChart3, FolderClosed } from 'lucide-react'
 import Card from '@/components/ui/card'
 import Empty from '@/components/shared/Empty'
 import { SOON } from '@/constants'
 
 const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
-  markup: PenLine,
   analytics: BarChart3,
   cases: FolderClosed,
 }

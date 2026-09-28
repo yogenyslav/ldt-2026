@@ -1,5 +1,16 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, FileText, FolderClosed, HardDrive, Layers, List, PenLine } from 'lucide-react'
+import {
+  BarChart3,
+  BrainCircuit,
+  FileText,
+  FolderClosed,
+  HardDrive,
+  Inbox,
+  Layers,
+  List,
+  PenLine,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { sidebarLinks } from '@/constants'
 import { cn } from '@/lib/utils'
 
@@ -8,6 +19,9 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   layers: Layers,
   file: FileText,
   pen: PenLine,
+  inbox: Inbox,
+  brain: BrainCircuit,
+  sliders: SlidersHorizontal,
   chart: BarChart3,
   folder: FolderClosed,
   drive: HardDrive,
@@ -15,10 +29,17 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 
 interface SideNavProps {
   queueCount?: number
+  markupCount?: number
   todayCount?: number
 }
 
-const SideNav = ({ queueCount, todayCount }: SideNavProps) => {
+/* Which links carry a count, and where it comes from. */
+const COUNTED: Record<string, 'queue' | 'markup'> = {
+  '/': 'queue',
+  '/markup': 'markup',
+}
+
+const SideNav = ({ queueCount, markupCount, todayCount }: SideNavProps) => {
   return (
     <aside className="flex flex-col border-r border-line bg-surface">
       <nav className="flex flex-col gap-0.5 p-3">
@@ -39,22 +60,31 @@ const SideNav = ({ queueCount, todayCount }: SideNavProps) => {
                     )
                   }
                 >
-                  {({ isActive }) => (
+                  {({ isActive }) => {
+                    const count =
+                      COUNTED[item.route] === 'queue'
+                        ? queueCount
+                        : COUNTED[item.route] === 'markup'
+                          ? markupCount
+                          : undefined
+
+                    return (
                     <>
                       <Icon size={18} />
                       {item.label}
-                      {item.route === '/' && queueCount !== undefined ? (
+                      {count !== undefined ? (
                         <span
                           className={cn(
                             'ml-auto flex-center h-6 min-w-6 rounded-full px-1.5 small-regular font-semibold',
                             isActive ? 'bg-white/20 text-white' : 'bg-surface-3 text-ink-2',
                           )}
                         >
-                          {queueCount}
+                          {count}
                         </span>
                       ) : null}
                     </>
-                  )}
+                    )
+                  }}
                 </NavLink>
               )
             })}

@@ -154,6 +154,10 @@ export type AnnotTask = 'hip_keypoints' | 'pelvis_crest' | 'foreign_seg'
    image never disagree. */
 export type PointState = 'empty' | 'suggested' | 'absent' | 'checked'
 
+/* What the annotator says about a point: the suggestion is right, or the
+   anatomy is cut off by the frame edge. */
+export type PointAnswer = 'confirmed' | 'absent'
+
 /* Three states of a criterion across the whole contour:
    норма · сомнение · нарушение. Doubt is not a violation — the
    same rule the analyser follows. */
@@ -175,6 +179,9 @@ export interface IAnnotPoint {
   /* somebody has already looked at this suggestion: behind the flag sit the
      contract's origin values — human / model_confirmed versus model */
   reviewed?: boolean
+  /* what the annotator has answered about this point on the desk, which
+     outranks whatever the model suggested */
+  answer?: PointAnswer
   /* [x0, y0, x1, y1] — the area of the frame where this point occurs */
   allowed_box: [number, number, number, number]
   prefill: IAnnotPrefill | null
@@ -226,6 +233,9 @@ export interface ITrainTarget {
   hard: string
   ready: boolean
   busy: boolean
+  /* while it is training: how far along, and how much longer */
+  done?: number
+  left_minutes?: number
 }
 
 /* A number a radiologist can argue with. `goal` is the direction it should

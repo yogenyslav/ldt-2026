@@ -1,4 +1,4 @@
-import type { AnnotSource, IAnnotCase, IQueueItem, PointState } from '@/types'
+import type { AnnotSource, IAnnotCase, IQueueItem, PointAnswer, PointState } from '@/types'
 
 /* ============================================================
    Annotation desk logic, kept apart from the components so that it
@@ -18,9 +18,13 @@ const GUESS_CONFIDENCE = 0.5
    is drawn and the point reads «проверьте»; if it is sure the anatomy is not
    in the frame, there is no marker at all. */
 export function pointState(item: IAnnotCase, index: number): PointState {
-  if (item.blank) return 'empty'
   const point = item.items?.[index]
-  if (!point?.prefill) return 'empty'
+  if (!point) return 'empty'
+  /* what the annotator answered outranks what the model suggested */
+  if (point.answer === 'absent') return 'absent'
+  if (point.answer === 'confirmed') return 'checked'
+  if (item.blank) return 'empty'
+  if (!point.prefill) return 'empty'
   if (!point.prefill.present) {
     return point.prefill.confidence >= GUESS_CONFIDENCE ? 'suggested' : 'absent'
   }
@@ -55,7 +59,7 @@ export function blankCase(item: IAnnotCase): IAnnotCase {
   return {
     ...item,
     blank: true,
-    items: item.items?.map((point) => ({ ...point, prefill: null, reviewed: false })),
+    items: item.items?.map((point) => ({ ...point, prefill: null, reviewed: false, answer: undefined })),
     polygons: item.polygons ? [] : undefined,
     verdict: undefined,
   }
@@ -83,4 +87,34 @@ export function nextKey(keys: string[], current: string): string | null {
   const index = keys.indexOf(current)
   if (index < 0) return keys[0] ?? null
   return keys[index + 1] ?? null
+}
+
+/* ---------- what the annotator answers ----------
+   The desk works on a copy of the frame: the exported case is shared data and
+   is never touched. An answer given twice is an answer taken back — the point
+   returns to whatever the model had said about it. */
+
+export function answerPoint(
+  item: IAnnotCase,
+  index: number,
+  answer: PointAnswer,
+): IAnnotCase {
+  return {
+    ...item,
+    items: item.items?.map((point, at) =>
+      at === index ? { ...point, answer: point.answer === answer ? undefined : answer } : point,
+    ),
+  }
+}
+
+/* Where the conveyor goes after a point has been answered: on to the next one
+   that still needs attention, or it stays put when the frame is done. */
+export function nextPoint(item: IAnnotCase, from: number): number {
+  const total = item.items?.length ?? 0
+  for (let step = 1; step <= total; step += 1) {
+    const index = (from + step) % total
+    const state = pointState(item, index)
+    if (state === 'suggested' || state === 'empty') return index
+  }
+  return from
 }
