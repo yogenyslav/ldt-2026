@@ -28,18 +28,20 @@ func TestHashPassword(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.name, func(t *testing.T) {
+				t.Parallel()
 
-			hashedPassword, err := HashPassword(tt.password)
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Empty(t, hashedPassword)
-			} else {
-				require.NoError(t, err)
-				assert.NotEmpty(t, hashedPassword)
-			}
-		})
+				hashedPassword, err := HashPassword(tt.password)
+				if tt.wantErr {
+					require.Error(t, err)
+					assert.Empty(t, hashedPassword)
+				} else {
+					require.NoError(t, err)
+					assert.NotEmpty(t, hashedPassword)
+				}
+			},
+		)
 	}
 }
 
@@ -71,12 +73,14 @@ func TestVerifyPassword(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.name, func(t *testing.T) {
+				t.Parallel()
 
-			got := VerifyPassword(tt.hashedPassword, tt.password)
-			assert.Equal(t, tt.want, got)
-		})
+				got := VerifyPassword(tt.hashedPassword, tt.password)
+				assert.Equal(t, tt.want, got)
+			},
+		)
 	}
 }
 
@@ -106,18 +110,20 @@ func TestEncrypt(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.name, func(t *testing.T) {
+				t.Parallel()
 
-			encryptedText, err := Encrypt(tt.plainText, tt.keyRaw)
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Empty(t, encryptedText)
-			} else {
-				require.NoError(t, err)
-				assert.NotEmpty(t, encryptedText)
-			}
-		})
+				encryptedText, err := Encrypt(tt.plainText, tt.keyRaw)
+				if tt.wantErr {
+					require.Error(t, err)
+					assert.Empty(t, encryptedText)
+				} else {
+					require.NoError(t, err)
+					assert.NotEmpty(t, encryptedText)
+				}
+			},
+		)
 	}
 }
 
@@ -154,17 +160,19 @@ func TestDecrypt(t *testing.T) {
 	}
 
 	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			t.Parallel()
+		t.Run(
+			tt.name, func(t *testing.T) {
+				t.Parallel()
 
-			got, err := Decrypt(tt.encryptedText, tt.keyRaw)
-			if tt.wantErr {
-				require.Error(t, err)
-				assert.Empty(t, got)
-			} else {
-				require.NoError(t, err)
-				assert.Equal(t, tt.want, got)
-			}
-		})
+				got, err := Decrypt(tt.encryptedText, tt.keyRaw)
+				if tt.wantErr {
+					require.Error(t, err)
+					assert.Empty(t, got)
+				} else {
+					require.NoError(t, err)
+					assert.Equal(t, tt.want, got)
+				}
+			},
+		)
 	}
 }

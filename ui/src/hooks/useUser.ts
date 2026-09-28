@@ -15,4 +15,4 @@ export const useCurrentUser = () => {
 
 /* The organisation the specialist works in. Only the id arrives from the
    backend: the organisation table has a name, but no endpoint exposes it. */
-export const useOrgId = () => storage.getSession()?.org_id
+export const useOrgId = () => storage.getSession()?.organization_id

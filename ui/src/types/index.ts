@@ -1,4 +1,4 @@
-/* Types mirror the dicom-manager contract (context/swagger.yaml).
+/* Types mirror the dicom-manager contract (../dicom-manager/docs/swagger.yaml).
    The study_id, patient_ref, study_date and device fields were requested
    from the backend developer — see context/backend_requests.md. */
 
@@ -83,19 +83,18 @@ export interface IStudy {
   jobs: IJobInfo[]
 }
 
-/* Sign-in answers with the token and the two ids and nothing else: the role
-   comes from GET /user/{id}, and the interface contour is derived from it —
-   see item 4 in context/backend_requests.md */
+/* POST /user/login response. */
 export interface IUserResponse {
+  role: UserRole
   token: string
   user_id: number
-  org_id: number
+  organization_id: number
 }
 
 /* What is kept between sessions after a sign-in. */
 export interface ISession {
   user_id: number
-  org_id: number
+  organization_id: number
   role?: UserRole
   full_name?: string
 }
@@ -104,7 +103,7 @@ export interface IUserInfo {
   id: number
   full_name: string
   role: UserRole
-  organisation_ids: number[]
+  organization_id: number
 }
 
 export interface IReport {
@@ -115,7 +114,7 @@ export interface IReport {
 
 export interface IDicomImage {
   image_data?: string
-  image_data_raw?: number[]
+  image_data_raw?: string
 }
 
 export interface IUploadedDicom {

@@ -7,14 +7,14 @@ const ApiDicom = {
   },
 
   async upload(file: File) {
-    const formData = new FormData()
-    formData.append('file', file)
-    return await api.post<IUploadedDicom>('/dicom/upload', formData)
+    return await api.post<IUploadedDicom>('/dicom/upload', file, {
+      headers: { 'Content-Type': 'application/dicom' },
+    })
   },
 
   async uploadBatch(file: File) {
     const formData = new FormData()
-    formData.append('files', file)
+    formData.append('file', file)
     return await api.post<{ data: IUploadedDicom[] }>('/dicom/upload/batch', formData)
   },
 }

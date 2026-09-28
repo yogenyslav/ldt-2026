@@ -9,25 +9,24 @@ import type { Decision } from '@/types'
    services/apiXxx.ts stay real: with VITE_USE_MOCKS=false the very same methods
    hit dicom-manager without a single edit.
 
-   Needed while the handlers of dicom-manager return 501. This file is only
-   routing and request parsing; the state lives in services/mock/store.ts. */
+   This file handles routing and request parsing; the state lives in services/mock/store.ts. */
 
 /* Two accounts, one per contour. The password is checked like a real service
    would check it: a wrong one answers 401 and the sign-in screen says so. */
 const ACCOUNTS = [
   {
-    username: 'ivanova.a.p',
+    email: 'ivanova.a.p@example.com',
     password: 'laborant2026',
     user_id: 42,
-    org_id: 218,
+    organization_id: 218,
     full_name: 'Иванова А. П.',
     role: 'specialist' as const,
   },
   {
-    username: 'sokolova.m.i',
+    email: 'sokolova.m.i@example.com',
     password: 'centr2026',
     user_id: 17,
-    org_id: 1,
+    organization_id: 1,
     full_name: 'Соколова М. И.',
     role: 'admin' as const,
   },
@@ -41,7 +40,8 @@ function reply<T>(config: InternalAxiosRequestConfig, data: T, status = 200): Ax
 
 function fail(config: InternalAxiosRequestConfig, status: number, message: string) {
   const error = new Error(message) as Error & { response?: AxiosResponse }
-  error.response = reply(config, message, status)
+  error.response = reply(config, { message }, status)
+  Object.assign(error, { config })
   return Promise.reject(error)
 }
 
@@ -80,18 +80,17 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
   /* --- sign-in --- */
   if (method === 'post' && url === '/user/login') {
-    const { username, password } = body(config) as { username?: string; password?: string }
+    const { email, password } = body(config) as { email?: string; password?: string }
     const account = ACCOUNTS.find(
       (item) =>
-        item.username === (username ?? '').trim().toLowerCase() && item.password === password,
+        item.email === (email ?? '').trim().toLowerCase() && item.password === password,
     )
     if (!account) return fail(config, 401, 'Неверный логин или пароль')
-    /* The response carries the token and the two ids, and nothing else — the
-       role arrives from GET /user/{id}. See context/backend_requests.md. */
     return reply(config, {
       token: `demo-token-${account.user_id}`,
+      role: account.role,
       user_id: account.user_id,
-      org_id: account.org_id,
+      organization_id: account.organization_id,
     })
   }
 
@@ -103,7 +102,7 @@ export const mockAdapter: AxiosAdapter = async (config) => {
       id: account.user_id,
       full_name: account.full_name,
       role: account.role,
-      organisation_ids: [account.org_id],
+      organization_id: account.organization_id,
     })
   }
 
@@ -141,13 +140,15 @@ export const mockAdapter: AxiosAdapter = async (config) => {
 
   /* --- upload --- */
   if (method === 'post' && url === '/dicom/upload') {
-    const file = fileOf(config, 'file')
-    if (!file) return fail(config, 400, 'Файл не передан')
+    const file = config.data instanceof File ? config.data : null
+    if (!file || config.headers['Content-Type'] !== 'application/dicom') {
+      return fail(config, 400, 'Ожидается DICOM-файл с Content-Type application/dicom')
+    }
     return reply(config, store.create(file.name), 201)
   }
 
   if (method === 'post' && url === '/dicom/upload/batch') {
-    const file = fileOf(config, 'files')
+    const file = fileOf(config, 'file')
     if (!file) return fail(config, 400, 'Архив не передан')
 
     const names = zipEntries(await file.arrayBuffer())

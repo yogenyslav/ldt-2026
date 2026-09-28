@@ -16,6 +16,7 @@ const (
 
 // JobInfo структура, содержащая информацию о задаче на обработку DICOM-файла.
 type JobInfo struct {
+	Error              string         `json:"error,omitempty"`               // Описание ошибки обработки.
 	ID                 string         `json:"id"`                            // ID задачи на обработку.
 	DicomID            string         `json:"dicom_id"`                      // ID DICOM-файла.
 	Status             JobStatus      `json:"status"`                        // Статус задачи на обработку.
@@ -29,4 +30,12 @@ type JobInfo struct {
 	Comment            *string        `json:"comment,omitempty"`             // Комментарий специалиста.
 	CreatedAt          time.Time      `json:"created_at"`
 	UpdatedAt          time.Time      `json:"updated_at"`
+}
+
+// ToJobStatus приводит внутренний статус worker к публичному контракту API.
+func ToJobStatus(status string) JobStatus {
+	if status == "running" {
+		return JobStatusProcessing
+	}
+	return JobStatus(status)
 }

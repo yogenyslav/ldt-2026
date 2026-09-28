@@ -116,7 +116,7 @@ func (o *Orthanc) collectProperties(ctx context.Context, instance dto.OrthancNew
 		return dto.OrthancDicomProperties{}, fmt.Errorf("failed to get dicom instance: %w", errGetDicom)
 	}
 
-	series, errGetSeries := o.getParentSeries(ctx, instance.ID)
+	series, errGetSeries := o.getParentSeries(ctx, dicom.ParentSeries)
 	if errGetSeries != nil {
 		return dto.OrthancDicomProperties{}, fmt.Errorf("failed to get parent series: %w", errGetSeries)
 	}
@@ -162,8 +162,8 @@ func (o *Orthanc) getDicomInstance(ctx context.Context, instanceID string) (dto.
 	return dicomInfo, nil
 }
 
-func (o *Orthanc) getParentSeries(ctx context.Context, instanceID string) (dto.OrthancSeries, error) {
-	resp, err := o.client.GetSeriesId(ctx, instanceID, nil)
+func (o *Orthanc) getParentSeries(ctx context.Context, seriesID string) (dto.OrthancSeries, error) {
+	resp, err := o.client.GetSeriesId(ctx, seriesID, nil)
 	if err != nil {
 		return dto.OrthancSeries{}, fmt.Errorf("failed to call orthanc API: %w", err)
 	}
@@ -187,8 +187,8 @@ func (o *Orthanc) getParentSeries(ctx context.Context, instanceID string) (dto.O
 	return seriesInfo, nil
 }
 
-func (o *Orthanc) getParentStudy(ctx context.Context, seriesID string) (dto.OrthancStudy, error) {
-	resp, err := o.client.GetStudiesId(ctx, seriesID, nil)
+func (o *Orthanc) getParentStudy(ctx context.Context, studyID string) (dto.OrthancStudy, error) {
+	resp, err := o.client.GetStudiesId(ctx, studyID, nil)
 	if err != nil {
 		return dto.OrthancStudy{}, fmt.Errorf("failed to call orthanc API: %w", err)
 	}

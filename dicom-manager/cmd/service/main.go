@@ -137,8 +137,10 @@ func run() error {
 	userByID := uc_user_get_by_id.New(logger, metrics, userStorage)
 	userAuth := uc_user_auth.New(logger, metrics, userStorage, jwtProvider)
 	userRouter := srv.Router("user")
+	userRouter.Post("/login", api_user_login.New(logger, metrics, userAuth).Login)
+
+	srv.UseMiddleware(server.AuthMiddleware(userAuth.ParseToken))
 	userRouter.Get("/:user_id", api_user_get_by_id.New(logger, metrics, userByID).GetByID)
-	userRouter.Get("/login", api_user_login.New(logger, metrics, userAuth).Login)
 
 	// Бизнес-логика и маршруты организаций.
 	organizationByID := uc_organization_get_by_id.New(logger, metrics, organizationStorage)
@@ -157,7 +159,7 @@ func run() error {
 		logger, metrics, uow, dicomStorage, jobStorage, orthancClient, dicomWorkerClient.Client(),
 	)
 	dicomRouter := srv.Router("dicom")
-	dicomRouter.Get("/:id/image", api_dicom_get_image.New(logger, metrics, getDicomImage).GetImage)
+	dicomRouter.Get("/:dicom_id/image", api_dicom_get_image.New(logger, metrics, getDicomImage).GetImage)
 	dicomRouter.Post("/upload", api_dicom_upload.New(logger, metrics, uploadDicom).Upload)
 	dicomRouter.Post("/upload/batch", api_dicom_upload_batch.New(logger, metrics, uploadDicom).UploadBatch)
 
@@ -184,8 +186,6 @@ func run() error {
 	reportRouter.Get(
 		"/", api_report_get_paginated.New(logger, metrics, getReportsPaginated).GetPaginated,
 	)
-
-	srv.UseMiddleware(server.AuthMiddleware(userAuth.ParseToken))
 
 	if err = srv.Serve(); err != nil {
 		return fmt.Errorf("serve: %w", err)
