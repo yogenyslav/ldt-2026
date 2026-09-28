@@ -66,6 +66,10 @@
   --color-mark-warn: #ffc93d;
   --color-mark-bad: #ff6a5c;
   --color-mark-dead: #8fa6bc;
+  /* The vertical the spine axis is measured against: pink reads as a reference
+     line on the dark scan without being mistaken for a verdict — the grey one
+     sank into the background. */
+  --color-mark-plumb: #ff8fa3;
 
   --font-sans: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
 

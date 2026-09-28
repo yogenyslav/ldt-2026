@@ -60,7 +60,7 @@ const Overlay = ({ job }: OverlayProps) => {
          the edge of the frame. Thin and dashed, in the neutral tone: it is not
          something that was found on the scan, it is the reference the angle is
          counted from — without it the number has nothing to lean on. */
-      <g key="axis-plumb" className="text-mark-dead">
+      <g key="axis-plumb" className="text-mark-plumb">
         <line
           className="mk-thin"
           x1={bottom[0]}
