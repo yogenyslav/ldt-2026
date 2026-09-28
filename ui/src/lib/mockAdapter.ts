@@ -3,6 +3,7 @@ import { DEMO_SCANS } from '@/services/mock/demoJobs'
 import { csvDataUrl, reportCsv } from '@/services/mock/csv'
 import annotStore from '@/services/mock/annotStore'
 import store from '@/services/mock/store'
+import { rotationSettings } from '@/lib/settings'
 import { zipEntries } from '@/services/mock/zip'
 import type { Decision } from '@/types'
 
@@ -178,13 +179,17 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     return reply(config, { report_id: store.addReport(csvDataUrl(reportCsv(jobs))) })
   }
 
+  /* --- limits the analyser applies --- */
+  if (method === 'post' && url === '/settings') {
+    const settings = rotationSettings(body(config) as Record<string, number>)
+    if (!settings) return fail(config, 400, 'Границы переданы не полностью')
+    store.setSettings(settings)
+    return reply(config, '', 204)
+  }
+
   /* --- annotation: queue, desk, training, boundaries --- */
   if (method === 'get' && url === '/annotation/queue') {
-    return reply(config, {
-      queue: annotStore.queue(),
-      total: annotStore.total(),
-      tiles: annotStore.tiles(),
-    })
+    return reply(config, { queue: annotStore.queue() })
   }
 
   if (method === 'post' && url === '/annotation/queue') {
@@ -218,21 +223,6 @@ export const mockAdapter: AxiosAdapter = async (config) => {
   if (method === 'post' && url === '/annotation/training/switch') {
     const { ids } = body(config) as { ids?: string[] }
     annotStore.switchOver(ids ?? [])
-    return reply(config, '', 204)
-  }
-
-  if (method === 'get' && url === '/annotation/params') {
-    return reply(config, { params: annotStore.params() })
-  }
-
-  if (method === 'get' && /^\/annotation\/params\/[^/]+\/shots$/.test(url)) {
-    return reply(config, { shots: annotStore.shots(url.split('/')[3]) })
-  }
-
-  if (method === 'post' && /^\/annotation\/params\/[^/]+$/.test(url)) {
-    const { cuts } = body(config) as { cuts?: number[] }
-    if (!Array.isArray(cuts)) return fail(config, 400, 'Границы не переданы')
-    annotStore.saveCuts(url.split('/')[3], cuts)
     return reply(config, '', 204)
   }
 

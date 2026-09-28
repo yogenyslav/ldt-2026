@@ -1,5 +1,6 @@
 import { DEMO_JOBS } from '@/services/mock/demoJobs'
-import type { Decision, IJobInfo, IReport, JobStatus, Region } from '@/types'
+import { rotationBand, type IRotationSettings } from '@/lib/settings'
+import type { Decision, ICriterion, IJobInfo, IReport, JobStatus, Region } from '@/types'
 
 /* Demo mode keeps state instead of returning canned answers: an uploaded file
    really becomes a job, and the job really goes through pending → processing →
@@ -33,6 +34,9 @@ interface MockState {
   jobs: MockJob[]
   reports: IReport[]
   counter: number
+  /* limits picked on the tuning screen; until they are, every result carries
+     the ones it was produced with */
+  settings?: IRotationSettings
 }
 
 /* Templates: everything the ML service has already chewed through once. */
@@ -100,6 +104,35 @@ function templateFor(region: Region, index: number) {
   return pool[index % pool.length]
 }
 
+/* Limits picked on the tuning screen really apply: the distance was measured
+   once and does not change, but which of the three states it falls into is
+   decided by the numbers in force now. The analyser does exactly this — the
+   geometry is measured, the verdict is a comparison. */
+function retuned(
+  criteria?: Record<string, ICriterion>,
+  settings?: Record<string, number>,
+): { criteria?: Record<string, ICriterion>; settings?: Record<string, number> } {
+  if (!state.settings) return {}
+  const next = { ...settings, ...state.settings }
+  const trochanter = criteria?.lesser_trochanter
+  if (!criteria || !trochanter || typeof trochanter.value !== 'number') {
+    return { settings: next }
+  }
+
+  const band = rotationBand(state.settings, trochanter.value)
+  return {
+    settings: next,
+    criteria: {
+      ...criteria,
+      lesser_trochanter: {
+        ...trochanter,
+        ok: band === 'viol' ? 0 : 1,
+        details: { ...trochanter.details, status: band === 'warn' ? 'проверить' : '' },
+      },
+    },
+  }
+}
+
 /* One job as the backend would return it: the stage comes from the clock, the
    result from the template, the decision from what the specialist has done. */
 function project(job: MockJob): IJobInfo {
@@ -135,6 +168,7 @@ function project(job: MockJob): IJobInfo {
     updated_at: job.created_at,
     metadata: {
       ...template.metadata,
+      ...retuned(template.metadata?.criteria, template.metadata?.settings),
       study_id: job.study_id,
       patient_ref: job.patient_ref,
       device: 'GE Lunar Prodigy Advance',
@@ -190,6 +224,13 @@ const store = {
      decides what the analyser is going to "find". */
   create(fileName: string, source: 'device' | 'upload' = 'upload') {
     return createJob(fileName, source)
+  },
+
+  /* New limits from the tuning screen. They are kept, not applied once: every
+     result read after this is judged by them. */
+  setSettings(settings: IRotationSettings) {
+    state.settings = settings
+    save()
   },
 
   decide(jobIds: string[], decision: Decision, comment: string, specialist: string) {

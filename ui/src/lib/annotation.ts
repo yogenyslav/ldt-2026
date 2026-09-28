@@ -1,4 +1,11 @@
-import type { AnnotSource, IAnnotCase, IQueueItem, PointAnswer, PointState } from '@/types'
+import type {
+  AnnotSource,
+  IAnnotCase,
+  IAnnotPolygon,
+  IQueueItem,
+  Point,
+  PointState,
+} from '@/types'
 
 /* ============================================================
    Annotation desk logic, kept apart from the components so that it
@@ -75,11 +82,13 @@ export function queueKeys(queue: IQueueItem[], source: AnnotSource | 'all'): str
   return queueOf(queue, source).map((item) => item.key)
 }
 
-/* Position inside that filtered queue, as the panel prints it. */
-export function placeInQueue(keys: string[], current: string, total: number): string {
+/* Position inside that filtered queue, as the panel prints it. The second
+   number is the queue itself — counting frames the page has not been given
+   is how «1 из 59» ended up above a queue of five. */
+export function placeInQueue(keys: string[], current: string): string {
   const index = keys.indexOf(current)
   if (index < 0) return ''
-  return `${index + 1} из ${total || keys.length}`
+  return `${index + 1} из ${keys.length}`
 }
 
 /* Which frame the desk shows next after the current one is sent. */
@@ -89,35 +98,76 @@ export function nextKey(keys: string[], current: string): string | null {
   return keys[index + 1] ?? null
 }
 
-/* ---------- what the annotator answers ----------
-   The answers are kept apart from the frame: the exported case is shared data
-   and is never touched, and the working copy the screen draws is derived from
-   the two. An answer given twice is an answer taken back — the point returns
-   to whatever the model had said about it. */
+/* ---------- what the annotator does to the frame ----------
+   The edits are kept apart from the frame: the exported case is shared data
+   and is never touched. The frame the screen draws is the two put together,
+   so undoing an edit really returns the point to what the model had said. */
 
-export type PointAnswers = Record<number, PointAnswer>
+export interface IPointEdit {
+  /* where the annotator put the point, in frame pixels */
+  x?: number
+  y?: number
+  /* the anatomy is cut off by the frame edge — there is nothing to put */
+  absent?: boolean
+}
 
-export function toggleAnswer(
-  answers: PointAnswers,
-  index: number,
-  answer: PointAnswer,
-): PointAnswers {
-  const next = { ...answers }
-  if (next[index] === answer) delete next[index]
-  else next[index] = answer
+export type PointEdits = Record<number, IPointEdit>
+
+/* Placing a point clears «нет на снимке»: the two answers contradict. */
+export function placePoint(edits: PointEdits, index: number, x: number, y: number): PointEdits {
+  return { ...edits, [index]: { x, y } }
+}
+
+/* Said twice, it is taken back: the point returns to the model's guess. */
+export function toggleAbsent(edits: PointEdits, index: number): PointEdits {
+  const next = { ...edits }
+  if (next[index]?.absent) delete next[index]
+  else next[index] = { absent: true }
   return next
 }
 
-export function withAnswers(item: IAnnotCase, answers: PointAnswers): IAnnotCase {
-  if (!item.items) return item
-  return {
-    ...item,
-    items: item.items.map((point, index) => ({ ...point, answer: answers[index] })),
-  }
+/* Confirming the model's guess is the same as putting the point where the
+   model put it — after that it is the annotator's point. */
+export function confirmPoint(item: IAnnotCase, edits: PointEdits, index: number): PointEdits {
+  const guess = item.items?.[index]?.prefill
+  if (!guess) return edits
+  return placePoint(edits, index, guess.x, guess.y)
 }
 
-/* Where the conveyor goes after a point has been answered: on to the next one
-   that still needs attention, or it stays put when the frame is done. */
+export function clearPoint(edits: PointEdits, index: number): PointEdits {
+  const next = { ...edits }
+  delete next[index]
+  return next
+}
+
+/* The frame as it stands right now: the model's guesses with the annotator's
+   work on top. A placed point is settled — it is the answer, not a guess. */
+export function withEdits(
+  item: IAnnotCase,
+  edits: PointEdits,
+  polygons?: IAnnotPolygon[],
+): IAnnotCase {
+  const next: IAnnotCase = { ...item }
+  if (polygons) next.polygons = polygons
+  if (!item.items) return next
+
+  next.items = item.items.map((point, index) => {
+    const edit = edits[index]
+    if (!edit) return point
+    if (edit.absent) return { ...point, answer: 'absent' as const }
+    if (edit.x === undefined || edit.y === undefined) return point
+    return {
+      ...point,
+      answer: undefined,
+      reviewed: true,
+      prefill: { x: edit.x, y: edit.y, present: true, confidence: 1 },
+    }
+  })
+  return next
+}
+
+/* Where the conveyor goes after a point is settled: on to the next one that
+   still needs attention, or it stays put when the frame is done. */
 export function nextPoint(item: IAnnotCase, from: number): number {
   const total = item.items?.length ?? 0
   for (let step = 1; step <= total; step += 1) {
@@ -126,4 +176,14 @@ export function nextPoint(item: IAnnotCase, from: number): number {
     if (state === 'suggested' || state === 'empty') return index
   }
   return from
+}
+
+/* ---------- drawing a foreign object ----------
+   The outline is closed by hand, so a stray double-click must not leave a
+   two-point «polygon» behind. */
+
+export const MIN_POLYGON = 3
+
+export function canClose(points: Point[]): boolean {
+  return points.length >= MIN_POLYGON
 }

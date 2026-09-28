@@ -1,52 +1,121 @@
+import { useRef } from 'react'
 import Tag from '@/components/ui/tag'
 import { ANNOT_POINT_NAME, REGION_SHORT } from '@/constants'
 import { pointState } from '@/lib/annotation'
 import { cn } from '@/lib/utils'
-import type { IAnnotCase } from '@/types'
+import type { IAnnotCase, Point } from '@/types'
 
 /* ============================================================
-   The frame itself, with what is being marked on it.
+   The frame, and the instrument for marking it.
 
    Coordinates are original-frame pixels and the viewBox equals
-   cols x rows, so a marker sits exactly where a real submission
-   would put it — the picture is never cropped.
+   cols x rows, so what is drawn here is exactly what is sent: a
+   click at the tip of the trochanter becomes that pixel, not a
+   pixel of the screen.
+
+   Points: a click on the bone puts the point in hand there, and
+   the same gesture goes on dragging it, so it can be nudged before
+   the finger is lifted. An existing marker is picked up by its own
+   handle — that neither moves another point nor adds a stray one.
+
+   Objects: clicks lay down the outline, a double-click closes it.
+   There is no restricted area here — a foreign object anywhere on
+   the frame is worth having.
 
    Only the region of the point in hand is lit, and softly: it is a
-   hint about where to look, not a button to press. The variants
-   «all at once» and «no regions» stayed in prototype/annotation-lab.html.
+   hint about where to look, not a button to press.
    ============================================================ */
 
-const Marker = ({
-  x,
-  y,
-  label,
-  model,
+const path = (list: Point[]) => list.map(([x, y]) => `${x},${y}`).join(' ')
+
+interface AnnotCanvasProps {
+  item: IAnnotCase
+  active: number
+  /* the outline being laid down right now, if any */
+  drawing: Point[] | null
+  drawingKind: 'wire' | 'object' | null
+  onPlace: (index: number, x: number, y: number) => void
+  onPickPoint: (index: number) => void
+  onVertex: (x: number, y: number) => void
+  onCloseOutline: () => void
+  onRemovePolygon: (index: number) => void
+}
+
+const AnnotCanvas = ({
+  item,
   active,
-}: {
-  x: number
-  y: number
-  label: string
-  model: boolean
-  active: boolean
-}) => (
-  <g className={cn('mark', model && 'is-model', active && 'is-active')}>
-    <circle cx={x} cy={y} r={6} />
-    <path d={`M${x - 11} ${y}h22M${x} ${y - 11}v22`} />
-    <text className="mark-name" x={x + 9} y={y - 8} fill="currentColor">
-      {label}
-    </text>
-  </g>
-)
+  drawing,
+  drawingKind,
+  onPlace,
+  onPickPoint,
+  onVertex,
+  onCloseOutline,
+  onRemovePolygon,
+}: AnnotCanvasProps) => {
+  const svg = useRef<SVGSVGElement>(null)
+  /* Which point the pointer is currently carrying, if any. */
+  const held = useRef<number | null>(null)
 
-const points = (list: [number, number][]) => list.map(([x, y]) => `${x},${y}`).join(' ')
+  const points = item.items ?? []
+  const drawable = item.task === 'foreign_seg'
+  const current = points[active]
+  const now = drawable
+    ? drawingKind
+      ? 'Обведите предмет: клик — точка контура, двойной клик — замкнуть'
+      : 'Выберите, что обводите, в панели справа'
+    : (ANNOT_POINT_NAME[current?.name ?? ''] ?? current?.title ?? '')
 
-/* `active` comes from the desk, not from the frame: the annotator can step
-   back to a point that is already settled. */
-const AnnotCanvas = ({ item, active }: { item: IAnnotCase; active: number }) => {
-  const now =
-    item.items && active >= 0
-      ? (ANNOT_POINT_NAME[item.items[active].name] ?? item.items[active].title)
-      : 'Обведите посторонние предметы'
+  /* Screen pixels to frame pixels. The overlay is stretched over the picture,
+     which keeps the frame's own proportions, so this is a plain ratio. */
+  const toFrame = (clientX: number, clientY: number): Point | null => {
+    const box = svg.current?.getBoundingClientRect()
+    if (!box?.width || !box.height) return null
+    const x = ((clientX - box.left) / box.width) * item.cols
+    const y = ((clientY - box.top) / box.height) * item.rows
+    return [
+      Math.min(Math.max(Math.round(x * 10) / 10, 0), item.cols),
+      Math.min(Math.max(Math.round(y * 10) / 10, 0), item.rows),
+    ]
+  }
+
+  const onBackdropDown = (event: React.PointerEvent) => {
+    const at = toFrame(event.clientX, event.clientY)
+    if (!at) return
+
+    if (drawable) {
+      if (drawingKind) onVertex(at[0], at[1])
+      return
+    }
+    if (active < 0 || !points.length) return
+
+    event.preventDefault()
+    held.current = active
+    svg.current?.setPointerCapture(event.pointerId)
+    onPlace(active, at[0], at[1])
+  }
+
+  /* Picking up a marker: select that point and carry it, without placing a
+     second one under the finger. */
+  const onMarkerDown = (index: number) => (event: React.PointerEvent) => {
+    if (drawable) return
+    event.preventDefault()
+    event.stopPropagation()
+    onPickPoint(index)
+    held.current = index
+    svg.current?.setPointerCapture(event.pointerId)
+  }
+
+  const onMove = (event: React.PointerEvent) => {
+    if (held.current === null) return
+    const at = toFrame(event.clientX, event.clientY)
+    if (at) onPlace(held.current, at[0], at[1])
+  }
+
+  const onUp = (event: React.PointerEvent) => {
+    if (held.current === null) return
+    held.current = null
+    svg.current?.releasePointerCapture(event.pointerId)
+  }
 
   return (
     <div className="overflow-hidden rounded-panel border border-line">
@@ -63,7 +132,7 @@ const AnnotCanvas = ({ item, active }: { item: IAnnotCase; active: number }) => 
 
       {/* The one line the eye returns to: what is being marked right now. */}
       <div className="flex items-center gap-2.5 border-b border-line bg-brand-050 px-3.5 py-2.5 text-[15px]">
-        {item.items && active >= 0 ? (
+        {!drawable && active >= 0 ? (
           <span className="flex-center h-5.5 w-5.5 flex-none rounded-[6px] bg-brand text-[12px] font-bold text-white">
             {active + 1}
           </span>
@@ -71,54 +140,123 @@ const AnnotCanvas = ({ item, active }: { item: IAnnotCase; active: number }) => 
         <b>{now}</b>
         <span className="flex-1" />
         <span className="text-[13px] text-ink-2">
-          {item.items && active >= 0
-            ? 'подсвечена область, где эта точка бывает'
-            : 'обводить можно в любой части снимка'}
+          {drawable
+            ? 'обводить можно в любой части снимка'
+            : 'кликните по кости — точка встанет туда, её можно тянуть'}
         </span>
       </div>
 
       <div className="flex justify-center bg-scan-bg p-4.5">
         <div className="relative max-w-full leading-[0]" style={{ width: item.cols * item.scale }}>
-          <img className="block h-auto w-full" src={item.png} alt="" />
+          <img className="block h-auto w-full select-none" src={item.png} alt="" draggable={false} />
           <svg
-            className="absolute inset-0 h-full w-full overflow-visible"
+            ref={svg}
+            className={cn(
+              'absolute inset-0 h-full w-full touch-none overflow-visible',
+              drawable && !drawingKind ? 'cursor-default' : 'cursor-crosshair',
+            )}
             viewBox={`0 0 ${item.cols} ${item.rows}`}
             preserveAspectRatio="none"
+            onPointerMove={onMove}
+            onPointerUp={onUp}
+            onPointerCancel={onUp}
+            onDoubleClick={() => drawable && onCloseOutline()}
           >
-            {item.items?.map((point, index) => (
+            {/* The hit area. SVG has no background of its own, and this must
+                be the only thing that takes a press: a shape drawn on top of
+                it is a sibling, not a parent, so a press it swallowed would
+                never reach here — which is how outlining came to stop working
+                the moment the pointer was over an outline already drawn. */}
+            <rect
+              x={0}
+              y={0}
+              width={item.cols}
+              height={item.rows}
+              fill="transparent"
+              onPointerDown={onBackdropDown}
+            />
+
+            {points.map((point, index) => (
               <rect
                 key={`zone-${point.name}`}
-                className={cn('zone', index === active && 'is-active')}
+                className={cn('zone', index === active && !drawable && 'is-active')}
                 x={point.allowed_box[0]}
                 y={point.allowed_box[1]}
                 width={point.allowed_box[2] - point.allowed_box[0]}
                 height={point.allowed_box[3] - point.allowed_box[1]}
                 rx={2}
+                pointerEvents="none"
               />
             ))}
 
-            {/* No restricted area here: a foreign object anywhere on the frame
-                is worth having, even where the model does not look today. */}
             {item.polygons?.map((polygon, index) => (
               <polygon
                 key={`poly-${index}`}
-                className={polygon.cls === 'wire' ? 'poly-wire' : 'poly-object'}
-                points={points(polygon.points)}
+                className={cn(
+                  polygon.cls === 'wire' ? 'poly-wire' : 'poly-object',
+                  drawable && !drawingKind && 'cursor-pointer',
+                )}
+                points={path(polygon.points)}
+                /* While an outline is being laid down, everything already on
+                   the frame steps out of the way — otherwise a corner cannot
+                   be put inside or next to an existing shape. */
+                pointerEvents={drawable && !drawingKind ? 'auto' : 'none'}
+                onPointerDown={(event) => {
+                  if (!drawable || drawingKind) return
+                  event.stopPropagation()
+                  onRemovePolygon(index)
+                }}
               />
             ))}
 
-            {item.items?.map((point, index) => {
+            {/* The outline being laid down: the line so far and its corners. */}
+            {drawing?.length ? (
+              <g pointerEvents="none">
+                <polyline
+                  className={drawingKind === 'wire' ? 'draft-wire' : 'draft-object'}
+                  points={path(drawing)}
+                />
+                {drawing.map(([x, y], index) => (
+                  <circle key={index} className="draft-dot" cx={x} cy={y} r={2} />
+                ))}
+              </g>
+            ) : null}
+
+            {points.map((point, index) => {
               const state = pointState(item, index)
               if (!point.prefill || state === 'absent') return null
               return (
-                <Marker
+                <g
                   key={`mark-${point.name}`}
-                  x={point.prefill.x}
-                  y={point.prefill.y}
-                  label={String(index + 1)}
-                  model={state === 'suggested'}
-                  active={index === active}
-                />
+                  className={cn(
+                    'mark',
+                    state === 'suggested' && 'is-model',
+                    index === active && !drawable && 'is-active',
+                  )}
+                  pointerEvents="none"
+                >
+                  <circle cx={point.prefill.x} cy={point.prefill.y} r={6} />
+                  <path
+                    d={`M${point.prefill.x - 11} ${point.prefill.y}h22M${point.prefill.x} ${point.prefill.y - 11}v22`}
+                  />
+                  <text className="mark-name" x={point.prefill.x + 9} y={point.prefill.y - 8}>
+                    {index + 1}
+                  </text>
+                  {/* The handle: big enough to grab, invisible so it does not
+                      cover the anatomy under it. It is the only part of the
+                      marker that takes a press — the ring and the label must
+                      not swallow one meant for the bone underneath. */}
+                  <circle
+                    className={drawable ? '' : 'cursor-grab'}
+                    cx={point.prefill.x}
+                    cy={point.prefill.y}
+                    r={9}
+                    fill="transparent"
+                    stroke="none"
+                    pointerEvents={drawable ? 'none' : 'auto'}
+                    onPointerDown={onMarkerDown(index)}
+                  />
+                </g>
               )
             })}
           </svg>

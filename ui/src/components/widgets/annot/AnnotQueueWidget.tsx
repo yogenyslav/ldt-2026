@@ -2,12 +2,11 @@ import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { Inbox } from 'lucide-react'
 import Button from '@/components/ui/button'
-import Card, { CardBody, CardHead } from '@/components/ui/card'
+import Card, { CardHead } from '@/components/ui/card'
 import Chip from '@/components/ui/chip'
 import Tag from '@/components/ui/tag'
 import Empty from '@/components/shared/Empty'
 import Loader from '@/components/shared/Loader'
-import Tile from '@/components/shared/Tile'
 import WorkHead from '@/components/shared/WorkHead'
 import UploadSheet from '@/components/widgets/annot/UploadSheet'
 import { ANNOT_PRIORITY, ANNOT_SOURCE, ANNOT_SOURCE_TAG, ANNOT_TASK, REGION_SHORT } from '@/constants'
@@ -49,21 +48,11 @@ const AnnotQueueWidget = () => {
     <>
       <WorkHead
         title="Очередь заданий"
-        sub={`${data.total.all} ${plural(data.total.all, 'снимок', 'снимка', 'снимков')}`}
+        sub={`${queue.length} ${plural(queue.length, 'снимок', 'снимка', 'снимков')}`}
         lead="Основной поток — снимки из поликлиник, которые уже прошли анализатор: в очередь из них попадают те, где модель сомневается или расходится с таблицей разметки. Рядом второй вход — загрузка своих снимков, с прогоном через модели или без него."
       />
 
       <Card className="mb-4.5" mark>
-        <CardBody className="pt-4.5">
-          <div className="grid grid-cols-[repeat(auto-fit,minmax(150px,1fr))] gap-3">
-            {data.tiles.map((tile) => (
-              <Tile key={tile.label} {...tile} />
-            ))}
-          </div>
-        </CardBody>
-      </Card>
-
-      <Card className="mb-4.5">
         <CardHead>
           <h3 className="h3-bold flex-1">Что размечать</h3>
           {SOURCES.map((id) => (

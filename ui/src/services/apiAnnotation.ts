@@ -1,12 +1,5 @@
 import { api } from '@/lib/api'
-import type {
-  IAnnotCase,
-  IModelVersion,
-  IParamSpec,
-  IQueueItem,
-  ITrainTarget,
-  ITuneShot,
-} from '@/types'
+import type { IAnnotCase, IAnnotPolygon, IModelVersion, IQueueItem, ITrainTarget } from '@/types'
 
 /* The annotation contour as it will be asked of the backend. Nothing of this
    is implemented on the server yet — the routes are listed in
@@ -14,9 +7,6 @@ import type {
 
 export interface QueueAnswer {
   queue: IQueueItem[]
-  /* how long the queue is per source: the page carries five frames, not sixty */
-  total: { all: number; clinic: number; upload: number }
-  tiles: Array<{ label: string; value: string; note: string; tone: string }>
 }
 
 export interface TrainingAnswer {
@@ -28,9 +18,23 @@ export interface TrainingAnswer {
    not a refusal: the frame goes to a second pair of eyes. */
 export type AnnotOutcome = 'done' | 'doubt' | 'skip'
 
+/* One point as the contract wants it back: the name it came under, whether
+   the anatomy is in the frame at all, and where it ended up — in pixels of
+   the original frame, the same system the prediction arrived in. */
+export interface ISubmitPoint {
+  name: string
+  present: boolean
+  x: number | null
+  y: number | null
+}
+
 export interface SubmitData {
   key: string
   outcome: AnnotOutcome
+  points?: ISubmitPoint[]
+  polygons?: IAnnotPolygon[]
+  /* what the annotator says is on the frame, for the foreign-object task */
+  verdict?: string
   features?: string[]
   comment?: string
 }
@@ -66,17 +70,6 @@ const ApiAnnotation = {
     return await api.post('/annotation/training/switch', { ids })
   },
 
-  async getParams() {
-    return await api.get<{ params: IParamSpec[] }>('/annotation/params')
-  },
-
-  async getShots(id: string, source: string) {
-    return await api.get<{ shots: ITuneShot[] }>(`/annotation/params/${id}/shots?source=${source}`)
-  },
-
-  async saveParam(id: string, cuts: number[]) {
-    return await api.post(`/annotation/params/${id}`, { cuts })
-  },
 }
 
 export default ApiAnnotation

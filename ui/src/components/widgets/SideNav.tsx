@@ -52,7 +52,10 @@ const SideNav = ({ queueCount, markupCount, todayCount }: SideNavProps) => {
                 <NavLink
                   key={item.route}
                   to={item.route}
-                  end={item.route === '/'}
+                  /* every link is matched whole: «Очередь заданий» is /markup
+                     and «Разметка снимка» is /markup/frame, so a prefix match
+                     would light both at once */
+                  end
                   className={({ isActive }) =>
                     cn(
                       'flex h-11 items-center gap-2.5 rounded-control px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors',

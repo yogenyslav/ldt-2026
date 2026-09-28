@@ -13,57 +13,58 @@ import ForeignCard from '@/components/widgets/annot/ForeignCard'
 import NotesCard from '@/components/widgets/annot/NotesCard'
 import PointsCard from '@/components/widgets/annot/PointsCard'
 import { useToast } from '@/components/ui/toast'
-import { ANNOT_CASE_TITLE, ANNOT_SOURCE } from '@/constants'
+import { ANNOT_SOURCE } from '@/constants'
 import { useAnnot } from '@/context/AnnotContext'
 import { useAnnotCase, useAnnotQueue, useSubmitAnnot } from '@/hooks/useAnnotation'
 import {
   activeIndex,
-  blankCase,
+  canClose,
+  clearPoint,
+  confirmPoint,
   nextKey,
   nextPoint,
   placeInQueue,
+  placePoint,
+  pointStates,
   queueKeys,
-  toggleAnswer,
-  withAnswers,
-  type PointAnswers,
+  toggleAbsent,
+  withEdits,
+  type PointEdits,
 } from '@/lib/annotation'
 import type { AnnotOutcome } from '@/services/apiAnnotation'
-import type { AnnotSource, PointAnswer } from '@/types'
+import type { AnnotSource, IAnnotPolygon, Point } from '@/types'
 
 /* ============================================================
    Разметка снимка — a conveyor, not a form.
 
-   One point is in hand at a time and the keyboard carries the whole
-   cycle: the digits switch point, the space bar says «нет на снимке»,
-   Enter sends the frame and pulls the next one.
+   One frame is open: the one the queue handed over. One point is in
+   hand at a time; a click on the bone puts it there and it can be
+   dragged. The keyboard carries the cycle — the digits switch point,
+   the space bar says «нет на снимке», Enter sends the frame and
+   pulls the next one out of the same queue.
 
-   The queue behind it is the one chosen on the previous screen, and
-   it can be changed here without going back — «следующий» always
-   walks the list the doctor is actually in.
+   What is sent is what is on the screen: the coordinates of every
+   point in the pixels of the original frame, the outlines drawn by
+   hand, and whatever was said about the frame.
    ============================================================ */
 
 const SOURCES: Array<AnnotSource | 'all'> = ['all', 'clinic', 'upload']
 
 const AnnotDeskWidget = () => {
-  const { source, setSource, current, open, blank, setBlank } = useAnnot()
+  const { source, setSource, current, open } = useAnnot()
   const { data: queue } = useAnnotQueue()
   const submit = useSubmitAnnot()
   const { toast } = useToast()
   const navigate = useNavigate()
 
   const keys = useMemo(() => queueKeys(queue?.queue ?? [], source), [queue, source])
-
-  /* The frame the desk should be on: the one that was opened, as long as it is
-     still in this part of the queue. */
   const key = current && keys.includes(current) ? current : (keys[0] ?? null)
   const { data: loaded } = useAnnotCase(key ?? undefined)
 
-  /* Whether this frame came pre-annotated is a property of the frame, not of
-     the desk: switching frames must not carry the previous one's answer over. */
-  const queued = queue?.queue.find((item) => item.key === key)
-  const isBlank = current === key && blank !== null ? blank : !queued?.pre
-
-  const [answers, setAnswers] = useState<PointAnswers>({})
+  const [edits, setEdits] = useState<PointEdits>({})
+  const [drawn, setDrawn] = useState<IAnnotPolygon[] | null>(null)
+  const [drawing, setDrawing] = useState<Point[] | null>(null)
+  const [drawingKind, setDrawingKind] = useState<'wire' | 'object' | null>(null)
   /* The point the annotator stepped onto by hand; without one the conveyor
      picks the first that still needs attention. */
   const [pick, setPick] = useState<number | null>(null)
@@ -71,58 +72,124 @@ const AnnotDeskWidget = () => {
   const [features, setFeatures] = useState<string[]>([])
   const [comment, setComment] = useState('')
 
-  /* The frame the screen draws: the exported case plus whatever has been
-     answered about it. Derived, not stored — so the first paint is already
-     the right one. */
-  const work = useMemo(() => {
-    if (!loaded) return null
-    return withAnswers(isBlank ? blankCase(loaded) : loaded, answers)
-  }, [loaded, isBlank, answers])
+  /* The frame as it stands: what the model suggested, with the annotator's
+     work on top. Derived, so the first paint is already the right one. */
+  const work = useMemo(
+    () => (loaded ? withEdits(loaded, edits, drawn ?? undefined) : null),
+    [loaded, edits, drawn],
+  )
 
   const total = work?.items?.length ?? 0
-  const active =
-    pick !== null && pick < total ? pick : work ? Math.max(0, activeIndex(work)) : 0
+  const active = pick !== null && pick < total ? pick : work ? Math.max(0, activeIndex(work)) : 0
 
-  /* A new frame on the desk starts empty: nothing answered, nothing said. */
+  /* A new frame on the desk starts clean. */
   useEffect(() => {
-    setAnswers({})
+    setEdits({})
+    setDrawn(null)
+    setDrawing(null)
+    setDrawingKind(null)
     setPick(null)
     setFeatures([])
     setComment('')
-  }, [key, isBlank])
+  }, [key])
 
-  useEffect(() => {
-    setAnswer(loaded && !isBlank ? (loaded.verdict ?? null) : null)
-  }, [loaded, isBlank])
+  useEffect(() => setAnswer(loaded?.verdict ?? null), [loaded])
+
+  const polygons = drawn ?? loaded?.polygons ?? []
+
+  const place = useCallback((index: number, x: number, y: number) => {
+    setPick(index)
+    setEdits((current) => placePoint(current, index, x, y))
+  }, [])
+
+  const absent = useCallback(
+    (index: number) => {
+      setEdits((current) => {
+        const next = toggleAbsent(current, index)
+        if (loaded) setPick(nextPoint(withEdits(loaded, next), index))
+        return next
+      })
+    },
+    [loaded],
+  )
+
+  const confirm = useCallback(
+    (index: number) => {
+      if (!loaded) return
+      setEdits((current) => {
+        const next = confirmPoint(loaded, current, index)
+        setPick(nextPoint(withEdits(loaded, next), index))
+        return next
+      })
+    },
+    [loaded],
+  )
+
+  const reset = useCallback((index: number) => {
+    setPick(index)
+    setEdits((current) => clearPoint(current, index))
+  }, [])
+
+  /* ---- drawing an outline ---- */
+
+  const addVertex = useCallback((x: number, y: number) => {
+    setDrawing((current) => [...(current ?? []), [x, y] as Point])
+  }, [])
+
+  const closeOutline = useCallback(() => {
+    if (!drawing || !canClose(drawing) || !drawingKind) return
+    setDrawn((list) => [
+      ...(list ?? loaded?.polygons ?? []),
+      { cls: drawingKind, points: drawing },
+    ])
+    setDrawing([])
+  }, [drawing, drawingKind, loaded])
+
+  const dropVertex = useCallback(() => {
+    setDrawing((current) => (current?.length ? current.slice(0, -1) : current))
+  }, [])
+
+  const removePolygon = useCallback(
+    (index: number) => {
+      setDrawn((list) => (list ?? loaded?.polygons ?? []).filter((_, at) => at !== index))
+    },
+    [loaded],
+  )
+
+  /* ---- sending the frame on ---- */
 
   const finish = useCallback(
     async (outcome: AnnotOutcome) => {
-      if (!key) return
+      if (!key || !work) return
       const after = nextKey(keys, key)
-      await submit.mutateAsync({ key, outcome, features, comment })
+      const states = pointStates(work)
+
+      await submit.mutateAsync({
+        key,
+        outcome,
+        points: (work.items ?? []).map((point, index) => ({
+          name: point.name,
+          present: states[index] !== 'absent',
+          x: point.prefill?.x ?? null,
+          y: point.prefill?.y ?? null,
+        })),
+        polygons: work.task === 'foreign_seg' ? polygons : undefined,
+        verdict: work.task === 'foreign_seg' ? (answer ?? undefined) : undefined,
+        features,
+        comment,
+      })
+
       toast({
         title:
           outcome === 'done'
-            ? 'Снимок отправлен'
+            ? 'Разметка отправлена'
             : outcome === 'doubt'
               ? 'Снимок уйдёт на второй взгляд'
               : 'Снимок пропущен',
       })
-      /* When the queue runs out there is nothing to open: the frame just sent
-         is gone from it, so the desk falls through to whatever is left. */
       if (after) open(after)
     },
-    [key, keys, submit, features, comment, toast, open],
-  )
-
-  const answerAt = useCallback(
-    (index: number, value: PointAnswer) => {
-      if (!work) return
-      const next = toggleAnswer(answers, index, value)
-      setAnswers(next)
-      setPick(nextPoint(withAnswers(work, next), index))
-    },
-    [work, answers],
+    [key, work, keys, polygons, answer, features, comment, submit, toast, open],
   )
 
   /* The keyboard is the conveyor. It is listened to on the document, because
@@ -135,6 +202,25 @@ const AnnotDeskWidget = () => {
       if (target && /^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName)) return
       if (!work) return
 
+      if (event.key === 'Escape') {
+        setDrawing(null)
+        setDrawingKind(null)
+        return
+      }
+
+      if (work.task === 'foreign_seg') {
+        if (event.key === 'Backspace' && drawing?.length) {
+          event.preventDefault()
+          dropVertex()
+          return
+        }
+        if (event.key === 'Enter' && drawing && canClose(drawing)) {
+          event.preventDefault()
+          closeOutline()
+          return
+        }
+      }
+
       if (event.key === 'Enter') {
         event.preventDefault()
         void finish('done')
@@ -143,12 +229,24 @@ const AnnotDeskWidget = () => {
 
       if (event.key === ' ' && total) {
         event.preventDefault()
-        answerAt(active, 'absent')
+        absent(active)
         return
       }
 
       const digit = Number(event.key)
-      if (digit >= 1 && digit <= total) {
+      if (!digit) return
+
+      if (work.task === 'foreign_seg') {
+        const kind = digit === 1 ? 'wire' : digit === 2 ? 'object' : null
+        if (kind) {
+          event.preventDefault()
+          setDrawingKind(kind)
+          setDrawing([])
+        }
+        return
+      }
+
+      if (digit <= total) {
         event.preventDefault()
         setPick(digit - 1)
       }
@@ -156,7 +254,7 @@ const AnnotDeskWidget = () => {
 
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [work, total, active, finish, answerAt])
+  }, [work, total, active, drawing, finish, absent, dropVertex, closeOutline])
 
   if (!queue) return <Loader />
 
@@ -187,62 +285,70 @@ const AnnotDeskWidget = () => {
       </div>
 
       {work && key ? (
-        <>
-          <div className="mb-4 flex flex-wrap gap-2">
-            {keys.map((item) => (
-              <Chip key={item} on={item === key} onClick={() => open(item)}>
-                {ANNOT_CASE_TITLE[item] ?? item}
-              </Chip>
-            ))}
-            <span className="h-0 w-full" />
-            <Chip on={!isBlank} onClick={() => setBlank(false)}>
-              с предварительной разметкой
-            </Chip>
-            <Chip on={isBlank} onClick={() => setBlank(true)}>
-              без подсказок
-            </Chip>
-          </div>
+        <div className="grid grid-cols-[minmax(0,1fr)_380px] items-start gap-4.5">
+          <AnnotCanvas
+            item={work}
+            active={active}
+            drawing={drawing}
+            drawingKind={drawingKind}
+            onPlace={place}
+            onPickPoint={setPick}
+            onVertex={addVertex}
+            onCloseOutline={closeOutline}
+            onRemovePolygon={removePolygon}
+          />
 
-          <div className="grid items-start gap-4.5 grid-cols-[minmax(0,1fr)_380px]">
-            <AnnotCanvas item={work} active={active} />
+          <div className="flex min-w-0 flex-col gap-4.5">
+            <ActionBar
+              item={work}
+              place={placeInQueue(keys, key)}
+              busy={submit.isPending}
+              onDone={() => void finish('done')}
+              onDoubt={() => void finish('doubt')}
+              onSkip={() => void finish('skip')}
+            />
 
-            <div className="flex min-w-0 flex-col gap-4.5">
-              <ActionBar
+            {work.task === 'foreign_seg' ? (
+              <ForeignCard
+                polygons={polygons}
+                kind={drawingKind}
+                drawing={drawing}
+                answer={answer}
+                onKind={(value) => {
+                  setDrawingKind(value)
+                  setDrawing(value ? [] : null)
+                }}
+                onClose={closeOutline}
+                onDropVertex={dropVertex}
+                onRemove={removePolygon}
+                onAnswer={setAnswer}
+              />
+            ) : (
+              <PointsCard
                 item={work}
-                place={placeInQueue(keys, key, queue.total[source])}
-                busy={submit.isPending}
-                onDone={() => void finish('done')}
-                onDoubt={() => void finish('doubt')}
-                onSkip={() => void finish('skip')}
+                active={active}
+                edited={edits}
+                onPick={setPick}
+                onAbsent={absent}
+                onConfirm={confirm}
+                onReset={reset}
               />
+            )}
 
-              {work.task === 'foreign_seg' ? (
-                <ForeignCard item={work} answer={answer} onAnswer={setAnswer} />
-              ) : (
-                <PointsCard
-                  item={work}
-                  active={active}
-                  onPick={setPick}
-                  onAbsent={(index) => answerAt(index, 'absent')}
-                  onConfirm={(index) => answerAt(index, 'confirmed')}
-                />
-              )}
-
-              <NotesCard
-                features={features}
-                comment={comment}
-                onToggle={(feature) =>
-                  setFeatures((list) =>
-                    list.includes(feature)
-                      ? list.filter((item) => item !== feature)
-                      : [...list, feature],
-                  )
-                }
-                onComment={setComment}
-              />
-            </div>
+            <NotesCard
+              features={features}
+              comment={comment}
+              onToggle={(feature) =>
+                setFeatures((list) =>
+                  list.includes(feature)
+                    ? list.filter((item) => item !== feature)
+                    : [...list, feature],
+                )
+              }
+              onComment={setComment}
+            />
           </div>
-        </>
+        </div>
       ) : key ? (
         /* the frame is on its way — the queue says there is one */
         <Loader label="Снимок загружается…" />

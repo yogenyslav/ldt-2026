@@ -1,105 +1,137 @@
-import { useEffect, useState } from 'react'
+import { useMemo, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
+import { SlidersHorizontal } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot } from '@/components/ui/card'
-import Chip from '@/components/ui/chip'
 import Tag from '@/components/ui/tag'
 import BandScale from '@/components/shared/BandScale'
+import Empty from '@/components/shared/Empty'
 import Hint from '@/components/shared/Hint'
 import Loader from '@/components/shared/Loader'
 import ScanTile from '@/components/shared/ScanTile'
 import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
-import { useParams, useSaveParam, useShots } from '@/hooks/useAnnotation'
-import { spread, statusOf } from '@/lib/tune'
-import { plural } from '@/lib/utils'
-import type { IParamSpec } from '@/types'
+import { useJobs } from '@/hooks/useJobs'
+import { useSaveSettings } from '@/hooks/useSettings'
+import {
+  ROTATION_BANDS,
+  ROTATION_MAX,
+  ROTATION_MIN,
+  ROTATION_STEP,
+  centreToSettings,
+  cutToSettings,
+  normText,
+  rotationBand,
+  rotationCuts,
+  rotationFrames,
+  sameSettings,
+  settingsOf,
+  type IRotationSettings,
+} from '@/lib/settings'
+import { nm, plural } from '@/lib/utils'
+import type { Band } from '@/types'
 
 /* ============================================================
    Подбор параметров.
 
    Half of what the analyser decides is a measured number against a
    boundary. A boundary is not trained, it is chosen — and the
-   doctor looking at the grid is the one doing the choosing.
+   doctor looking at the grid is the one doing the choosing. So there
+   is nothing to compare against here: no marks, no share of
+   agreement. Only how the studies fall into the three states.
 
-   So there is nothing to compare against on this screen: no marks,
-   no share of agreement. Only how the frames fall into the three
-   states, and the frames themselves, each with the real outline of
-   the measured area filled in the colour of its current state.
+   Everything on this screen is what the service is actually running:
+   the studies come from the queue, the distance and the outline from
+   the result of each one, and the boundaries are computed from the
+   three settings the analyser applies — see lib/settings.ts. Moving
+   a handle moves a setting, not a picture.
    ============================================================ */
 
-/* Where the frames for tuning come from. */
-const SOURCES: Array<[string, string]> = [
-  ['clinic', 'последние из поликлиник'],
-  ['upload', 'последние загруженные'],
-]
-
 const TuneWidget = () => {
-  const { data: params } = useParams()
-  const save = useSaveParam()
+  const { data: jobs, isLoading } = useJobs(50)
+  const save = useSaveSettings()
   const { toast } = useToast()
+  const navigate = useNavigate()
 
-  const [pick, setPick] = useState<string | null>(null)
-  const [source, setSource] = useState('clinic')
-  /* The boundaries being dragged, before they are saved. */
-  const [draft, setDraft] = useState<Record<string, number[]>>({})
+  /* What the annotator is trying out, before it is saved. */
+  const [draft, setDraft] = useState<IRotationSettings | null>(null)
 
-  const id = pick ?? params?.[0]?.id
-  const { data: shots } = useShots(id, source)
+  const live = settingsOf(jobs)
+  const frames = useMemo(() => rotationFrames(jobs), [jobs])
 
-  /* Whatever comes back from the service is what «Вернуть прежние» returns to. */
-  useEffect(() => setDraft({}), [params])
+  if (isLoading) return <Loader />
 
-  if (!params?.length || !id) return <Loader />
+  if (!live) {
+    return (
+      <>
+        <WorkHead title="Подбор параметров" />
+        <Card>
+          <Empty
+            icon={<SlidersHorizontal size={22} />}
+            title="Параметры ещё не с чем сверить"
+            text="Настройки приходят вместе с разбором снимка. Как только через сервис пройдёт первое исследование бедра, границы можно будет двигать."
+          />
+        </Card>
+      </>
+    )
+  }
 
-  const saved = params.find((item) => item.id === id) as IParamSpec
-  const param: IParamSpec = { ...saved, cuts: draft[id] ?? saved.cuts }
-  const moved = !!draft[id]
+  const settings = draft ?? live
+  const cuts = rotationCuts(settings)
+  const moved = !sameSettings(settings, live)
 
-  const count = spread(param, (shots ?? []).map((shot) => shot.value))
-  const hasDoubt = param.bands.includes('warn')
+  const count: Record<Band, number> = { norm: 0, warn: 0, viol: 0 }
+  for (const frame of frames) count[rotationBand(settings, frame.value)] += 1
 
   return (
     <>
       <WorkHead
         title="Подбор параметров"
-        sub={
-          shots
-            ? `${shots.length} ${plural(shots.length, 'снимок', 'снимка', 'снимков')} · ` +
-              (SOURCES.find(([key]) => key === source)?.[1] ?? '')
-            : undefined
-        }
+        sub={`${frames.length} ${plural(frames.length, 'снимок', 'снимка', 'снимков')} бедра, которые прошли через сервис`}
       />
-
-      <div className="my-3 flex flex-wrap items-center gap-2 rounded-panel border border-line bg-surface px-3.5 py-2.5">
-        <span className="mr-1 text-[13px] text-muted">Параметр</span>
-        {params.map((item) => (
-          <Chip key={item.id} on={item.id === id} onClick={() => setPick(item.id)}>
-            {item.title}
-          </Chip>
-        ))}
-        <span className="flex-1" />
-        <span className="mr-1 text-[13px] text-muted">Снимки</span>
-        {SOURCES.map(([key, label]) => (
-          <Chip key={key} on={source === key} onClick={() => setSource(key)}>
-            {label}
-          </Chip>
-        ))}
-      </div>
 
       <Card className="mb-4.5" mark>
         <CardBody className="pt-4.5">
-          <div className="mb-4.5 text-[16px] font-semibold">{param.question}</div>
+          <div className="mb-4.5 text-[16px] font-semibold">
+            На сколько миллиметров малый вертел выступает за край кости
+          </div>
 
           <BandScale
-            param={param}
-            onChange={(cuts) => setDraft((current) => ({ ...current, [id]: cuts }))}
+            min={ROTATION_MIN}
+            max={ROTATION_MAX}
+            step={ROTATION_STEP}
+            unit="мм"
+            cuts={cuts}
+            bands={ROTATION_BANDS}
+            centre={settings.trochanter_center_mm}
+            onMoveCut={(index, value) => setDraft(cutToSettings(settings, index, value))}
+            onMoveCentre={(value) => setDraft(centreToSettings(settings, value))}
           />
 
-          <Hint>{param.how}</Hint>
+          <Hint>
+            Чем меньше выступает малый вертел, тем сильнее бедро завёрнуто внутрь; чем сильнее
+            выступает — тем больше развёрнуто наружу. Норма задаётся серединой и допуском вокруг
+            неё, поэтому границы двигаются парами: сервис применяет их симметрично.
+          </Hint>
 
-          <div className="mt-4 flex flex-wrap items-center gap-2 border-t border-line pt-3.5">
+          <div className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 border-t border-line pt-3.5 text-[14px]">
+            <span className="text-ink-2">
+              Середина нормы <b className="tabular">{nm(settings.trochanter_center_mm)} мм</b>
+            </span>
+            <span className="text-ink-2">
+              Допуск <b className="tabular">{nm(settings.trochanter_tol_percent, 0)} %</b>
+            </span>
+            <span className="text-ink-2">
+              Полоса сомнения <b className="tabular">{nm(settings.trochanter_yellow_percent, 0)} %</b>
+            </span>
+            <span className="text-ink-2">
+              Норма <b>{normText(settings)}</b>
+            </span>
+          </div>
+
+          <div className="mt-3 flex flex-wrap items-center gap-2">
             <Tag tone="ok">норма: {count.norm}</Tag>
-            {hasDoubt ? <Tag tone="warn">сомнение: {count.warn}</Tag> : null}
+            <Tag tone="warn">сомнение: {count.warn}</Tag>
             <Tag tone="bad">нарушение: {count.viol}</Tag>
           </div>
         </CardBody>
@@ -109,46 +141,42 @@ const TuneWidget = () => {
             variant="primary"
             disabled={!moved || save.isPending}
             onClick={async () => {
-              await save.mutateAsync({ id, cuts: param.cuts })
-              setDraft((current) => {
-                const next = { ...current }
-                delete next[id]
-                return next
-              })
-              toast({ title: `Границы сохранены: ${param.title.toLowerCase()}` })
+              await save.mutateAsync(settings)
+              setDraft(null)
+              toast({ title: `Норма ротации теперь ${normText(settings)}` })
             }}
           >
             Сохранить
           </Button>
-          <Button
-            variant="quiet"
-            disabled={!moved}
-            onClick={() =>
-              setDraft((current) => {
-                const next = { ...current }
-                delete next[id]
-                return next
-              })
-            }
-          >
+          <Button variant="quiet" disabled={!moved} onClick={() => setDraft(null)}>
             Вернуть прежние
           </Button>
+          <span className="flex-1" />
+          <span className="text-[13.5px] text-muted">
+            новые границы применяются к следующим снимкам
+          </span>
         </CardFoot>
       </Card>
 
-      {shots ? (
+      {frames.length ? (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3.5">
-          {shots.map((shot) => (
+          {frames.map((frame) => (
             <ScanTile
-              key={shot.key}
-              shot={shot}
-              status={statusOf(param, shot.value)}
-              unit={param.unit}
+              key={frame.jobId}
+              frame={frame}
+              status={rotationBand(settings, frame.value)}
+              onOpen={() => navigate(`/study/${frame.jobId}`)}
             />
           ))}
         </div>
       ) : (
-        <Loader />
+        <Card>
+          <Empty
+            icon={<SlidersHorizontal size={22} />}
+            title="Снимков бедра пока нет"
+            text="Ротацию меряют только на бедре. Границы можно двигать и сейчас, но проверить их будет не на чем."
+          />
+        </Card>
       )}
     </>
   )

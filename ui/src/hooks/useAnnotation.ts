@@ -57,26 +57,3 @@ export const useSwitchVersions = () => {
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annot', 'training'] }),
   })
 }
-
-export const useParams = () =>
-  useQuery({
-    queryKey: ['annot', 'params'],
-    queryFn: () => ApiAnnotation.getParams().then((response) => response.data.params),
-  })
-
-export const useShots = (id?: string, source = 'clinic') =>
-  useQuery({
-    queryKey: ['annot', 'shots', id, source],
-    queryFn: () =>
-      ApiAnnotation.getShots(id as string, source).then((response) => response.data.shots),
-    enabled: !!id,
-  })
-
-export const useSaveParam = () => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: { id: string; cuts: number[] }) =>
-      ApiAnnotation.saveParam(data.id, data.cuts),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annot', 'params'] }),
-  })
-}

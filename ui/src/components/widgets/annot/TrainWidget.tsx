@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import Button from '@/components/ui/button'
-import Card, { CardFoot, CardHead } from '@/components/ui/card'
+import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Check from '@/components/ui/check'
 import Tag from '@/components/ui/tag'
 import Bar from '@/components/shared/Bar'
@@ -10,6 +10,9 @@ import Loader from '@/components/shared/Loader'
 import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
 import { useStartTraining, useSwitchVersions, useTraining } from '@/hooks/useAnnotation'
+import { useJobs } from '@/hooks/useJobs'
+import { MODEL_NAME } from '@/constants'
+import { modelsOf } from '@/lib/settings'
 import { delta } from '@/lib/tune'
 import { BrainCircuit } from 'lucide-react'
 
@@ -32,10 +35,13 @@ const picked = (map: Record<string, boolean>) => Object.keys(map).filter((key) =
 
 const TrainWidget = () => {
   const { data, isLoading } = useTraining()
+  const { data: jobs } = useJobs()
   const start = useStartTraining()
   const change = useSwitchVersions()
   const { toast } = useToast()
   const navigate = useNavigate()
+
+  const models = modelsOf(jobs)
 
   const [trainPick, setTrainPick] = useState<Record<string, boolean>>({ crest: true })
   const [versionPick, setVersionPick] = useState<Record<string, boolean>>({ crest: true })
@@ -55,9 +61,32 @@ const TrainWidget = () => {
     <>
       <WorkHead
         title="Дообучение модели"
-        sub="четыре модели обучаются и обновляются по отдельности"
+        sub="каждая модель обучается и обновляется отдельно"
         lead="Размеченные снимки идут в обучение. Выберите, что дообучать и на какие новые версии переходить — остальное останется как есть."
       />
+
+      {/* What the service is running right now — straight out of the last
+          result, not out of a list kept here. */}
+      <Card className="mb-4.5">
+        <CardHead>
+          <h3 className="h3-bold flex-1">Модели в работе</h3>
+          <span className="text-[13.5px] text-muted">по последнему разбору</span>
+        </CardHead>
+        <CardBody className="flex flex-wrap gap-2 pt-0">
+          {models.length ? (
+            models.map((model) => (
+              <Tag key={model.id} tone={model.connected ? 'ok' : 'dead'}>
+                {MODEL_NAME[model.id] ?? model.id}
+                {model.connected ? '' : ` · ${model.status}`}
+              </Tag>
+            ))
+          ) : (
+            <span className="text-[13.5px] text-muted">
+              Список появится после первого разбора снимка.
+            </span>
+          )}
+        </CardBody>
+      </Card>
 
       <Card className="mb-4.5" mark>
         <CardHead>

@@ -273,31 +273,3 @@ export interface ITuneFrame {
   /* the outline of the measured area, in frame pixels */
   bump: Point[][]
 }
-
-/* One frame of the grid on the tuning screen: the real picture, the real
-   outline of the measured area, and the number that was measured. */
-export interface ITuneShot {
-  key: string
-  png: string
-  cols: number
-  rows: number
-  /* outline of the measured area, in frame pixels */
-  shapes: Point[][]
-  value: number
-}
-
-/* One tunable boundary set: the question it answers and where the
-   boundaries currently sit. Five stripes for the rotation, two for
-   the crest — `bands` is one longer than `cuts`. */
-export interface IParamSpec {
-  id: string
-  title: string
-  question: string
-  how: string
-  unit: string
-  min: number
-  max: number
-  step: number
-  cuts: number[]
-  bands: Band[]
-}

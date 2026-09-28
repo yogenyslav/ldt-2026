@@ -21,7 +21,7 @@ const RootLayout = () => {
       />
 
       <div className="grid min-h-0 flex-1 grid-cols-[258px_1fr]">
-        <SideNav queueCount={undecided} markupCount={markup?.total.all} todayCount={todayCount} />
+        <SideNav queueCount={undecided} markupCount={markup?.queue.length} todayCount={todayCount} />
         <main className="min-w-0 overflow-auto px-8 pt-7 pb-12">
           <Outlet />
         </main>

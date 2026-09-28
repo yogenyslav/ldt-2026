@@ -1,94 +1,145 @@
 import { useRef } from 'react'
 import { BAND } from '@/constants'
-import { cutLabel, positionOf, setCut, valueAt } from '@/lib/tune'
 import { cn } from '@/lib/utils'
-import type { IParamSpec } from '@/types'
+import type { Band } from '@/types'
 
 /* ============================================================
    One scale with the boundaries on it. The stripes are the verdict
    and are named right on the scale; the handles are what is being
-   chosen. Five stripes for the rotation, two for the crest — the
-   bands are always one more than the boundaries.
+   chosen.
 
-   A handle cannot pass its neighbour, so the stripes never turn
-   inside out, and the arrow keys move a boundary one step at a time.
+   The handles are not free numbers — each one stands for a setting
+   the analyser applies symmetrically around the centre of the norm,
+   so moving one moves its mirror image too. The centre itself has a
+   handle of its own, below the scale.
    ============================================================ */
 
-interface BandScaleProps {
-  param: IParamSpec
-  onChange: (cuts: number[]) => void
+const BAND_CLASS: Record<Band, string> = {
+  norm: 'band-norm',
+  warn: 'band-warn',
+  viol: 'band-viol',
 }
 
-const BandScale = ({ param, onChange }: BandScaleProps) => {
-  const track = useRef<HTMLDivElement>(null)
-  const edges = [param.min, ...param.cuts, param.max]
+const label = (value: number, step: number) =>
+  value.toFixed(step < 1 ? 1 : 0).replace('.', ',')
 
-  const dragTo = (index: number, clientX: number) => {
-    const rect = track.current?.getBoundingClientRect()
-    if (!rect) return
-    const value = valueAt(param, clientX, rect)
-    if (value === null) return
-    onChange(setCut(param, index, value))
+interface BandScaleProps {
+  min: number
+  max: number
+  step: number
+  unit: string
+  cuts: number[]
+  bands: Band[]
+  /* the centre of the norm, if the parameter has one */
+  centre?: number
+  onMoveCut: (index: number, value: number) => void
+  onMoveCentre?: (value: number) => void
+}
+
+const BandScale = ({
+  min,
+  max,
+  step,
+  unit,
+  cuts,
+  bands,
+  centre,
+  onMoveCut,
+  onMoveCentre,
+}: BandScaleProps) => {
+  const track = useRef<HTMLDivElement>(null)
+  const edges = [min, ...cuts, max]
+  const at = (value: number) => ((value - min) / (max - min)) * 100
+
+  const valueAt = (clientX: number) => {
+    const box = track.current?.getBoundingClientRect()
+    if (!box?.width) return null
+    const share = Math.min(Math.max((clientX - box.left) / box.width, 0), 1)
+    return min + share * (max - min)
   }
+
+  const grip = (
+    key: string,
+    value: number,
+    move: (next: number) => void,
+    tone: 'cut' | 'centre',
+  ) => (
+    <button
+      key={key}
+      type="button"
+      aria-label={`${tone === 'centre' ? 'центр нормы' : 'граница'} ${label(value, step)} ${unit}`}
+      className={cn(
+        'absolute -ml-3.5 w-7 cursor-ew-resize touch-none border-0 bg-transparent p-0',
+        tone === 'centre' ? 'centre-grip top-2.5 h-12' : 'grip -top-[7px] h-15',
+      )}
+      style={{ left: `${at(value)}%` }}
+      onPointerDown={(event) => {
+        event.preventDefault()
+        event.currentTarget.focus()
+        event.currentTarget.setPointerCapture(event.pointerId)
+      }}
+      onPointerMove={(event) => {
+        if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
+        const next = valueAt(event.clientX)
+        if (next !== null) move(next)
+      }}
+      onKeyDown={(event) => {
+        const direction = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
+        if (!direction) return
+        event.preventDefault()
+        move(value + direction * step)
+      }}
+    >
+      <b
+        className={cn(
+          'absolute left-1/2 -translate-x-1/2 rounded-[6px] border-[1.5px] bg-surface px-[7px] text-[12.5px] font-normal',
+          tone === 'centre'
+            ? 'top-[52px] border-ink-2 text-ink-2'
+            : 'bottom-[-8px] border-brand text-brand-700',
+        )}
+      >
+        {label(value, step)}
+      </b>
+    </button>
+  )
 
   return (
     <>
       <div className="relative mx-3.5 mb-1.5 h-[46px] rounded-[8px]" ref={track}>
-        {param.bands.map((band, index) => (
+        {bands.map((band, index) => (
           <div
             key={index}
             className={cn(
               'absolute top-0 flex h-[46px] items-center justify-center overflow-hidden',
               'text-[13px] font-semibold whitespace-nowrap',
-              band === 'norm' ? 'band-norm' : band === 'warn' ? 'band-warn' : 'band-viol',
+              BAND_CLASS[band],
               index === 0 && 'rounded-l-[8px]',
-              index === param.bands.length - 1 && 'rounded-r-[8px]',
+              index === bands.length - 1 && 'rounded-r-[8px]',
             )}
             style={{
-              left: `${positionOf(param, edges[index])}%`,
-              width: `${positionOf(param, edges[index + 1]) - positionOf(param, edges[index])}%`,
+              left: `${at(edges[index])}%`,
+              width: `${at(edges[index + 1]) - at(edges[index])}%`,
             }}
           >
             <span className="px-1">{BAND[band].title}</span>
           </div>
         ))}
 
-        {param.cuts.map((cut, index) => (
-          <button
-            key={index}
-            type="button"
-            aria-label={`граница ${cutLabel(param, cut)} ${param.unit}`}
-            className="grip absolute -top-[7px] -ml-3.5 h-15 w-7 cursor-ew-resize touch-none border-0 bg-transparent p-0"
-            style={{ left: `${positionOf(param, cut)}%` }}
-            onPointerDown={(event) => {
-              event.preventDefault()
-              event.currentTarget.focus()
-              event.currentTarget.setPointerCapture(event.pointerId)
-            }}
-            onPointerMove={(event) => {
-              if (!event.currentTarget.hasPointerCapture(event.pointerId)) return
-              dragTo(index, event.clientX)
-            }}
-            onKeyDown={(event) => {
-              const step = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
-              if (!step) return
-              event.preventDefault()
-              onChange(setCut(param, index, cut + step * param.step))
-            }}
-          >
-            <b className="absolute bottom-[-8px] left-1/2 -translate-x-1/2 rounded-[6px] border-[1.5px] border-brand bg-surface px-[7px] text-[12.5px] font-normal text-brand-700">
-              {cutLabel(param, cut)}
-            </b>
-          </button>
-        ))}
+        {cuts.map((cut, index) =>
+          grip(`cut-${index}`, cut, (next) => onMoveCut(index, next), 'cut'),
+        )}
+
+        {centre !== undefined && onMoveCentre
+          ? grip('centre', centre, onMoveCentre, 'centre')
+          : null}
       </div>
 
-      <div className="mx-3.5 mt-4.5 flex justify-between text-[12.5px] text-muted tabular">
+      <div className="mx-3.5 mt-11 flex justify-between text-[12.5px] text-muted tabular">
         <span>
-          {param.min} {param.unit}
+          {min} {unit}
         </span>
         <span>
-          {param.max} {param.unit}
+          {max} {unit}
         </span>
       </div>
     </>

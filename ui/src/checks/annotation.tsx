@@ -31,10 +31,27 @@ import {
   pointState,
   pointStates,
   queueKeys,
-  toggleAnswer,
-  withAnswers,
+  placePoint,
+  toggleAbsent,
+  confirmPoint,
+  clearPoint,
+  canClose,
+  withEdits,
+  type PointEdits,
 } from '@/lib/annotation'
-import { cutLabel, delta, positionOf, setCut, spread, statusOf } from '@/lib/tune'
+import { delta } from '@/lib/tune'
+import {
+  ROTATION_DEFAULTS,
+  centreToSettings,
+  cutToSettings,
+  modelsOf,
+  normText,
+  rotationBand,
+  rotationCuts,
+  rotationFrames,
+  settingsOf,
+} from '@/lib/settings'
+import { DEMO_JOBS } from '@/services/mock/demoJobs'
 
 let passed = 0
 const failures: string[] = []
@@ -73,22 +90,45 @@ ok('у предметов нет отдельных точек', (foreign.items 
 eq('пустой снимок с предметами требует ответа', leftToMark(blankCase(foreign)), 1)
 
 /* ответ разметчика перекрывает догадку модели */
-const answered = (...steps: Array<[number, 'confirmed' | 'absent']>) => {
-  let map = {}
-  for (const [index, value] of steps) map = toggleAnswer(map, index, value)
-  return withAnswers(hipRight, map)
+const edited = (...steps: Array<[number, 'place' | 'absent' | 'confirm' | 'clear', number?, number?]>) => {
+  let map: PointEdits = {}
+  for (const [index, what, x, y] of steps) {
+    if (what === 'place') map = placePoint(map, index, x!, y!)
+    else if (what === 'absent') map = toggleAbsent(map, index)
+    else if (what === 'confirm') map = confirmPoint(hipRight, map, index)
+    else map = clearPoint(map, index)
+  }
+  return withEdits(hipRight, map)
 }
 
-const confirmed = answered([1, 'confirmed'])
+const confirmed = edited([1, 'confirm'])
 eq('«всё верно» закрывает точку', pointState(confirmed, 1), 'checked')
 eq('после «всё верно» конвейер идёт дальше', nextPoint(confirmed, 1), 2)
-const absent = answered([1, 'absent'])
+eq('«всё верно» сохраняет координату модели', [confirmed.items![1].prefill!.x, confirmed.items![1].prefill!.y],
+   [hipRight.items![1].prefill!.x, hipRight.items![1].prefill!.y])
+
+const placed = edited([1, 'place', 111.5, 92.5])
+eq('поставленная точка встаёт куда указали', [placed.items![1].prefill!.x, placed.items![1].prefill!.y], [111.5, 92.5])
+eq('поставленная точка считается готовой', pointState(placed, 1), 'checked')
+eq('её можно передвинуть', edited([1, 'place', 111.5, 92.5], [1, 'place', 130, 80]).items![1].prefill!.x, 130)
+eq('и вернуть как было', pointState(edited([1, 'place', 130, 80], [1, 'clear']), 1), 'suggested')
+
+const absent = edited([1, 'absent'])
 eq('«нет на снимке» ставит своё состояние', pointState(absent, 1), 'absent')
-eq('повторное «нет на снимке» снимает ответ', pointState(answered([1, 'absent'], [1, 'absent']), 1), 'suggested')
+eq('повторное «нет на снимке» снимает ответ', pointState(edited([1, 'absent'], [1, 'absent']), 1), 'suggested')
+eq('поставленная точка отменяет «нет на снимке»', pointState(edited([1, 'absent'], [1, 'place', 100, 100]), 1), 'checked')
 ok('исходный снимок по-прежнему не тронут', pointStates(hipRight)[1] === 'suggested')
-const done = answered([1, 'confirmed'], [2, 'confirmed'])
+
+const done = edited([1, 'confirm'], [2, 'confirm'])
 eq('когда отмечать нечего, точка остаётся в руке', nextPoint(done, 2), 2)
 eq('снимок закрыт', leftToMark(done), 0)
+
+/* обводка замыкается только когда в ней есть площадь */
+eq('два угла — ещё не контур', canClose([[0, 0], [5, 0]]), false)
+eq('три угла — уже контур', canClose([[0, 0], [5, 0], [5, 5]]), true)
+const drawn = withEdits(foreign, {}, [{ cls: 'wire', points: [[0, 0], [5, 0], [5, 5]] }])
+eq('обводка попадает на снимок', drawn.polygons!.length, 1)
+ok('исходный снимок с предметами не тронут', (foreign.polygons ?? []).length === 3)
 
 /* ---------- 2. очередь и место в ней ---------- */
 
@@ -96,27 +136,27 @@ const queue = annotStore.queue()
 eq('очередь целиком', queueKeys(queue, 'all').length, 5)
 eq('из поликлиник', queueKeys(queue, 'clinic'), ['spine_foreign', 'hip_left', 'spine_ok'])
 eq('загруженные', queueKeys(queue, 'upload'), ['spine_bad', 'hip_right'])
-eq('место в отфильтрованной очереди', placeInQueue(queueKeys(queue, 'clinic'), 'hip_left', 41), '2 из 41')
+eq('место считается по той очереди, что на экране', placeInQueue(queueKeys(queue, 'clinic'), 'hip_left'), '2 из 3')
 eq('следующий идёт по той же очереди', nextKey(queueKeys(queue, 'clinic'), 'hip_left'), 'spine_ok')
 eq('после последнего следующего нет', nextKey(queueKeys(queue, 'clinic'), 'spine_ok'), null)
 
-/* отправленный снимок уходит из очереди и из счётчика */
-const totalBefore = annotStore.total()
+/* отправленный снимок уходит из очереди */
 annotStore.finish('hip_left')
 eq('отправленный снимок ушёл из очереди', queueKeys(annotStore.queue(), 'all').includes('hip_left'), false)
-eq('счётчик поликлиник уменьшился', annotStore.total().clinic, totalBefore.clinic - 1)
-eq('счётчик загруженных не тронут', annotStore.total().upload, totalBefore.upload)
-annotStore.add(12, false)
-eq('добавленные снимки попали в счётчик', annotStore.total().upload, totalBefore.upload + 12)
+eq('очередь стала короче', annotStore.queue().length, 4)
+eq('и из своей части очереди тоже', queueKeys(annotStore.queue(), 'clinic').length, 2)
+eq('соседняя часть очереди не тронута', queueKeys(annotStore.queue(), 'upload').length, 2)
+eq('место пересчитывается по укоротившейся очереди',
+   placeInQueue(queueKeys(annotStore.queue(), 'clinic'), 'spine_ok'), '2 из 2')
 
 /* ---------- 3. дообучение ---------- */
 
 eq('обучается одна модель', annotStore.targets().filter((t) => t.busy).length, 1)
-annotStore.train(['crest'])
+annotStore.train(['pelvis_crest'])
 eq('после запуска обучаются две', annotStore.targets().filter((t) => t.busy).length, 2)
 eq('новых версий две', annotStore.versions().length, 2)
-annotStore.switchOver(['crest'])
-eq('переведённая версия больше не новая', annotStore.versions().map((v) => v.id), ['foreign'])
+annotStore.switchOver(['pelvis_crest'])
+eq('переведённая версия больше не новая', annotStore.versions().map((v) => v.id), ['foreign_seg'])
 
 eq('рост там, где нужен рост', delta({ name: '', unit: '%', goal: 'up', now: 86, next: 93 }), {
   text: '+7 п. п.',
@@ -132,49 +172,64 @@ eq('падение промаха — улучшение', delta({ name: '', uni
 })
 eq('без изменений', delta({ name: '', unit: '%', goal: 'up', now: 5, next: 5 }).text, 'без изменений')
 
-/* ---------- 4. подбор параметров ---------- */
+/* ---------- 4. подбор параметров: настоящие настройки анализатора ---------- */
 
-const rotation = annotStore.params().find((item) => item.id === 'rotation')!
-const crest = annotStore.params().find((item) => item.id === 'crest')!
+/* Настройки приезжают с разбором снимка, а не из отдельного списка. */
+const live = settingsOf(DEMO_JOBS)!
+ok('настройки нашлись в разборе снимка', !!live)
+eq('это те самые три параметра', live, ROTATION_DEFAULTS)
 
-eq('полос на одну больше, чем границ', rotation.bands.length, rotation.cuts.length + 1)
-eq('у гребня одна граница и две полосы', [crest.cuts.length, crest.bands.length], [1, 2])
-eq('ниже первой границы — нарушение', statusOf(rotation, 0.1), 'viol')
-eq('между первой и второй — сомнение', statusOf(rotation, 0.5), 'warn')
-eq('в середине — норма', statusOf(rotation, 2.5), 'norm')
-eq('за последней границей — нарушение', statusOf(rotation, 7), 'viol')
-eq('ровно на границе — уже следующая полоса', statusOf(rotation, 0.2), 'warn')
+/* Границы считаются из середины и допусков — ровно так, как их применяет
+   анализатор: 2,7 ± 63 % и ещё 30 % на сомнение. */
+eq('границы из настроек', rotationCuts(live), [0.2, 1, 4.4, 5.2])
+eq('норма читается словами', normText(live), 'от 1,0 до 4,4 мм')
+eq('ниже первой границы — нарушение', rotationBand(live, 0.1), 'viol')
+eq('между первой и второй — сомнение', rotationBand(live, 0.5), 'warn')
+eq('в середине — норма', rotationBand(live, 2.7), 'norm')
+eq('за последней границей — нарушение', rotationBand(live, 7), 'viol')
+eq('ровно на границе — уже следующая полоса', rotationBand(live, 0.2), 'warn')
 
-const shots = annotStore.shots('rotation')
-eq('снимков для ротации', shots.length, 16)
-ok('у каждого снимка есть контур', shots.every((shot) => shot.shapes.length > 0))
-ok('контур лежит внутри кадра', shots.every((shot) =>
-  shot.shapes.every((shape) => shape.every(([x, y]) => x >= 0 && y >= 0 && x <= shot.cols && y <= shot.rows)),
+/* Бегунок двигает параметр, а не картинку, и двигает обе стороны сразу. */
+const tighter = cutToSettings(live, 1, 1.6)
+eq('внутренний бегунок меняет допуск', tighter.trochanter_tol_percent, 40.7)
+eq('и норма сужается симметрично', rotationCuts(tighter)[2], Number((2.7 * 1.407).toFixed(1)))
+eq('полоса сомнения не тронута', tighter.trochanter_yellow_percent, live.trochanter_yellow_percent)
+
+const wider = cutToSettings(live, 3, 6)
+eq('внешний бегунок меняет полосу сомнения', wider.trochanter_tol_percent, live.trochanter_tol_percent)
+ok('и она расширяется', wider.trochanter_yellow_percent > live.trochanter_yellow_percent)
+eq('границы остаются по возрастанию', rotationCuts(wider).every((cut, i, all) => i === 0 || cut >= all[i - 1]), true)
+
+eq('внешняя граница не заходит внутрь допуска', cutToSettings(live, 0, 2.0).trochanter_yellow_percent, 0)
+eq('середина нормы тоже настройка', centreToSettings(live, 3.4).trochanter_center_mm, 3.4)
+ok('сдвиг середины двигает все границы', rotationCuts(centreToSettings(live, 3.4))[2] > rotationCuts(live)[2])
+
+/* Снимки для сетки — настоящие исследования с измеренным расстоянием. */
+const frames = rotationFrames(DEMO_JOBS)
+ok('снимки бедра нашлись', frames.length > 0)
+ok('у каждого измерено расстояние', frames.every((frame) => typeof frame.value === 'number'))
+ok('у каждого есть контур измеренной области', frames.every((frame) => frame.regions.length > 0))
+ok('контур лежит внутри кадра', frames.every((frame) =>
+  frame.regions.every((region) => region.every(([x, y]) => x >= 0 && y >= 0 && x <= frame.cols && y <= frame.rows)),
 ))
-const counted = spread(rotation, shots.map((shot) => shot.value))
-eq('распределение сходится с числом снимков', counted.norm + counted.warn + counted.viol, shots.length)
+ok('у каждого есть снимок, который можно запросить', frames.every((frame) => !!frame.dicomId))
 
-const wider = { ...rotation, cuts: setCut(rotation, 2, 8) }
-eq('граница не перепрыгивает соседа', wider.cuts[2] <= wider.cuts[3] - rotation.step + 1e-9, true)
-eq('границы остались по возрастанию', wider.cuts.every((cut, i) => i === 0 || cut >= wider.cuts[i - 1]), true)
-eq('граница не уходит ниже начала шкалы', setCut(rotation, 0, -5)[0], rotation.min)
-eq('шаг округляется', setCut(rotation, 0, 0.17)[0], 0.2)
-const moved = spread({ ...rotation, cuts: setCut(rotation, 2, 1.5) }, shots.map((s) => s.value))
-ok('сдвиг границы меняет распределение', moved.norm !== counted.norm)
+const spread = (settings: typeof live) => {
+  const count = { norm: 0, warn: 0, viol: 0 }
+  for (const frame of frames) count[rotationBand(settings, frame.value)] += 1
+  return count
+}
+eq('распределение сходится с числом снимков', Object.values(spread(live)).reduce((a, b) => a + b, 0), frames.length)
+ok('сдвиг границы меняет распределение', spread(centreToSettings(live, 6)).norm !== spread(live).norm)
 
-const crestShots = annotStore.shots('crest')
-eq('снимков для гребня', crestShots.length, 16)
-ok('у гребня по два окна на снимке', crestShots.every((shot) => shot.shapes.length === 2))
+/* ---------- 4б. модели, которые крутит сервис ---------- */
 
-eq('подпись границы по-русски', cutLabel(rotation, 1.0), '1,0')
-eq('целая шкала без запятой', cutLabel(crest, 70), '70')
-eq('начало шкалы — ноль процентов', positionOf(rotation, rotation.min), 0)
-eq('конец шкалы — сто процентов', positionOf(rotation, rotation.max), 100)
-
-annotStore.saveCuts('rotation', [0.3, 1.2, 4, 5])
-eq('сохранённые границы возвращаются', annotStore.params().find((p) => p.id === 'rotation')!.cuts, [
-  0.3, 1.2, 4, 5,
+const models = modelsOf(DEMO_JOBS)
+eq('моделей пять, как в контракте', models.length, 5)
+eq('имена из контракта', models.map((model) => model.id).sort(), [
+  'foreign_seg', 'hip_keypoints', 'pelvis_crest', 'pelvis_presence', 'region',
 ])
+ok('все подключены', models.every((model) => model.connected))
 
 /* ---------- 5. экраны: что видит врач ---------- */
 
@@ -182,17 +237,13 @@ eq('сохранённые границы возвращаются', annotStore.
 annotStore.reset()
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-client.setQueryData(['annot', 'queue'], {
-  queue: annotStore.queue(),
-  total: annotStore.total(),
-  tiles: annotStore.tiles(),
-})
+client.setQueryData(['annot', 'queue'], { queue: annotStore.queue() })
 client.setQueryData(['annot', 'training'], {
   targets: annotStore.targets(),
   versions: annotStore.versions(),
 })
-client.setQueryData(['annot', 'params'], annotStore.params())
-client.setQueryData(['annot', 'shots', 'rotation', 'clinic'], annotStore.shots('rotation'))
+/* Экран параметров и список моделей читают настоящий разбор снимков. */
+client.setQueryData(['jobs', 50, 0], DEMO_JOBS)
 for (const item of ANNOT_CASES) client.setQueryData(['annot', 'case', item.key], item)
 
 /* Второй клиент: очередь из одного снимка бедра с предварительной разметкой —
@@ -202,11 +253,7 @@ const pointsQueue = annotStore
   .queue()
   .filter((item) => item.key === 'hip_right')
   .map((item) => ({ ...item, pre: true }))
-pointsClient.setQueryData(['annot', 'queue'], {
-  queue: pointsQueue,
-  total: annotStore.total(),
-  tiles: annotStore.tiles(),
-})
+pointsClient.setQueryData(['annot', 'queue'], { queue: pointsQueue })
 for (const item of ANNOT_CASES) pointsClient.setQueryData(['annot', 'case', item.key], item)
 
 const drawWith = (client: QueryClient, node: React.ReactNode) =>
@@ -284,12 +331,16 @@ ok('разметка: место в очереди напечатано', /\d+ �
 for (const word of ['Посторонние предметы', 'обвести', 'Снимок чистый', 'обводить можно в любой части снимка']) {
   ok(`разметка предметов: «${word}»`, desk.includes(word))
 }
+ok('разметка предметов: обведённое перечислено', desk.includes('Обведено на снимке'))
+ok('разметка: демо-переключателей снимков нет', !desk.includes('без подсказок'))
+ok('разметка: одного снимка достаточно', !desk.includes('с предварительной разметкой м'))
 ok('разметка предметов: точек нет', !desk.includes('Точки на снимке'))
 
 const points = text(screens[4][1])
-for (const word of ['Точки на снимке', 'нет на снимке', 'Верхушка большого вертела', 'подсвечена область']) {
+for (const word of ['Точки на снимке', 'нет на снимке', 'Верхушка большого вертела', 'точка встанет туда']) {
   ok(`разметка точек: «${word}»`, points.includes(word))
 }
+ok('разметка точек: сказано, что точка ставится кликом', points.includes('Кликните по кости'))
 /* три состояния точки читаются на экране */
 for (const word of ['готово', 'проверьте']) {
   ok(`разметка точек: состояние «${word}»`, points.includes(word))
