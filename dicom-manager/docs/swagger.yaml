@@ -14,6 +14,13 @@ definitions:
         description: ID сгенерированного отчета по результатам обработки DICOM-файлов.
         type: integer
     type: object
+  get_all.GetAllOut:
+    properties:
+      organizations:
+        items:
+          $ref: '#/definitions/internal_api_organization_get_all.Organization'
+        type: array
+    type: object
   get_by_dicom_id.GetByDicomIDOut:
     properties:
       jobs:
@@ -107,6 +114,13 @@ definitions:
         allOf:
         - $ref: '#/definitions/model.JobInfo'
         description: Содержит информацию о задаче на обработку DICOM-файлоа.
+    type: object
+  internal_api_organization_get_all.Organization:
+    properties:
+      id:
+        type: integer
+      name:
+        type: string
     type: object
   internal_api_organization_get_by_id.GetByIDOut:
     properties:
@@ -779,6 +793,32 @@ paths:
       summary: Принять решение по результатам обработки DICOM-файлов.
       tags:
       - job
+  /organization:
+    get:
+      description: Возвращает все организации, отсортированные по ID. Доступно только
+        администратору.
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список организаций.
+          schema:
+            $ref: '#/definitions/get_all.GetAllOut'
+        "401":
+          description: Требуется авторизация.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещен.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить все организации.
+      tags:
+      - organization
   /organization/{org_id}:
     get:
       consumes:

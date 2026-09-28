@@ -635,6 +635,44 @@ const docTemplate = `{
                 }
             }
         },
+        "/organization": {
+            "get": {
+                "description": "Возвращает все организации, отсортированные по ID. Доступно только администратору.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organization"
+                ],
+                "summary": "Получить все организации.",
+                "responses": {
+                    "200": {
+                        "description": "Список организаций.",
+                        "schema": {
+                            "$ref": "#/definitions/get_all.GetAllOut"
+                        }
+                    },
+                    "401": {
+                        "description": "Требуется авторизация.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/organization/{org_id}": {
             "get": {
                 "description": "Получить организацию по ID.",
@@ -1049,6 +1087,17 @@ const docTemplate = `{
                 }
             }
         },
+        "get_all.GetAllOut": {
+            "type": "object",
+            "properties": {
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_api_organization_get_all.Organization"
+                    }
+                }
+            }
+        },
         "get_by_dicom_id.GetByDicomIDOut": {
             "type": "object",
             "properties": {
@@ -1186,6 +1235,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.JobInfo"
                         }
                     ]
+                }
+            }
+        },
+        "internal_api_organization_get_all.Organization": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },

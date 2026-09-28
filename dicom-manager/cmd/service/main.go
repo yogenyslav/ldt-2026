@@ -16,6 +16,7 @@ import (
 	api_job_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_by_id"
 	api_job_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_paginated"
 	api_job_result_decision "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/result_decision"
+	api_organization_get_all "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/organization/get_all"
 	api_organization_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/organization/get_by_id"
 	api_organization_get_users_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/organization/get_users_paginated"
 	api_report_generate "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/report/generate"
@@ -35,6 +36,7 @@ import (
 	uc_job_get_by_dicom_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_dicom_id"
 	uc_job_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_id"
 	uc_job_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_paginated"
+	uc_organization_get_all "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_all"
 	uc_organization_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_by_id"
 	uc_organization_get_users "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_users"
 	uc_report_generate "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/report/generate"
@@ -148,9 +150,11 @@ func run() error {
 	userRouter.Get("/:user_id", api_user_get_by_id.New(logger, metrics, userByID).GetByID)
 
 	// Бизнес-логика и маршруты организаций.
+	allOrganizations := uc_organization_get_all.New(logger, metrics, organizationStorage)
 	organizationByID := uc_organization_get_by_id.New(logger, metrics, organizationStorage)
 	organizationUsers := uc_organization_get_users.New(logger, metrics, organizationStorage)
 	organizationRouter := srv.Router("organization")
+	organizationRouter.Get("/", api_organization_get_all.New(logger, metrics, allOrganizations).GetAll)
 	organizationRouter.Get(
 		"/:org_id", api_organization_get_by_id.New(logger, metrics, organizationByID).GetByID,
 	)
