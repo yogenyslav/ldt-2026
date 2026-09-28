@@ -32,7 +32,7 @@ func TestIntegrationDicomMetadata(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := storage.Dicom{ID: "manager", FileName: "file", SeriesID: "series", StudyID: "study", DicomImageUid: "image-uid", DicomStudyUid: "study-uid", DicomSeriesUid: "series-uid", CreatorID: 905, OrganizationID: 905, PatientID: "p1", DeviceModel: "Modality=DX; Manufacturer=Maker; ManufacturerModelName=Model; DeviceSerialNumber=serial; StationName=station"}
+	want := storage.Dicom{UploadSource: storage.UploadSourceManual, ID: "manager", FileName: "file", SeriesID: "series", StudyID: "study", DicomImageUid: "image-uid", DicomStudyUid: "study-uid", DicomSeriesUid: "series-uid", CreatorID: 905, OrganizationID: 905, PatientID: "p1", DeviceModel: "Modality=DX; Manufacturer=Maker; ManufacturerModelName=Model; DeviceSerialNumber=serial; StationName=station"}
 	check := func(want storage.Dicom) {
 		t.Helper()
 		got, err := repo.GetByID(ctx, want.ID)
@@ -48,13 +48,19 @@ func TestIntegrationDicomMetadata(t *testing.T) {
 		}
 	}
 	check(want)
+	// Повторная регистрация через другой путь не меняет исходный источник.
+	if err := uc.RegisterOrthanc(ctx, want); err != nil {
+		t.Fatal(err)
+	}
+	check(want)
 	want.ID = "callback"
+	want.UploadSource = storage.UploadSourceOrthanc
 	if err := uc.RegisterOrthanc(ctx, want); err != nil {
 		t.Fatal(err)
 	}
 	check(want)
 	// Старые клиенты и файлы без необязательных тегов остаются допустимыми.
-	empty := storage.Dicom{ID: "empty", CreatorID: 905, OrganizationID: 905}
+	empty := storage.Dicom{UploadSource: storage.UploadSourceOrthanc, ID: "empty", CreatorID: 905, OrganizationID: 905}
 	if err := uc.RegisterOrthanc(ctx, empty); err != nil {
 		t.Fatal(err)
 	}

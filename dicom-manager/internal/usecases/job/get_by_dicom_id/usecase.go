@@ -3,6 +3,7 @@ package get_by_dicom_id
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
@@ -62,6 +63,11 @@ func (uc *Usecase) GetByDicomID(ctx context.Context, in GetJobsRequest) ([]Job, 
 		return nil, ErrDicomForbidden
 	}
 
+	if (len(in.OrganizationIDs) > 0 && !slices.Contains(in.OrganizationIDs, dicom.OrganizationID)) ||
+		(len(in.UploadSources) > 0 && !slices.Contains(in.UploadSources, dicom.UploadSource)) {
+		return []Job{}, nil
+	}
+
 	jobs, err := uc.jobRepo.GetJobsByDicomID(ctx, in.DicomID)
 	if err != nil {
 		uc.metrics.Counter("usecases.job.get_by_dicom_id.error").Inc()
@@ -73,6 +79,7 @@ func (uc *Usecase) GetByDicomID(ctx context.Context, in GetJobsRequest) ([]Job, 
 	for _, j := range jobs {
 		res = append(
 			res, Job{
+				UploadSource:       dicom.UploadSource,
 				ID:                 j.ID,
 				DicomFileID:        j.DicomFileID,
 				Status:             j.Status,

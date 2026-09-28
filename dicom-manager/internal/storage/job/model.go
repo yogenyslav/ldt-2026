@@ -9,11 +9,12 @@ type DicomJobResult struct {
 	DetectionProperties
 	ResultDecision
 
-	ID          string    `db:"job_id"`
-	DicomFileID string    `db:"dicom_file_id"`
-	Status      string    `db:"job_status"`
-	CreatedAt   time.Time `db:"created_at"`
-	UpdatedAt   time.Time `db:"updated_at"`
+	UploadSource string    `db:"upload_source"`
+	ID           string    `db:"job_id"`
+	DicomFileID  string    `db:"dicom_file_id"`
+	Status       string    `db:"job_status"`
+	CreatedAt    time.Time `db:"created_at"`
+	UpdatedAt    time.Time `db:"updated_at"`
 }
 
 // DetectionProperties структура для хранения информации о свойствах обнаружения в результате обработки DICOM файла.

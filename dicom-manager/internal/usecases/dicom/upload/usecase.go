@@ -106,6 +106,11 @@ func (uc *Usecase) UploadDicomFiles(
 		return nil, fmt.Errorf("failed to get DICOM properties: %w", err)
 	}
 
+	source := storage.UploadSourceOrthanc
+	if in.SyncOrthanc {
+		source = storage.UploadSourceManual
+	}
+
 	saveDicoms := make([]storage.Dicom, 0, len(dicomProperties))
 	dicomIDs := make([]string, 0, len(saveDicoms))
 	seen := make(map[string]bool)
@@ -117,6 +122,7 @@ func (uc *Usecase) UploadDicomFiles(
 		dicomIDs = append(dicomIDs, prop.ID)
 		saveDicoms = append(
 			saveDicoms, storage.Dicom{
+				UploadSource:   source,
 				DeviceModel:    prop.DeviceModel,
 				PatientID:      prop.PatientID,
 				ID:             prop.ID,

@@ -6,6 +6,7 @@ import (
 
 // GetByIDOut содержит все поля dicom_file, кроме updated_at.
 type GetByIDOut struct {
+	UploadSource   string    `json:"upload_source" enums:"unknown,manual,orthanc"`
 	ID             string    `json:"id"`
 	FileName       string    `json:"file_name"`
 	SeriesID       string    `json:"series_id"`        // Поле из Orthanc.

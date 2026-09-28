@@ -23,16 +23,19 @@ func (s *Storage) SaveDicomFiles(ctx context.Context, dicoms []Dicom) error {
 		Columns(
 			"id", "file_name", "series_id", "study_id", "dicom_series_uid", "dicom_study_uid",
 			"dicom_image_uid", "creator_id", "organization_id",
-			"patient_id", "device_model",
+			"patient_id", "device_model", "upload_source",
 		).
 		Suffix("on conflict (id) do nothing").
 		PlaceholderFormat(sq.Dollar)
 
 	for _, dicom := range dicoms {
+		if dicom.UploadSource == "" {
+			dicom.UploadSource = UploadSourceUnknown
+		}
 		baseQuery = baseQuery.Values(
 			dicom.ID, dicom.FileName, dicom.SeriesID, dicom.StudyID, dicom.DicomSeriesUid, dicom.DicomStudyUid,
 			dicom.DicomImageUid, dicom.CreatorID, dicom.OrganizationID,
-			dicom.PatientID, dicom.DeviceModel,
+			dicom.PatientID, dicom.DeviceModel, dicom.UploadSource,
 		)
 	}
 
@@ -50,7 +53,7 @@ func (s *Storage) GetByID(ctx context.Context, id string) (Dicom, error) {
 	const query = `select 
 						id, file_name, series_id, study_id, dicom_series_uid, dicom_study_uid, dicom_image_uid, 
 						creator_id, organization_id, created_at,
-						patient_id, device_model
+						patient_id, device_model, upload_source
 					from dicom_file where id = $1;`
 
 	var dicom Dicom

@@ -3,6 +3,7 @@ package get_by_id
 import (
 	"context"
 	"errors"
+	"slices"
 
 	"github.com/jackc/pgx/v5"
 	"github.com/rs/zerolog"
@@ -81,8 +82,14 @@ func (uc *Usecase) GetByID(ctx context.Context, in GetJobRequest) (Job, error) {
 		return Job{}, ErrDicomForbidden
 	}
 
+	if (len(in.OrganizationIDs) > 0 && !slices.Contains(in.OrganizationIDs, dicom.OrganizationID)) ||
+		(len(in.UploadSources) > 0 && !slices.Contains(in.UploadSources, dicom.UploadSource)) {
+		return Job{}, ErrJobNotFound
+	}
+
 	uc.metrics.Counter("usecases.job.get_by_id.ok").Inc()
 	return Job{
+		UploadSource:       dicom.UploadSource,
 		ID:                 job.ID,
 		DicomFileID:        job.DicomFileID,
 		Status:             job.Status,

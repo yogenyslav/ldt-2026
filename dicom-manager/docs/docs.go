@@ -346,7 +346,7 @@ const docTemplate = `{
         },
         "/dicom/{dicom_id}/jobs": {
             "get": {
-                "description": "Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору.",
+                "description": "Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору. Каждая задача содержит upload_source; при несовпадении фильтров возвращается пустой список.",
                 "produces": [
                     "application/json"
                 ],
@@ -361,6 +361,31 @@ const docTemplate = `{
                         "name": "dicom_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ID организаций через запятую",
+                        "name": "organization_ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "manual",
+                                "orthanc"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Источники загрузки DICOM через запятую",
+                        "name": "upload_source",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -368,6 +393,12 @@ const docTemplate = `{
                         "description": "Список задач",
                         "schema": {
                             "$ref": "#/definitions/get_by_dicom_id.GetByDicomIDOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные фильтры.",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "401": {
@@ -399,7 +430,7 @@ const docTemplate = `{
         },
         "/job/info": {
             "get": {
-                "description": "Получить информацию о задачах на обработку DICOM-файлов по их ID с пагинацией",
+                "description": "Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка через UI, orthanc — поступление из Orthanc.",
                 "consumes": [
                     "application/json"
                 ],
@@ -421,6 +452,31 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Limit для пагинации (по умолчанию 10)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ID организаций через запятую",
+                        "name": "organization_ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "manual",
+                                "orthanc"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Источники загрузки DICOM через запятую",
+                        "name": "upload_source",
                         "in": "query"
                     }
                 ],
@@ -448,7 +504,7 @@ const docTemplate = `{
         },
         "/job/info/{job_id}": {
             "get": {
-                "description": "Получить информацию о задаче на обработку DICOM-файла по ID",
+                "description": "Получить задачу по ID вместе с upload_source. При несовпадении organization_ids или upload_source возвращается 404.",
                 "consumes": [
                     "application/json"
                 ],
@@ -466,6 +522,31 @@ const docTemplate = `{
                         "name": "job_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ID организаций через запятую",
+                        "name": "organization_ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "manual",
+                                "orthanc"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Источники загрузки DICOM через запятую",
+                        "name": "upload_source",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -1084,6 +1165,14 @@ const docTemplate = `{
                 "study_id": {
                     "description": "Поле из Orthanc.",
                     "type": "string"
+                },
+                "upload_source": {
+                    "type": "string",
+                    "enum": [
+                        "unknown",
+                        "manual",
+                        "orthanc"
+                    ]
                 }
             }
         },
@@ -1271,6 +1360,14 @@ const docTemplate = `{
                 },
                 "updated_at": {
                     "type": "string"
+                },
+                "upload_source": {
+                    "type": "string",
+                    "enum": [
+                        "unknown",
+                        "manual",
+                        "orthanc"
+                    ]
                 },
                 "violations": {
                     "description": "Список нарушений, обнаруженных в DICOM-файле.",

@@ -4,8 +4,16 @@ import (
 	"time"
 )
 
+// Источники поступления DICOM-файлов.
+const (
+	UploadSourceManual  = "manual"
+	UploadSourceOrthanc = "orthanc"
+	UploadSourceUnknown = "unknown"
+)
+
 // Dicom структура для хранения информации о DICOM файле в БД.
 type Dicom struct {
+	UploadSource   string    `db:"upload_source"`
 	ID             string    `db:"id"`
 	FileName       string    `db:"file_name"`
 	SeriesID       string    `db:"series_id"`        // Поле из Orthanc.

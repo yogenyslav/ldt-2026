@@ -94,6 +94,12 @@ definitions:
       study_id:
         description: Поле из Orthanc.
         type: string
+      upload_source:
+        enum:
+        - unknown
+        - manual
+        - orthanc
+        type: string
     type: object
   internal_api_job_get_by_id.GetByIDOut:
     properties:
@@ -218,6 +224,12 @@ definitions:
         - $ref: '#/definitions/model.JobStatus'
         description: Статус задачи на обработку.
       updated_at:
+        type: string
+      upload_source:
+        enum:
+        - unknown
+        - manual
+        - orthanc
         type: string
       violations:
         description: Список нарушений, обнаруженных в DICOM-файле.
@@ -428,13 +440,32 @@ paths:
   /dicom/{dicom_id}/jobs:
     get:
       description: Возвращает все попытки обработки от новых к старым. Доступ разрешён
-        владельцу файла и администратору.
+        владельцу файла и администратору. Каждая задача содержит upload_source; при
+        несовпадении фильтров возвращается пустой список.
       parameters:
       - description: ID DICOM-файла
         in: path
         name: dicom_id
         required: true
         type: string
+      - collectionFormat: csv
+        description: ID организаций через запятую
+        in: query
+        items:
+          format: int64
+          type: integer
+        name: organization_ids
+        type: array
+      - collectionFormat: csv
+        description: Источники загрузки DICOM через запятую
+        in: query
+        items:
+          enum:
+          - manual
+          - orthanc
+          type: string
+        name: upload_source
+        type: array
       produces:
       - application/json
       responses:
@@ -442,6 +473,10 @@ paths:
           description: Список задач
           schema:
             $ref: '#/definitions/get_by_dicom_id.GetByDicomIDOut'
+        "400":
+          description: Некорректные фильтры.
+          schema:
+            type: string
         "401":
           description: Требуется авторизация.
           schema:
@@ -604,8 +639,10 @@ paths:
     get:
       consumes:
       - application/json
-      description: Получить информацию о задачах на обработку DICOM-файлов по их ID
-        с пагинацией
+      description: 'Список задач с пагинацией и фильтрами. Администратор может выбрать
+        организации через organization_ids; без фильтра используется его организация.
+        Остальные пользователи видят только собственные задачи. upload_source: manual
+        — загрузка через UI, orthanc — поступление из Orthanc.'
       parameters:
       - description: Offset для пагинации (по умолчанию 0)
         in: query
@@ -615,6 +652,24 @@ paths:
         in: query
         name: limit
         type: integer
+      - collectionFormat: csv
+        description: ID организаций через запятую
+        in: query
+        items:
+          format: int64
+          type: integer
+        name: organization_ids
+        type: array
+      - collectionFormat: csv
+        description: Источники загрузки DICOM через запятую
+        in: query
+        items:
+          enum:
+          - manual
+          - orthanc
+          type: string
+        name: upload_source
+        type: array
       produces:
       - application/json
       responses:
@@ -638,13 +693,32 @@ paths:
     get:
       consumes:
       - application/json
-      description: Получить информацию о задаче на обработку DICOM-файла по ID
+      description: Получить задачу по ID вместе с upload_source. При несовпадении
+        organization_ids или upload_source возвращается 404.
       parameters:
       - description: ID задачи на обработку DICOM-файла
         in: path
         name: job_id
         required: true
         type: string
+      - collectionFormat: csv
+        description: ID организаций через запятую
+        in: query
+        items:
+          format: int64
+          type: integer
+        name: organization_ids
+        type: array
+      - collectionFormat: csv
+        description: Источники загрузки DICOM через запятую
+        in: query
+        items:
+          enum:
+          - manual
+          - orthanc
+          type: string
+        name: upload_source
+        type: array
       produces:
       - application/json
       responses:

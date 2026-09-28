@@ -11,6 +11,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/model"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/query"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_dicom_id"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
@@ -39,15 +40,18 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 // GetByDicomID возвращает все задачи обработки одного DICOM-файла.
 //
 //	@Summary		Получить все задачи DICOM-файла
-//	@Description	Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору.
+//	@Description	Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору. Каждая задача содержит upload_source; при несовпадении фильтров возвращается пустой список.
 //	@Tags			job
 //	@Produce		json
-//	@Param			dicom_id	path		string			true	"ID DICOM-файла"
-//	@Success		200			{object}	GetByDicomIDOut	"Список задач"
-//	@Failure		401			{string}	string			"Требуется авторизация."
-//	@Failure		403			{string}	string			"Доступ запрещён."
-//	@Failure		404			{string}	string			"DICOM-файл не найден."
-//	@Failure		500			{string}	string			"Внутренняя ошибка сервера."
+//	@Param			dicom_id			path		string			true	"ID DICOM-файла"
+//	@Param			organization_ids	query		[]int64			false	"ID организаций через запятую"				collectionFormat(csv)
+//	@Param			upload_source		query		[]string		false	"Источники загрузки DICOM через запятую"	Enums(manual,orthanc)	collectionFormat(csv)
+//	@Success		200					{object}	GetByDicomIDOut	"Список задач"
+//	@Failure		400					{string}	string			"Некорректные фильтры."
+//	@Failure		401					{string}	string			"Требуется авторизация."
+//	@Failure		403					{string}	string			"Доступ запрещён."
+//	@Failure		404					{string}	string			"DICOM-файл не найден."
+//	@Failure		500					{string}	string			"Внутренняя ошибка сервера."
 //	@Router			/dicom/{dicom_id}/jobs [get]
 func (h *Handler) GetByDicomID(c fiber.Ctx) error {
 	dicomID := c.Params("dicom_id")
@@ -57,8 +61,14 @@ func (h *Handler) GetByDicomID(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token claims")
 	}
 
+	organizationIDs, sources, err := query.ParseFilters(c)
+	if err != nil {
+		return err
+	}
+
 	jobs, err := h.uc.GetByDicomID(
 		c.Context(), get_by_dicom_id.GetJobsRequest{
+			OrganizationIDs: organizationIDs, UploadSources: sources,
 			DicomID:       dicomID,
 			RequesterID:   claims.UserID,
 			RequesterRole: usermodel.UserRole(claims.Role),
@@ -104,6 +114,7 @@ func convertToOut(jobs []get_by_dicom_id.Job) (GetByDicomIDOut, error) {
 				Error:              errorMessage,
 				ID:                 job.ID,
 				DicomID:            job.DicomFileID,
+				UploadSource:       job.UploadSource,
 				Status:             model.ToJobStatus(job.Status),
 				AnatomicalRegion:   job.AnatomicalRegion,
 				Confidence:         job.Confidence,

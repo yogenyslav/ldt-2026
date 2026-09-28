@@ -76,7 +76,7 @@ func TestGetByID(t *testing.T) {
 					t.Fatalf("unexpected field %s", field)
 				}
 			}
-			if len(body) != 12 || body["id"] != "dicom" || body["patient_id"] != file.PatientID || body["device_model"] != file.DeviceModel || body["created_at"] != "2026-09-29T00:00:00Z" {
+			if len(body) != 13 || body["id"] != "dicom" || body["patient_id"] != file.PatientID || body["device_model"] != file.DeviceModel || body["created_at"] != "2026-09-29T00:00:00Z" {
 				t.Fatalf("response=%v", body)
 			}
 		})

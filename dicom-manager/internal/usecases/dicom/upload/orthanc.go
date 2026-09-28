@@ -11,10 +11,12 @@ import (
 
 // RegisterOrthanc сохраняет метаданные уже загруженного в Orthanc файла без внешних вызовов.
 func (uc *Usecase) RegisterOrthanc(ctx context.Context, file storage.Dicom) error {
+	file.UploadSource = storage.UploadSourceOrthanc
 	return uc.uow.WithTx(ctx, database.TxLevelReadCommitted, func(ctx context.Context) error {
 		if err := uc.dicomRepo.SaveDicomFiles(ctx, []storage.Dicom{file}); err != nil {
 			return err
 		}
+
 		return uc.lockDicoms(ctx, []string{file.ID}, file.CreatorID, file.OrganizationID)
 	})
 }
@@ -26,9 +28,11 @@ func (uc *Usecase) StartOrthanc(ctx context.Context, id string, creatorID, organ
 	if err != nil {
 		return err
 	}
+
 	if file.CreatorID != creatorID || file.OrganizationID != organizationID {
 		return ErrDicomForbidden
 	}
+
 	go func() {
 		// Контекст запроса и его транзакция не должны жить в фоновой задаче.
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Minute)
@@ -45,5 +49,6 @@ func (uc *Usecase) StartOrthanc(ctx context.Context, id string, creatorID, organ
 			uc.metrics.Counter("usecases.dicom.upload.orthanc_async.error").Inc()
 		}
 	}()
+
 	return nil
 }
