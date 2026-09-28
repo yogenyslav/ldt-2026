@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Inbox } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card from '@/components/ui/card'
+import Chip from '@/components/ui/chip'
 import AnnotCanvas from '@/components/shared/AnnotCanvas'
 import Empty from '@/components/shared/Empty'
 import Loader from '@/components/shared/Loader'
@@ -12,7 +13,7 @@ import ForeignCard from '@/components/widgets/annot/ForeignCard'
 import NotesCard from '@/components/widgets/annot/NotesCard'
 import PointsCard from '@/components/widgets/annot/PointsCard'
 import { useToast } from '@/components/ui/toast'
-import { FRAME_FLAG } from '@/constants'
+import { ANNOT_SOURCE, FRAME_FLAG } from '@/constants'
 import { useAnnot } from '@/context/AnnotContext'
 import { useAnnotQueue, useAnnotTask, useSubmitAnnot } from '@/hooks/useAnnotation'
 import { useDicomImage } from '@/hooks/useDicomImage'
@@ -36,7 +37,9 @@ import { caseOf } from '@/lib/annotQueue'
 import { errorText } from '@/lib/errors'
 import type { ISubmission, SubmissionStatus } from '@/services/apiAnnotation'
 import { SCHEMA_VERSION } from '@/services/apiAnnotation'
-import type { AnnotTask, IAnnotPolygon, Point } from '@/types'
+import type { AnnotSource, AnnotTask, IAnnotPolygon, Point } from '@/types'
+
+const SOURCES: Array<AnnotSource | 'all'> = ['all', 'clinic', 'upload']
 
 /* ============================================================
    Разметка снимка — a conveyor, not a form.
@@ -59,7 +62,7 @@ const newId = () =>
   `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`.toUpperCase()
 
 const AnnotDeskWidget = () => {
-  const { current, open } = useAnnot()
+  const { source, setSource, tab, setTab, current, open } = useAnnot()
   const { pending, done, submissionOf, isLoading } = useAnnotQueue()
   const submit = useSubmitAnnot()
   const { toast } = useToast()
@@ -70,15 +73,21 @@ const AnnotDeskWidget = () => {
      conveyor simply walks past it until the screen is left. */
   const [skipped, setSkipped] = useState<string[]>([])
 
-  /* The desk walks the frames that still need work; a correction is opened
-     from the second list and stays on its own frame. */
-  const keys = useMemo(() => pending.map((item) => item.key), [pending])
-  const correcting = !!current && done.some((item) => item.key === current)
+  /* The desk walks exactly the queue that was chosen on the list screen — the
+     same half of it and the same source. «Следующий» must not quietly hand
+     over an upload to somebody who came in through «из поликлиник». */
+  const chosen = tab === 'pending' ? pending : done
+  const keys = useMemo(
+    () =>
+      chosen
+        .filter((item) => source === 'all' || item.source === source)
+        .map((item) => item.key),
+    [chosen, source],
+  )
+
+  const correcting = tab === 'done'
   const waiting = keys.filter((item) => !skipped.includes(item))
-  const key =
-    current && (keys.includes(current) || correcting)
-      ? current
-      : (waiting[0] ?? keys[0] ?? null)
+  const key = current && keys.includes(current) ? current : (waiting[0] ?? keys[0] ?? null)
 
   const { data: job } = useAnnotTask(key ?? undefined)
   const { src } = useDicomImage(job?.dicom_id)
@@ -276,9 +285,9 @@ const AnnotDeskWidget = () => {
               : 'Разметка отправлена',
         })
 
-        const after = nextKey(keys, key)
-        if (correcting) navigate('/markup')
-        else if (after) open(after)
+        const after = nextKey(waiting, key)
+        if (after) open(after)
+        else navigate('/markup')
       } catch (error) {
         toast({ variant: 'destructive', title: errorText(error, 'Не удалось отправить разметку') })
       }
@@ -343,25 +352,47 @@ const AnnotDeskWidget = () => {
     <>
       <WorkHead
         title="Разметка снимка"
-        sub={correcting ? 'правка отправленной разметки' : undefined}
+        sub={correcting ? 'правка отправленной разметки' : ANNOT_SOURCE[source]}
       />
 
-      <div className="my-3 flex items-center gap-2 rounded-panel border border-line bg-surface px-3.5 py-2.5">
-        <span className="text-[13px] text-muted">
-          {correcting
-            ? 'Разметка этого снимка уже отправлена — правка заменит её'
-            : `Ждут разметки: ${waiting.length}`}
-        </span>
+      {/* The queue the desk is walking, changeable without going back. */}
+      <div className="my-3 flex flex-wrap items-center gap-2 rounded-panel border border-line bg-surface px-3.5 py-2.5">
+        <span className="mr-1 text-[13px] text-muted">Очередь</span>
+        <Chip on={tab === 'pending'} count={pending.length} onClick={() => setTab('pending')}>
+          ждут разметки
+        </Chip>
+        <Chip on={tab === 'done'} count={done.length} onClick={() => setTab('done')}>
+          размеченные
+        </Chip>
+        <span className="mx-1 h-5 w-px bg-line" />
+        {SOURCES.map((id) => (
+          <Chip
+            key={id}
+            on={source === id}
+            count={
+              id === 'all' ? chosen.length : chosen.filter((item) => item.source === id).length
+            }
+            onClick={() => setSource(id)}
+          >
+            {ANNOT_SOURCE[id]}
+          </Chip>
+        ))}
+        <span className="flex-1" />
         {skipped.length ? (
           <Button variant="quiet" className="h-8 px-3 text-[14px]" onClick={() => setSkipped([])}>
             Вернуть отложенные ({skipped.length})
           </Button>
         ) : null}
-        <span className="flex-1" />
         <Button variant="quiet" className="h-8 px-3 text-[14px]" onClick={() => navigate('/markup')}>
-          Открыть очередь
+          Открыть список
         </Button>
       </div>
+
+      {correcting ? (
+        <p className="mt-0 mb-3 text-[13.5px] text-ink-2">
+          Разметка этого снимка уже отправлена — правка заменит её.
+        </p>
+      ) : null}
 
       {work && key ? (
         <div className="grid grid-cols-[minmax(0,1fr)_380px] items-start gap-4.5">

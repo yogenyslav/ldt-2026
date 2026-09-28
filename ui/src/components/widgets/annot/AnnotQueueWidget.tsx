@@ -9,10 +9,15 @@ import Empty from '@/components/shared/Empty'
 import Loader from '@/components/shared/Loader'
 import WorkHead from '@/components/shared/WorkHead'
 import UploadSheet from '@/components/widgets/annot/UploadSheet'
-import { ANNOT_TASK, REGION_SHORT } from '@/constants'
+import { ANNOT_SOURCE, ANNOT_SOURCE_TAG, ANNOT_TASK, REGION_SHORT } from '@/constants'
 import { useAnnot } from '@/context/AnnotContext'
 import { useAnnotQueue } from '@/hooks/useAnnotation'
 import { plural, whenOf } from '@/lib/utils'
+import type { AnnotSource } from '@/types'
+
+/* The filter is one thing across both screens: chosen here, it travels to the
+   desk, «следующий» walks that same list and the counter counts it. */
+const SOURCES: Array<AnnotSource | 'all'> = ['all', 'clinic', 'upload']
 
 /* ============================================================
    Очередь заданий — where the work comes from.
@@ -25,14 +30,16 @@ import { plural, whenOf } from '@/lib/utils'
 
 const AnnotQueueWidget = () => {
   const { pending, done, isLoading } = useAnnotQueue()
-  const { open } = useAnnot()
+  const { source, setSource, tab, setTab, open } = useAnnot()
   const [sheet, setSheet] = useState(false)
-  const [tab, setTab] = useState<'pending' | 'done'>('pending')
   const navigate = useNavigate()
 
   if (isLoading) return <Loader />
 
-  const queue = tab === 'pending' ? pending : done
+  const bySource = (list: typeof pending) =>
+    source === 'all' ? list : list.filter((item) => item.source === source)
+
+  const queue = bySource(tab === 'pending' ? pending : done)
 
   const toDesk = (key: string) => {
     open(key)
@@ -43,22 +50,42 @@ const AnnotQueueWidget = () => {
     <>
       <WorkHead
         title="Очередь заданий"
-        sub={`${pending.length} ${plural(pending.length, 'задание', 'задания', 'заданий')}`}
+        sub={`${bySource(pending).length} ${plural(bySource(pending).length, 'задание', 'задания', 'заданий')}`}
         lead="В очередь попадают снимки, на которых анализатор сомневается: не нашёл точку, не увидел гребень в кадре или засомневался в постороннем предмете. Размеченное не пропадает — его видно рядом, и разметку можно поправить."
       />
 
       <Card mark>
-        <CardHead>
+        <CardHead className="flex-wrap">
           <h3 className="h3-bold flex-1">Снимки</h3>
-          <Chip on={tab === 'pending'} count={pending.length} onClick={() => setTab('pending')}>
+          <Chip
+            on={tab === 'pending'}
+            count={bySource(pending).length}
+            onClick={() => setTab('pending')}
+          >
             ждут разметки
           </Chip>
-          <Chip on={tab === 'done'} count={done.length} onClick={() => setTab('done')}>
+          <Chip on={tab === 'done'} count={bySource(done).length} onClick={() => setTab('done')}>
             размеченные
           </Chip>
           <Button className="h-8 px-3 text-[14px]" onClick={() => setSheet(true)}>
             Добавить снимки
           </Button>
+          <span className="h-0 w-full" />
+          <span className="text-[13px] text-muted">Источник</span>
+          {SOURCES.map((id) => (
+            <Chip
+              key={id}
+              on={source === id}
+              count={
+                id === 'all'
+                  ? (tab === 'pending' ? pending : done).length
+                  : (tab === 'pending' ? pending : done).filter((item) => item.source === id).length
+              }
+              onClick={() => setSource(id)}
+            >
+              {ANNOT_SOURCE[id]}
+            </Chip>
+          ))}
         </CardHead>
 
         {queue.length ? (
@@ -67,6 +94,7 @@ const AnnotQueueWidget = () => {
               <thead>
                 <tr className="[&>th]:border-b [&>th]:border-line-2 [&>th]:px-3 [&>th]:py-2.5 [&>th]:text-left [&>th]:text-[12.5px] [&>th]:font-semibold [&>th]:whitespace-nowrap [&>th]:text-muted">
                   <th>Снимок</th>
+                  <th>Источник</th>
                   <th>Область</th>
                   <th>Задача</th>
                   <th>Предварительная разметка</th>
@@ -88,6 +116,11 @@ const AnnotQueueWidget = () => {
                           {item.cols}×{item.rows}
                         </div>
                       ) : null}
+                    </td>
+                    <td>
+                      <Tag tone={item.source === 'clinic' ? '' : 'dead'}>
+                        {ANNOT_SOURCE_TAG[item.source]}
+                      </Tag>
                     </td>
                     <td>{REGION_SHORT[item.region]}</td>
                     <td>{ANNOT_TASK[item.task]}</td>

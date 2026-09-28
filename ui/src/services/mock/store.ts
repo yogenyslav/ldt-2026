@@ -145,6 +145,7 @@ function project(job: MockJob): IJobInfo {
     id: job.id,
     dicom_id: template.dicom_id,
     file_name: job.file_name,
+    source: job.source,
     study_id: job.study_id,
     patient_ref: job.patient_ref,
     created_at: job.created_at,

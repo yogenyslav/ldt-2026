@@ -1,5 +1,15 @@
 import { REGION_SHORT } from '@/constants'
-import type { AnnotTask, IAnnotCase, IAnnotPoint, IAnnotPolygon, ICriterion, IJobInfo, Point, Region } from '@/types'
+import type {
+  AnnotSource,
+  AnnotTask,
+  IAnnotCase,
+  IAnnotPoint,
+  IAnnotPolygon,
+  ICriterion,
+  IJobInfo,
+  Point,
+  Region,
+} from '@/types'
 
 /* ============================================================
    The annotation queue, built out of what the service has already
@@ -116,6 +126,8 @@ export interface IAnnotTask {
   rows: number
   cols: number
   why: string
+  /* the stream from the clinics, or an upload made here */
+  source: AnnotSource
   /* the model has already put something on this frame */
   pre: boolean
   created_at: string
@@ -147,6 +159,7 @@ export function annotTasks(jobs?: IJobInfo[]): IAnnotTask[] {
         rows: meta.shape[0],
         cols: meta.shape[1],
         why,
+        source: job.source === 'upload' ? 'upload' : 'clinic',
         pre: task === 'foreign_seg' ? !!criterion.regions?.length : pointsOf(criterion) > 0,
         created_at: job.created_at,
       })

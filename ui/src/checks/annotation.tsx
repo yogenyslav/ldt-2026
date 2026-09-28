@@ -118,6 +118,18 @@ eq('и причина названа', annotTasks([short])[0].why, 'модель
 eq('неразобранный снимок в очередь не идёт', annotTasks([{ ...clean, status: 'processing' }]).length, 0)
 
 eq('место считается по очереди', placeInQueue(['a', 'b', 'c'], 'b'), '2 из 3')
+
+/* фильтр по источнику опирается на поле контракта, а не на догадку */
+const uploaded: IJobInfo = { ...short, id: 'up', source: 'upload' }
+const fromClinic: IJobInfo = { ...short, id: 'dev', source: 'device' }
+eq('загруженный снимок помечен как загруженный', annotTasks([uploaded])[0].source, 'upload')
+eq('пришедший с аппарата — как из поликлиники', annotTasks([fromClinic])[0].source, 'clinic')
+eq('без поля источника считаем потоком', annotTasks([short])[0].source, 'clinic')
+eq(
+  'фильтр делит очередь',
+  annotTasks([uploaded, fromClinic]).filter((task) => task.source === 'upload').length,
+  1,
+)
 eq('следующий идёт по той же очереди', nextKey(['a', 'b', 'c'], 'b'), 'c')
 eq('после последнего следующего нет', nextKey(['a', 'b', 'c'], 'c'), null)
 
@@ -395,12 +407,12 @@ for (const word of ['норма', 'сомнение', 'нарушение', 'м�
 }
 
 const queueScreen = text(screens[0][1])
-for (const word of ['Очередь заданий', 'ждут разметки', 'размеченные', 'Добавить снимки']) {
+for (const word of ['Очередь заданий', 'ждут разметки', 'размеченные', 'Добавить снимки', 'Источник', 'из поликлиник', 'загруженные']) {
   ok(`очередь: «${word}»`, queueScreen.includes(word))
 }
 
 const desk = text(screens[1][1])
-for (const word of ['Готово, следующий', 'сомневаюсь', 'пропустить', 'Особенности снимка']) {
+for (const word of ['Готово, следующий', 'сомневаюсь', 'пропустить', 'Особенности снимка', 'Очередь', 'из поликлиник']) {
   ok(`разметка: «${word}»`, desk.includes(word))
 }
 ok('разметка: демо-переключателей снимков нет', !desk.includes('без подсказок'))

@@ -73,6 +73,10 @@ export interface IJobInfo {
   /* the column exists in the dicom_file table but is missing from the DTO —
      requested in context/backend_requests.md, lists fall back to the job id */
   file_name?: string
+  /* how the scan got here: sent by the densitometer or uploaded by hand.
+     Requested in context/back_annotations.md — without it the annotation
+     queue cannot tell the stream from the clinics from one's own uploads. */
+  source?: 'device' | 'upload'
 }
 
 /* A visit: the scans taken for one patient during a single appointment. */
