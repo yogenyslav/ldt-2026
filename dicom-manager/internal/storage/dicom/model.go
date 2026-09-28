@@ -15,5 +15,7 @@ type Dicom struct {
 	DicomImageUid  string    `db:"dicom_image_uid"`  // Внутреннее поле из DICOM файла.
 	CreatorID      int64     `db:"creator_id"`
 	OrganizationID int64     `db:"organization_id"`
+	DeviceModel    string    `db:"device_model"`
+	PatientID      string    `db:"patient_id"`
 	CreatedAt      time.Time `db:"created_at"`
 }

@@ -129,6 +129,159 @@ const docTemplate = `{
                 }
             }
         },
+        "/dicom/upload/orthanc": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dicom"
+                ],
+                "summary": "Зарегистрировать файл из Orthanc",
+                "parameters": [
+                    {
+                        "description": "Метаданные файла в Orthanc",
+                        "name": "file",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/upload_orthanc.UploadIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/upload_orthanc.UploadOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/dicom/upload/orthanc/{dicom_id}/process": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dicom"
+                ],
+                "summary": "Запустить обработку зарегистрированного файла Orthanc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID экземпляра Orthanc",
+                        "name": "dicom_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/upload_orthanc.UploadOut"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/dicom/{dicom_id}": {
+            "get": {
+                "description": "Получить DICOM-файл по его идентификатору, включая метаданные пациента и аппарата, без updated_at.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dicom"
+                ],
+                "summary": "Получить DICOM-файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "DICOM ID",
+                        "name": "dicom_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DICOM-файл успешно получен.",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_dicom_get_by_id.GetByIDOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "DICOM-файл не найден.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/dicom/{dicom_id}/image": {
             "get": {
                 "description": "Получить изображение DICOM по его идентификатору. Можно указать флаг raw, чтобы получить байты изображения вместо base64.",
@@ -888,6 +1041,52 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_api_dicom_get_by_id.GetByIDOut": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_id": {
+                    "type": "integer"
+                },
+                "device_model": {
+                    "type": "string"
+                },
+                "dicom_image_uid": {
+                    "description": "Внутреннее поле из DICOM файла.",
+                    "type": "string"
+                },
+                "dicom_series_uid": {
+                    "description": "Внутреннее поле из DICOM файла.",
+                    "type": "string"
+                },
+                "dicom_study_uid": {
+                    "description": "Внутреннее поле из DICOM файла.",
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "patient_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "description": "Поле из Orthanc.",
+                    "type": "string"
+                },
+                "study_id": {
+                    "description": "Поле из Orthanc.",
+                    "type": "string"
+                }
+            }
+        },
         "internal_api_job_get_by_id.GetByIDOut": {
             "type": "object",
             "properties": {
@@ -1202,6 +1401,46 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/upload_batch.DicomData"
                     }
+                }
+            }
+        },
+        "upload_orthanc.UploadIn": {
+            "type": "object",
+            "properties": {
+                "device_model": {
+                    "type": "string"
+                },
+                "dicom_id": {
+                    "type": "string"
+                },
+                "dicom_image_uid": {
+                    "type": "string"
+                },
+                "dicom_series_uid": {
+                    "type": "string"
+                },
+                "dicom_study_uid": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "patient_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "type": "string"
+                },
+                "study_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "upload_orthanc.UploadOut": {
+            "type": "object",
+            "properties": {
+                "dicom_id": {
+                    "type": "string"
                 }
             }
         }

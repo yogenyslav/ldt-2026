@@ -61,11 +61,11 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 	contentType := c.Get("Content-Type")
 	switch contentType {
 	case contentTypeApplicationDicom:
-		fileName = c.Get("X-Instance-ID")
-		if fileName == "" {
-			syncOrthanc = true
-			fileName = uuid.New().String()
+		if c.Get("X-Instance-ID") != "" {
+			return fiber.NewError(fiber.StatusBadRequest, "use /dicom/upload/orthanc for Orthanc callbacks")
 		}
+		syncOrthanc = true
+		fileName = uuid.New().String()
 
 		data = c.Body()
 		if len(data) == 0 {

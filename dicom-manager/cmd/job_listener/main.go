@@ -57,7 +57,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
-	
+
 	client, err := messaging.New(logger, metrics, cfg)
 	if err != nil {
 		return fmt.Errorf("init NATS client: %w", err)

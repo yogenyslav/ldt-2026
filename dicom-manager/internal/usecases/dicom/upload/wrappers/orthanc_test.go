@@ -85,3 +85,53 @@ func TestDeleteInstancesContinuesAfterErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 }
+
+func TestGetDicomPropertiesMetadata(t *testing.T) {
+	for _, tc := range []struct {
+		name, body string
+		status     int
+		wantErr    bool
+	}{
+		{"all tags", `{"PatientID":"p1","PatientName":"Test^Patient","PatientBirthDate":"19800102","PatientSex":"F","Modality":"DX","Manufacturer":"Maker","ManufacturerModelName":"Model","DeviceSerialNumber":"serial","StationName":"station"}`, 200, false},
+		{"missing tags", `{}`, 200, false},
+		{"server error", `{}`, 500, true},
+		{"invalid JSON", `{`, 200, true},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			client, err := orthanc.NewClient("http://orthanc", orthanc.WithHTTPClient(httpStub(func(r *http.Request) (*http.Response, error) {
+				switch r.URL.Path {
+				case "/instances/id":
+					return response(200, `{"FileUuid":"file","ParentSeries":"series","MainDicomTags":{"SOPInstanceUID":"image-uid"}}`), nil
+				case "/series/series":
+					return response(200, `{"ParentStudy":"study","MainDicomTags":{"SeriesInstanceUID":"series-uid"}}`), nil
+				case "/studies/study":
+					return response(200, `{"MainDicomTags":{"StudyInstanceUID":"study-uid"}}`), nil
+				case "/instances/id/simplified-tags":
+					return response(tc.status, tc.body), nil
+				default:
+					t.Errorf("unexpected path %s", r.URL.Path)
+					return response(404, ""), nil
+				}
+			})))
+			if err != nil {
+				t.Fatal(err)
+			}
+			props, err := NewOrthanc(client).GetDicomProperties(context.Background(), "id")
+			if (err != nil) != tc.wantErr {
+				t.Fatalf("error=%v", err)
+			}
+			if tc.wantErr {
+				return
+			}
+			if props.DicomImageUid != "image-uid" || props.ParentStudy != "study" {
+				t.Fatalf("lost existing metadata: %+v", props)
+			}
+			if tc.name == "all tags" && (props.PatientID != "p1" || props.DeviceModel != "Modality=DX; Manufacturer=Maker; ManufacturerModelName=Model; DeviceSerialNumber=serial; StationName=station") {
+				t.Fatalf("metadata=%+v", props)
+			}
+			if tc.name == "missing tags" && (props.PatientID != "" || props.DeviceModel != "") {
+				t.Fatalf("metadata=%+v", props)
+			}
+		})
+	}
+}

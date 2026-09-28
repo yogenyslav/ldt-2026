@@ -1,13 +1,13 @@
 -- Run from the repository root: lua orthanc/autoroute_test.lua
 local realPrint = print
-local calls, logs, settings, failLogin, failUpload, loginCount
+local calls, logs, settings, failLogin, failUpload, failStart, loginCount
 
 function print(message)
     table.insert(logs, message)
 end
 
 function SetHttpTimeout(timeout)
-    assert(timeout == 5)
+    assert(timeout == 60)
 end
 
 function GetOrthancConfiguration()
@@ -16,23 +16,42 @@ end
 
 function DumpJson(value, keepStrings)
     assert(keepStrings)
-    assert(value.email == "router@example.test" and value.password == "password")
-    return "login-json"
+    if value.email then
+        assert(value.email == "router@example.test" and value.password == "password")
+        return "login-json"
+    end
+    assert(value.dicom_id == "instance-id" and value.series_id == "series-id" and value.study_id == "study-id")
+    assert(value.dicom_image_uid == "image-uid" and value.dicom_series_uid == "series-uid" and value.dicom_study_uid == "study-uid")
+    assert(value.patient_id == "patient-1")
+    assert(value.device_model == "Manufacturer=Test manufacturer; DeviceSerialNumber=serial-1")
+    assert(value.patient_name == nil and value.patient_birth_date == nil and value.patient_sex == nil)
+    return "metadata-json"
 end
 
 function ParseJson(value)
     if value == "login-response" then
         return { token = "jwt-" .. loginCount }
     elseif value == "upload-response" then
-        return { job_id = "job-id" }
+        return { dicom_id = "instance-id" }
+    elseif value == "tags" then
+        return { PatientID = "patient-1", PatientName = "Test^Patient", Manufacturer = "Test manufacturer", DeviceSerialNumber = "serial-1" }
+    elseif value == "instance" then
+        return { ParentSeries = "series-id", MainDicomTags = { SOPInstanceUID = "image-uid" } }
+    elseif value == "series" then
+        return { ParentStudy = "study-id", MainDicomTags = { SeriesInstanceUID = "series-uid" } }
+    elseif value == "study" then
+        return { MainDicomTags = { StudyInstanceUID = "study-uid" } }
     end
     return {}
 end
 
 function RestApiGet(path)
     table.insert(calls, { method = "GET", path = path })
-    assert(path == "/instances/instance-id/file")
-    return "dicom-bytes"
+    if path == "/instances/instance-id/simplified-tags" then return "tags" end
+    if path == "/instances/instance-id" then return "instance" end
+    if path == "/series/series-id" then return "series" end
+    if path == "/studies/study-id" then return "study" end
+    error("unexpected Orthanc request: " .. path)
 end
 
 function HttpPost(url, body, headers)
@@ -46,11 +65,18 @@ function HttpPost(url, body, headers)
         if failLogin == "invalid" then return "invalid" end
         return "login-response"
     end
-    assert(url == "http://manager/dicom/upload")
-    assert(body == "dicom-bytes")
     assert(headers["Authorization"] == "Bearer jwt-" .. loginCount)
-    assert(headers["X-Instance-ID"] == "instance-id")
-    assert(headers["Content-Type"] == "application/dicom")
+    assert(headers["Content-Type"] == "application/json")
+    if url == "http://manager/dicom/upload/orthanc/instance-id/process" then
+        assert(calls[#calls - 1].url == "http://manager/dicom/upload/orthanc")
+        assert(not failUpload, "processing must follow successful registration")
+        if failStart == "throw" then error("HTTP 500") end
+        if failStart == "nil" then return nil end
+        if failStart == "invalid" then return "invalid" end
+        return "upload-response"
+    end
+    assert(url == "http://manager/dicom/upload/orthanc")
+    assert(body == "metadata-json")
     if failUpload == "throw" then error("HTTP 500") end
     if failUpload == "nil" then return nil end
     if failUpload == "invalid" then return "invalid" end
@@ -59,7 +85,7 @@ end
 
 local function reset()
     calls, logs, loginCount = {}, {}, 0
-    failLogin, failUpload = nil, nil
+    failLogin, failUpload, failStart = nil, nil, nil
     settings = { ManagerUrl = "http://manager/", Email = "router@example.test", Password = "password" }
     dofile("orthanc/autoroute.lua")
     Initialize()
@@ -83,8 +109,8 @@ end
 for _, origin in ipairs({ { RequestOrigin = "DicomProtocol" }, { RequestOrigin = "RestApi", Username = "dicom-orthanc" } }) do
     reset()
     OnStoredInstance("instance-id", {}, {}, origin)
-    assert(#calls == 3)
-    assert(string.find(logs[#logs], "job_id=job-id", 1, true))
+    assert(#calls == 7)
+    assert(string.find(logs[#logs], "dicom_id=instance-id", 1, true))
     OnStoredInstance("instance-id", {}, {}, origin)
     assert(loginCount == 2, "JWT must be refreshed for the next callback")
 end
@@ -97,6 +123,10 @@ for _, failure in ipairs({ "throw", "nil", "invalid" }) do
     assertFailed()
     reset()
     failUpload = failure
+    OnStoredInstance("instance-id", {}, {}, { RequestOrigin = "DicomProtocol" })
+    assertFailed()
+    reset()
+    failStart = failure
     OnStoredInstance("instance-id", {}, {}, { RequestOrigin = "DicomProtocol" })
     assertFailed()
 end

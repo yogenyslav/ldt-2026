@@ -145,7 +145,14 @@ func (o *Orthanc) collectProperties(ctx context.Context, instance dto.OrthancNew
 		return dto.OrthancDicomProperties{}, fmt.Errorf("failed to get parent study: %w", errGetStudy)
 	}
 
+	metadata, err := o.getInstanceMetadata(ctx, instance.ID)
+	if err != nil {
+		return dto.OrthancDicomProperties{}, fmt.Errorf("failed to get instance metadata: %w", err)
+	}
+
 	return dto.OrthancDicomProperties{
+		DeviceModel:    metadata.DeviceModel(),
+		PatientID:      metadata.PatientID,
 		ID:             instance.ID,
 		ParentStudy:    series.ParentStudy,
 		ParentSeries:   dicom.ParentSeries,
@@ -229,4 +236,20 @@ func (o *Orthanc) getParentStudy(ctx context.Context, studyID string) (dto.Ortha
 	}
 
 	return studyInfo, nil
+}
+
+func (o *Orthanc) getInstanceMetadata(ctx context.Context, id string) (dto.InstanceMetadata, error) {
+	resp, err := o.client.GetInstancesIdSimplifiedTags(ctx, id, nil)
+	if err != nil {
+		return dto.InstanceMetadata{}, fmt.Errorf("failed to call orthanc API: %w", err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		return dto.InstanceMetadata{}, fmt.Errorf("orthanc API returned code %d", resp.StatusCode)
+	}
+	var metadata dto.InstanceMetadata
+	if err := json.NewDecoder(resp.Body).Decode(&metadata); err != nil {
+		return dto.InstanceMetadata{}, fmt.Errorf("failed to decode instance metadata: %w", err)
+	}
+	return metadata, nil
 }

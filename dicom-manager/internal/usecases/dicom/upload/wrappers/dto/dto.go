@@ -1,7 +1,11 @@
 package dto
 
+import "strings"
+
 // OrthancDicomProperties структура для представления свойств DICOM в Orthanc.
 type OrthancDicomProperties struct {
+	DeviceModel string
+	PatientID   string
 	// Created равен true только для экземпляров, созданных текущей загрузкой.
 	Created        bool
 	ID             string
@@ -54,4 +58,32 @@ type OrthancSeries struct {
 // OrthancStudy структура для представления исследования в Orthanc.
 type OrthancStudy struct {
 	Tags MainStudyTags `json:"MainDicomTags"`
+}
+
+// InstanceMetadata содержит теги пациента и аппарата из simplified-tags.
+type InstanceMetadata struct {
+	PatientID             string `json:"PatientID"`
+	Modality              string `json:"Modality"`
+	Manufacturer          string `json:"Manufacturer"`
+	ManufacturerModelName string `json:"ManufacturerModelName"`
+	DeviceSerialNumber    string `json:"DeviceSerialNumber"`
+	StationName           string `json:"StationName"`
+}
+
+// DeviceModel объединяет непустые теги аппарата в стабильном порядке.
+func (m InstanceMetadata) DeviceModel() string {
+	fields := []struct{ key, value string }{
+		{"Modality", m.Modality},
+		{"Manufacturer", m.Manufacturer},
+		{"ManufacturerModelName", m.ManufacturerModelName},
+		{"DeviceSerialNumber", m.DeviceSerialNumber},
+		{"StationName", m.StationName},
+	}
+	parts := make([]string, 0, len(fields))
+	for _, field := range fields {
+		if field.value != "" {
+			parts = append(parts, field.key+"="+field.value)
+		}
+	}
+	return strings.Join(parts, "; ")
 }
