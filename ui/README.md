@@ -157,3 +157,13 @@ src/
 
 Исходный HTML-прототип, по которому собран интерфейс, лежит в `prototype/`.
 Открывается двойным кликом по `prototype/prototype2.html`, сборка не нужна.
+
+Контур разметки и дообучения — отдельная пара файлов, тоже без сборки:
+
+- `prototype/annotation.html` — очередь заданий, рабочий стол разметчика, экран дообучения;
+- `prototype/annotation-lab.html` — выбор оформления холста: раскладка, маркеры, зоны, фон.
+
+Снимки и координаты в них настоящие. Их выгружает
+`dicom-analyzer/examples/annotation/export_for_ui.py` (прогон моделей `qc_prototype` по DICOM
+из `data/`) в `prototype/annotation.data.js` и `prototype/assets/annot/`. Контракт разметки,
+который они показывают, описан в `dicom-analyzer/examples/annotation/README.md`.

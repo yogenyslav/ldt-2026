@@ -1,0 +1,641 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>Разметка и дообучение — прототип</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="annotation.css" />
+</head>
+<body class="ly-right mk-cross zn-active bg-dark">
+
+<div class="app">
+  <header class="topbar">
+    <div>
+      <div class="topbar__name">Контроль качества ДРА</div>
+      <div class="topbar__place">Центр диагностики и телемедицины</div>
+    </div>
+    <span class="spacer"></span>
+    <div class="topbar__user">
+      <div>
+        <div class="topbar__user-name">Соколова М. И.</div>
+        <div class="topbar__user-role">врач-рентгенолог · ЦДиТ</div>
+      </div>
+    </div>
+  </header>
+
+  <div class="console">
+    <aside class="side">
+      <nav>
+        <div class="side__group">Разметка</div>
+        <button class="side__link" type="button" data-go="queue">Очередь заданий<span class="side__count num">63</span></button>
+        <button class="side__link is-on" type="button" data-go="annot">Разметка снимка</button>
+        <div class="side__group">Дообучение и подбор параметров</div>
+        <button class="side__link" type="button" data-go="train">Дообучение модели</button>
+        <button class="side__link" type="button" data-go="tune">Подбор параметров</button>
+      </nav>
+      <div class="side__foot">
+        Модель <span class="num">dxa-qc 0.4.2</span><br />
+        Размечено за сутки <span class="num">41</span>
+      </div>
+    </aside>
+
+    <main class="work" id="work"></main>
+  </div>
+</div>
+
+<script src="annotation.data.js"></script>
+<script src="annotation.tune.js"></script>
+<script src="annotation.js"></script>
+<script>
+/* ============================================================
+   Three screens of the annotation contour: the queue that feeds
+   work, the desk where a frame is annotated, and the screen
+   that turns what was marked into a better program.
+
+   Static mock: the numbers outside annotation.data.js are stand-ins
+   for aggregates the backend does not expose yet.
+   ============================================================ */
+(function () {
+  'use strict';
+
+  var esc = AnnotUI.esc;
+  var work = document.getElementById('work');
+  var route = 'annot';
+  var desk = null;
+
+  /* ---------- queue ---------- */
+
+  /* Two ways into the queue. The stream from the clinics always arrives
+     pre-labelled: the analyser has already looked at every study. Uploaded
+     frames arrive either way, depending on the choice made on upload. */
+  var QUEUE = [
+    { key: 'spine_foreign', task: 'foreign_seg', src: 'clinic', from: 'ГП 180, филиал 2',
+      pre: true, why: 'вердикт против метки artifacts=1', conf: 0.58, prio: 1 },
+    { key: 'hip_left', task: 'hip_keypoints', src: 'clinic', from: 'ГП 68',
+      pre: true, why: 'уверенность у порога присутствия', conf: 0.34, prio: 1 },
+    { key: 'spine_bad', task: 'pelvis_crest', src: 'upload', from: 'архив 2024, 40 снимков',
+      pre: true, why: 'гребень слева не найден', conf: 0.41, prio: 2 },
+    { key: 'hip_right', task: 'hip_keypoints', src: 'upload', from: 'отбор негативов, 12 снимков',
+      pre: false, why: 'загружено без моделей', conf: null, prio: 2 },
+    { key: 'spine_ok', task: 'pelvis_crest', src: 'clinic', from: 'ГП 180, филиал 2',
+      pre: true, why: 'контроль: второй разметчик', conf: 0.96, prio: 3 }
+  ];
+
+  var SRC = 'all';
+  var modal = false;
+
+  var TASK_TITLE = {
+    hip_keypoints: '2 · точки бедра',
+    pelvis_crest: '3 + 4 · гребни и окна',
+    foreign_seg: '5 · посторонний предмет'
+  };
+
+  function viewQueue() {
+    var rows = QUEUE.filter(function (q) { return SRC === 'all' || q.src === SRC; }).map(function (q) {
+      var c = AnnotUI.byKey[q.key];
+      if (!c) return '';
+      return '<tr>' +
+        '<td><img class="thumb" src="' + c.png + '" alt="" /></td>' +
+        '<td><b>' + esc(c.file) + '</b><div class="card__note">' + esc(c.region) + ' · ' +
+          c.cols + '×' + c.rows + '</div></td>' +
+        '<td>' + (q.src === 'clinic'
+          ? '<span class="tag">из поликлиники</span>'
+          : '<span class="tag tag--dead">загружено</span>') +
+          '<div class="card__note">' + esc(q.from) + '</div></td>' +
+        '<td>' + esc(TASK_TITLE[q.task]) + '</td>' +
+        '<td>' + (q.pre
+          ? '<span class="tag tag--ok">модель 0.4.2</span>'
+          : '<span class="tag tag--warn">нет, с нуля</span>') + '</td>' +
+        '<td class="num">' + (q.conf === null ? '—' : q.conf.toFixed(2)) + '</td>' +
+        '<td>' + esc(q.why) + '</td>' +
+        '<td>' + (q.prio === 1 ? '<span class="tag tag--bad">срочно</span>' :
+                  q.prio === 2 ? '<span class="tag tag--warn">в очереди</span>' :
+                                 '<span class="tag tag--dead">фон</span>') + '</td>' +
+        '<td><button class="btn btn--s" type="button" data-open="' + c.key +
+          '" data-pre="' + (q.pre ? '1' : '0') + '">Открыть</button></td>' +
+      '</tr>';
+    }).join('');
+
+    return '<div class="work__head"><h1 class="work__title">Очередь заданий</h1>' +
+      '<span class="work__sub">63 снимка · 252 уникальных растра в наборе</span></div>' +
+      '<p class="work__lead">Основной поток — снимки из поликлиник, которые уже прошли анализатор: ' +
+      'в очередь из них попадают те, где модель не уверена или расходится с таблицей разметки. ' +
+      'Рядом второй вход — загрузка своих снимков, с прогоном через модели или без него.</p>' +
+
+      '<div class="card"><div class="card__body" style="padding-top:18px">' +
+        '<div class="tiles">' +
+          tile('Задача 5 · предмет', '19', 'позитивов в обучении', 'bad') +
+          tile('Задача 2 · негативы', '7', 'снимков с обрезанной анатомией', 'bad') +
+          tile('Задача 3 · ошибка точки', '21 px', 'в среднем против разметки', 'warn') +
+          tile('Задача 4 · метки', '88', 'окон размечено', 'ok') +
+        '</div>' +
+      '</div></div>' +
+
+      '<div class="card"><div class="card__head"><h3>Что размечать</h3>' +
+        '<span class="spacer"></span>' +
+        srcTab('all', 'все', QUEUE.length) +
+        srcTab('clinic', 'из поликлиник', QUEUE.filter(function (q) { return q.src === 'clinic'; }).length) +
+        srcTab('upload', 'загруженные', QUEUE.filter(function (q) { return q.src === 'upload'; }).length) +
+        '<button class="btn btn--s" type="button" data-upload="1">Добавить снимки</button>' +
+      '</div><div class="card__body" style="padding:0 0 4px">' +
+        '<table class="tbl"><thead><tr>' +
+          '<th></th><th>Снимок</th><th>Источник</th><th>Задача</th><th>Предразметка</th>' +
+          '<th class="num">Уверенность</th><th>Почему в очереди</th><th>Приоритет</th><th></th>' +
+        '</tr></thead><tbody>' + rows + '</tbody></table>' +
+      '</div></div>' + (modal ? viewUpload() : '');
+  }
+
+  function srcTab(id, label, count) {
+    return '<button class="pick" type="button" data-src="' + id + '" aria-pressed="' + (SRC === id) + '">' +
+      esc(label) + ' <span class="num">' + count + '</span></button>';
+  }
+
+  /* Upload: whether to run the models is decided here, once, because it
+     decides what the annotator sees on the desk afterwards. */
+  var UP_MODE = 'pre';
+
+  function viewUpload() {
+    return '<div class="sheet"><div class="sheet__box">' +
+      '<div class="card" style="margin:0">' +
+        '<div class="card__head"><h3>Добавить снимки в очередь</h3>' +
+          '<span class="spacer"></span>' +
+          '<button class="btn btn--quiet btn--s" type="button" data-close="1">Закрыть</button></div>' +
+        '<div class="card__body">' +
+          '<div class="drop">DICOM или архив — перетащите сюда' +
+            '<div class="card__note">принимаются .dcm и .zip, регион определяется автоматически</div></div>' +
+          '<div class="field"><span class="field__label">Что делать после загрузки</span>' +
+            '<div class="opts">' +
+              upOpt('pre', 'Прогнать через модели',
+                'Анализатор ставит точки, окна и полигоны. Разметчик правит или подтверждает; ' +
+                'нетронутая точка в обучение не идёт. Быстрее на снимок, но глаз тянется согласиться с моделью.') +
+              upOpt('blank', 'Без моделей, размечать с нуля',
+                'Снимок приходит пустым: только зоны allowed_box и правила. Медленнее, зато разметка ' +
+                'ничем не подсказана — то, что нужно для контрольной выборки и спорных случаев.') +
+            '</div></div>' +
+          '<div class="field"><span class="field__label">Куда поставить</span><div class="chips">' +
+            '<button class="pick" type="button" aria-pressed="true">в конец очереди</button>' +
+            '<button class="pick" type="button" aria-pressed="false">срочно</button>' +
+          '</div></div>' +
+        '</div>' +
+        '<div class="card__foot"><button class="btn btn--primary" type="button" data-close="1">Добавить в очередь</button>' +
+          '<span class="spacer"></span><span class="card__note">файлы не покидают контур ЦДиТ</span></div>' +
+      '</div>' +
+    '</div></div>';
+  }
+
+  function upOpt(id, title, text) {
+    return '<button class="opt' + (UP_MODE === id ? ' is-on' : '') + '" type="button" data-upmode="' + id + '">' +
+      '<b>' + esc(title) + '</b><p>' + esc(text) + '</p></button>';
+  }
+
+  function tile(label, value, note, cls) {
+    return '<div class="tile ' + (cls || '') + '"><span>' + esc(label) + '</span><b>' + esc(value) + '</b>' +
+      '<span>' + esc(note) + '</span></div>';
+  }
+
+  /* ---------- desk ---------- */
+
+  /* The filter chosen in the queue comes along: "next" walks the queue the
+     doctor is actually in, and the source can be changed without going back. */
+  var SRC_NAME = { all: 'вся очередь', clinic: 'из поликлиник', upload: 'загруженные' };
+
+  function queueKeys() {
+    return QUEUE.filter(function (q) { return SRC === 'all' || q.src === SRC; })
+                .map(function (q) { return q.key; });
+  }
+
+  function viewDesk() {
+    return '<div class="work__head"><h1 class="work__title">Разметка снимка</h1>' +
+      '<span class="work__sub">' + esc(SRC_NAME[SRC]) + '</span></div>' +
+      '<div class="deskbar">' +
+        '<span class="deskbar__label">Очередь</span>' +
+        ['all', 'clinic', 'upload'].map(function (id) {
+          var n = QUEUE.filter(function (q) { return id === 'all' || q.src === id; }).length;
+          return '<button class="pick" type="button" data-src="' + id + '" aria-pressed="' +
+            (SRC === id) + '">' + esc(SRC_NAME[id]) + ' <span class="num">' + n + '</span></button>';
+        }).join('') +
+        '<span class="spacer"></span>' +
+        '<button class="btn btn--s btn--quiet" type="button" data-go="queue">Открыть список</button>' +
+      '</div>' +
+      '<div class="annot__cases" id="cases"></div>' +
+      '<div id="stage"></div>';
+  }
+
+  /* ---------- дообучение модели ----------
+     The four models are independent: each is trained on its own answers and
+     each can be switched over on its own. So both lists are checkboxes —
+     nothing here is all-or-nothing. */
+
+  var WORK = [
+    { id: 'hip', name: 'Точки на бедре', have: 96, need: 250,
+      hard: 'снимков с обрезанной анатомией: 7 из 60', ready: false, busy: false },
+    { id: 'crest', name: 'Гребни таза', have: 248, need: 250,
+      hard: 'снимков, где гребень не попал в кадр: 38 из 40', ready: true, busy: false },
+    { id: 'foreign', name: 'Посторонние предметы', have: 121, need: 120,
+      hard: 'чистых снимков для сравнения: 61 из 60', ready: true, busy: true }
+  ];
+
+  /* Numbers a radiologist can argue with: agreement with the doctor on a
+     held-out set, how often the violation is caught, how often a correct
+     frame is flagged, how far the point lands from the mark.
+
+     Each metric carries the direction it should move ('up' or 'down'), so the
+     column on the right is arithmetic — the difference and its sign — and not
+     somebody's reading of the numbers. The vertical pixel of this scanner is
+     1.05 mm, so the miss is shown in millimetres. */
+  var NEW_VERSIONS = [
+    { id: 'crest', name: 'Гребни таза', trained: '28 сентября', checked: 40,
+      metrics: [
+        { name: 'Доля верных решений', unit: '%', goal: 'up', now: 86, next: 93 },
+        { name: 'Находит нарушение укладки', unit: '%', goal: 'up', now: 71, next: 88 },
+        { name: 'Тревога на корректном снимке', unit: '%', goal: 'down', now: 4, next: 5 },
+        { name: 'Средний промах точки', unit: 'мм', goal: 'down', now: 22, next: 13 }
+      ] },
+    { id: 'foreign', name: 'Посторонние предметы', trained: '26 сентября', checked: 40,
+      metrics: [
+        { name: 'Доля верных решений', unit: '%', goal: 'up', now: 79, next: 84 },
+        { name: 'Находит предмет', unit: '%', goal: 'up', now: 6, next: 59 },
+        { name: 'Тревога на чистом снимке', unit: '%', goal: 'down', now: 3, next: 12 }
+      ] }
+  ];
+
+  /* Difference between the two versions, with the sign the doctor reads. */
+  function delta(m) {
+    var d = m.next - m.now;
+    if (d === 0) return { text: 'без изменений', cls: 'dead' };
+    var better = m.goal === 'up' ? d > 0 : d < 0;
+    var sign = d > 0 ? '+' : '−';
+    return { text: sign + Math.abs(d) + ' ' + (m.unit === '%' ? 'п. п.' : m.unit),
+             cls: better ? 'ok' : 'bad' };
+  }
+
+  var trainPick = { crest: true };
+  var versionPick = { crest: true };
+
+  function box(on) {
+    return '<span class="check check--box' + (on ? ' is-on' : '') + '"><i>' + (on ? '✓' : '') + '</i></span>';
+  }
+
+  function viewTrain() {
+    var rows = WORK.map(function (w) {
+      var pct = Math.min(100, Math.round(w.have / w.need * 100));
+      var state = w.busy ? '<span class="tag tag--warn">обучается</span>'
+        : w.ready ? '<span class="tag tag--ok">можно дообучать</span>'
+          : '<span class="tag tag--dead">нужно ещё ' + (w.need - w.have) + '</span>';
+      var pickable = w.ready && !w.busy;
+      return '<tr' + (pickable ? ' data-tpick="' + w.id + '"' : '') + '>' +
+        '<td style="width:46px">' + (pickable ? box(!!trainPick[w.id]) : '') + '</td>' +
+        '<td><b>' + esc(w.name) + '</b><div class="card__note">' + esc(w.hard) + '</div></td>' +
+        '<td class="num">' + w.have + ' из ' + w.need + '</td>' +
+        '<td style="width:200px"><div class="bar"><i class="' +
+          (pct >= 100 ? 'ok' : pct >= 50 ? '' : 'warn') + '" style="width:' + pct + '%"></i></div></td>' +
+        '<td>' + state + '</td>' +
+      '</tr>';
+    }).join('');
+
+    var picked = Object.keys(trainPick).filter(function (k) { return trainPick[k]; }).length;
+
+    var vers = NEW_VERSIONS.map(function (v) {
+      var head = '<tr class="grp" data-vpick="' + v.id + '">' +
+        '<td style="width:46px">' + box(!!versionPick[v.id]) + '</td>' +
+        '<td><b>' + esc(v.name) + '</b></td>' +
+        '<td colspan="3" class="card__note">обучена ' + esc(v.trained) +
+          ' · проверена на ' + v.checked + ' контрольных снимках</td>' +
+      '</tr>';
+      var rows = v.metrics.map(function (m) {
+        var d = delta(m);
+        return '<tr>' +
+          '<td></td><td>' + esc(m.name) + '</td>' +
+          '<td class="num">' + m.now + ' ' + esc(m.unit) + '</td>' +
+          '<td class="num"><b>' + m.next + ' ' + esc(m.unit) + '</b></td>' +
+          '<td class="num"><span class="tag tag--' + d.cls + '">' + esc(d.text) + '</span></td>' +
+        '</tr>';
+      }).join('');
+      return head + rows;
+    }).join('');
+
+    var vpicked = Object.keys(versionPick).filter(function (k) { return versionPick[k]; }).length;
+
+    return '<div class="work__head"><h1 class="work__title">Дообучение модели</h1>' +
+      '<span class="work__sub">четыре модели обучаются и обновляются по отдельности</span></div>' +
+      '<p class="work__lead">Размеченные снимки идут в обучение. Выберите, что дообучать ' +
+      'и на какие новые версии переходить — остальное останется как есть.</p>' +
+
+      '<div class="card"><div class="card__head"><h3>Собрано для обучения</h3>' +
+        '<span class="spacer"></span><span class="card__note">учитываются только проверенные снимки</span>' +
+      '</div><div class="card__body" style="padding:0 0 4px">' +
+        '<table class="tbl tbl--pick"><tbody>' + rows + '</tbody></table>' +
+      '</div><div class="card__foot">' +
+        '<button class="btn btn--primary" type="button"' + (picked ? '' : ' disabled') + '>' +
+          'Дообучить выбранные' + (picked ? ' (' + picked + ')' : '') + '</button>' +
+        '<span class="spacer"></span>' +
+        '<span class="card__note">«Посторонние предметы» сейчас обучаются: пройдена треть, ' +
+        'осталось около 22 минут</span>' +
+      '</div></div>' +
+
+      '<div class="card"><div class="card__head"><h3>Новые версии</h3>' +
+        '<span class="spacer"></span>' +
+        '<span class="card__note">отметьте те, на которые переходим</span>' +
+      '</div><div class="card__body" style="padding:0 0 4px">' +
+        '<table class="tbl tbl--pick"><thead><tr><th></th><th>Показатель</th>' +
+        '<th class="num">Сейчас</th><th class="num">Новая версия</th>' +
+        '<th class="num">Разница</th></tr></thead>' +
+        '<tbody>' + vers + '</tbody></table>' +
+      '</div><div class="card__foot">' +
+        '<button class="btn btn--primary" type="button"' + (vpicked ? '' : ' disabled') + '>' +
+          'Перевести выбранные' + (vpicked ? ' (' + vpicked + ')' : '') + '</button>' +
+        '<button class="btn" type="button">Посмотреть 9 спорных снимков</button>' +
+      '</div></div>';
+  }
+
+  /* ---------- подбор параметров ----------
+     The analyser measures one number per frame; what turns that number into a
+     verdict is a set of boundaries somebody has to choose. This screen is that
+     choice: real frames from the service, the measured area outlined on each,
+     and one scale with the boundaries on it.
+
+     There is nothing to compare against here — the doctor looking at the grid
+     is the one deciding what counts as correct. So no reference, no labels,
+     no agreement score: only how the frames fall into the three verdicts. */
+
+  var TUNE_SET = window.ANNOT_TUNE || [];
+
+  var PARAMS = {
+    rotation: {
+      title: 'Ротация бедра',
+      question: 'На сколько миллиметров малый вертел выступает за край кости',
+      how: 'Чем меньше выступает малый вертел, тем сильнее бедро завёрнуто внутрь; ' +
+           'чем сильнее выступает — тем больше развёрнуто наружу.',
+      unit: 'мм', min: 0, max: 8, step: 0.1,
+      /* violation · doubt · norm · doubt · violation */
+      cuts: [0.2, 1.0, 4.4, 5.2],
+      bands: ['viol', 'warn', 'norm', 'warn', 'viol']
+    },
+    crest: {
+      title: 'Гребень таза',
+      question: 'Насколько уверенно должен быть виден гребень, чтобы считать его найденным',
+      how: 'Гребень ищется в нижних углах кадра — они выделены на снимках.',
+      unit: '%', min: 50, max: 100, step: 1,
+      cuts: [70],
+      bands: ['viol', 'norm']
+    }
+  };
+
+  var DEFAULTS = {};
+  Object.keys(PARAMS).forEach(function (k) { DEFAULTS[k] = PARAMS[k].cuts.slice(); });
+
+  var TUNE = 'rotation';
+
+  /* Where the frames for tuning come from. */
+  var TUNE_SRC = 'clinic';
+  var TUNE_SRC_NAME = { clinic: 'последние из поликлиник', upload: 'последние загруженные' };
+
+  var BAND_NAME = { norm: 'норма', warn: 'сомнение', viol: 'нарушение' };
+
+  function statusOf(p, value) {
+    for (var i = 0; i < p.cuts.length; i++) {
+      if (value < p.cuts[i]) return p.bands[i];
+    }
+    return p.bands[p.bands.length - 1];
+  }
+
+  var CREST_SET = [
+    ['spine_ok', 95], ['spine_bad', 62], ['spine_ok', 88], ['spine_bad', 54],
+    ['spine_ok', 97], ['spine_ok', 68], ['spine_bad', 58], ['spine_ok', 92],
+    ['spine_bad', 66], ['spine_ok', 99], ['spine_ok', 75], ['spine_bad', 51],
+    ['spine_ok', 84], ['spine_bad', 69], ['spine_ok', 93], ['spine_bad', 60]
+  ];
+
+  function rect(x, y, w, h) {
+    return [[x, y], [x + w, y], [x + w, y + h], [x, y + h]];
+  }
+
+  function tuneRows() {
+    var p = PARAMS[TUNE];
+    if (TUNE === 'rotation') {
+      return TUNE_SET.map(function (f) {
+        return { png: f.png, cols: f.cols, rows: f.rows, shapes: f.bump,
+                 label: f.dist_mm.toFixed(1) + ' мм', status: statusOf(p, f.dist_mm) };
+      });
+    }
+    return CREST_SET.map(function (row) {
+      var c = AnnotUI.byKey[row[0]];
+      if (!c) return null;
+      var y0 = Math.floor(0.667 * c.rows), w = Math.floor(0.36 * c.cols);
+      return { png: c.png, cols: c.cols, rows: c.rows,
+               shapes: [rect(0, y0, w, c.rows - y0), rect(c.cols - w, y0, w, c.rows - y0)],
+               label: row[1] + ' %', status: statusOf(p, row[1]) };
+    }).filter(Boolean);
+  }
+
+  function tile(r) {
+    var shapes = r.shapes.map(function (pts) {
+      return '<polygon class="fill fill--' + r.status + '" points="' +
+        pts.map(function (pt) { return pt[0] + ',' + pt[1]; }).join(' ') + '" />';
+    }).join('');
+
+    return '<figure class="shot">' +
+      '<div class="shot__pic" style="aspect-ratio:' + r.cols + '/' + r.rows + '">' +
+        '<img src="' + r.png + '" alt="" />' +
+        '<svg viewBox="0 0 ' + r.cols + ' ' + r.rows + '" preserveAspectRatio="none">' + shapes + '</svg>' +
+      '</div>' +
+      '<figcaption>' +
+        '<span class="shot__val num">' + esc(r.label) + '</span>' +
+        '<span class="shot__mark is-' + r.status + '">' + BAND_NAME[r.status] + '</span>' +
+      '</figcaption>' +
+    '</figure>';
+  }
+
+  /* One scale, the boundaries on it. Five stripes for rotation, two for the
+     crest — the stripes are the verdict, the handles are what is being chosen. */
+  function scale(p) {
+    var span = p.max - p.min;
+    var pos = function (v) { return ((v - p.min) / span * 100).toFixed(2); };
+
+    var edges = [p.min].concat(p.cuts, [p.max]);
+    var stripes = p.bands.map(function (b, i) {
+      var left = pos(edges[i]);
+      var w = (Number(pos(edges[i + 1])) - Number(left)).toFixed(2);
+      return '<div class="scale__band scale__band--' + b + '" style="left:' + left + '%;width:' + w + '%">' +
+        '<span>' + BAND_NAME[b] + '</span></div>';
+    }).join('');
+
+    var handles = p.cuts.map(function (v, i) {
+      return '<button class="scale__grip" type="button" data-grip="' + i + '" ' +
+        'style="left:' + pos(v) + '%" aria-label="граница ' + v + ' ' + esc(p.unit) + '">' +
+        '<b class="num">' + v.toFixed(p.step < 1 ? 1 : 0) + '</b></button>';
+    }).join('');
+
+    return '<div class="scale" data-scale="1">' + stripes + handles + '</div>' +
+      '<div class="scale__ends num"><span>' + p.min + ' ' + esc(p.unit) + '</span>' +
+        '<span>' + p.max + ' ' + esc(p.unit) + '</span></div>';
+  }
+
+  function viewTune() {
+    var p = PARAMS[TUNE];
+    var rows = tuneRows();
+    var count = { norm: 0, warn: 0, viol: 0 };
+    rows.forEach(function (r) { count[r.status]++; });
+
+    return '<div class="work__head"><h1 class="work__title">Подбор параметров</h1>' +
+      '<span class="work__sub">' + rows.length + ' снимков · ' +
+      esc(TUNE_SRC_NAME[TUNE_SRC]) + '</span></div>' +
+
+      '<div class="deskbar">' +
+        '<span class="deskbar__label">Параметр</span>' +
+        Object.keys(PARAMS).map(function (k) {
+          return '<button class="pick" type="button" data-tune="' + k + '" aria-pressed="' +
+            (TUNE === k) + '">' + esc(PARAMS[k].title) + '</button>';
+        }).join('') +
+        '<span class="spacer"></span>' +
+        '<span class="deskbar__label">Снимки</span>' +
+        Object.keys(TUNE_SRC_NAME).map(function (k) {
+          return '<button class="pick" type="button" data-tsrc="' + k + '" aria-pressed="' +
+            (TUNE_SRC === k) + '">' + esc(TUNE_SRC_NAME[k]) + '</button>';
+        }).join('') +
+      '</div>' +
+
+      '<div class="card"><div class="card__body knob">' +
+        '<div class="knob__name">' + esc(p.question) + '</div>' +
+        scale(p) +
+        '<p class="hint">' + esc(p.how) + '</p>' +
+        '<div class="knob__score">' +
+          '<span class="tag tag--ok">норма: ' + count.norm + '</span>' +
+          (p.bands.indexOf('warn') >= 0
+            ? '<span class="tag tag--warn">сомнение: ' + count.warn + '</span>' : '') +
+          '<span class="tag tag--bad">нарушение: ' + count.viol + '</span>' +
+        '</div>' +
+      '</div><div class="card__foot">' +
+        '<button class="btn btn--primary" type="button">Сохранить</button>' +
+        '<button class="btn btn--quiet" type="button" data-reset="1">Вернуть прежние</button>' +
+      '</div></div>' +
+
+      '<div class="shots">' + rows.map(tile).join('') + '</div>';
+  }
+
+  /* Dragging a boundary. Handles keep their order: a boundary cannot pass its
+     neighbour, so the stripes never turn inside out. */
+  var drag = null;
+
+  function setCut(p, i, value) {
+    /* neighbours keep one step of room, so two boundaries never sit on top
+       of each other and a stripe cannot vanish without a trace */
+    var lo = i === 0 ? p.min : p.cuts[i - 1] + p.step;
+    var hi = i === p.cuts.length - 1 ? p.max : p.cuts[i + 1] - p.step;
+    if (lo > hi) { lo = hi = (lo + hi) / 2; }
+    var v = Math.min(Math.max(value, lo), hi);
+    v = Math.round(v / p.step) * p.step;
+    p.cuts[i] = Number(v.toFixed(p.step < 1 ? 1 : 0));
+  }
+
+  function valueAt(p, clientX, rect) {
+    if (!rect || !rect.width) return null;
+    var k = (clientX - rect.left) / rect.width;
+    return p.min + Math.min(Math.max(k, 0), 1) * (p.max - p.min);
+  }
+
+  document.addEventListener('pointerdown', function (e) {
+    var grip = e.target.closest && e.target.closest('[data-grip]');
+    if (!grip) return;
+    var track = grip.parentNode;
+    drag = { i: Number(grip.dataset.grip), rect: track.getBoundingClientRect() };
+    e.preventDefault();
+  });
+
+  document.addEventListener('pointermove', function (e) {
+    if (!drag) return;
+    var p = PARAMS[TUNE];
+    var v = valueAt(p, e.clientX, drag.rect);
+    if (v === null) return;
+    setCut(p, drag.i, v);
+    render();
+  });
+
+  document.addEventListener('pointerup', function () { drag = null; });
+
+  /* Keyboard: the same boundaries, one step at a time. */
+  document.addEventListener('keydown', function (e) {
+    var grip = e.target.closest && e.target.closest('[data-grip]');
+    if (!grip) return;
+    var dir = e.key === 'ArrowLeft' ? -1 : e.key === 'ArrowRight' ? 1 : 0;
+    if (!dir) return;
+    var p = PARAMS[TUNE];
+    var i = Number(grip.dataset.grip);
+    setCut(p, i, p.cuts[i] + dir * p.step);
+    render();
+    e.preventDefault();
+  });
+
+  /* ---------- routing ---------- */
+
+  function render() {
+    work.innerHTML = route === 'queue' ? viewQueue()
+      : route === 'train' ? viewTrain()
+        : route === 'tune' ? viewTune()
+          : viewDesk();
+    work.scrollTop = 0;
+    if (route === 'annot') {
+      var keys = queueKeys();
+      var blankByKey = {};
+      QUEUE.forEach(function (q) { blankByKey[q.key] = !q.pre; });
+      var want = desk && keys.indexOf(desk.current) >= 0 ? desk.current : keys[0];
+      desk = AnnotUI.mount(document.getElementById('cases'), document.getElementById('stage'), want, {
+        blank: desk && desk.current === want ? !!desk.blank : !!blankByKey[want],
+        keys: keys,
+        total: SRC === 'all' ? 63 : SRC === 'clinic' ? 41 : 22,
+        blankByKey: blankByKey
+      });
+    }
+    Array.prototype.forEach.call(document.querySelectorAll('[data-go]'), function (b) {
+      b.classList.toggle('is-on', b.dataset.go === route);
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var go = e.target.closest('[data-go]');
+    if (go) { route = go.dataset.go; render(); return; }
+
+    var tp = e.target.closest('[data-tpick]');
+    if (tp) { trainPick[tp.dataset.tpick] = !trainPick[tp.dataset.tpick]; render(); return; }
+
+    var vp = e.target.closest('[data-vpick]');
+    if (vp) { versionPick[vp.dataset.vpick] = !versionPick[vp.dataset.vpick]; render(); return; }
+
+    var tune = e.target.closest('[data-tune]');
+    if (tune) { TUNE = tune.dataset.tune; render(); return; }
+
+    if (e.target.closest('[data-reset]')) {
+      PARAMS[TUNE].cuts = DEFAULTS[TUNE].slice();
+      render();
+      return;
+    }
+
+    var tsrc = e.target.closest('[data-tsrc]');
+    if (tsrc) { TUNE_SRC = tsrc.dataset.tsrc; render(); return; }
+
+    var src = e.target.closest('[data-src]');
+    if (src) { SRC = src.dataset.src; render(); return; }
+
+
+    if (e.target.closest('[data-upload]')) { modal = true; render(); return; }
+    if (e.target.closest('[data-close]')) { modal = false; render(); return; }
+
+    var up = e.target.closest('[data-upmode]');
+    if (up) { UP_MODE = up.dataset.upmode; render(); return; }
+
+    var open = e.target.closest('[data-open]');
+    if (open) {
+      route = 'annot';
+      desk = { current: open.dataset.open, blank: open.dataset.pre === '0' };
+      render();
+    }
+  });
+
+  render();
+})();
+</script>
+</body>
+</html>
