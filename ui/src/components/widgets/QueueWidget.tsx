@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Check, ChevronRight, FileText, Inbox, Search, X } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card from '@/components/ui/card'
+import Select from '@/components/ui/select'
 import Empty from '@/components/shared/Empty'
 import Loader from '@/components/shared/Loader'
 import VerdictBadge from '@/components/shared/VerdictBadge'
@@ -22,28 +23,6 @@ interface IFilters {
   decision: string
   query: string
 }
-
-const Select = ({
-  value,
-  onChange,
-  options,
-}: {
-  value: string
-  onChange: (value: string) => void
-  options: Array<[string, string]>
-}) => (
-  <select
-    value={value}
-    onChange={(event) => onChange(event.target.value)}
-    className="h-11 cursor-pointer appearance-none rounded-control border-[1.5px] border-line-2 bg-surface bg-[url('data:image/svg+xml;utf8,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%2216%22 height=%2216%22 viewBox=%220 0 24 24%22 fill=%22none%22 stroke=%22%231e3f93%22 stroke-width=%222%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22><path d=%22m6 9 6 6 6-6%22/></svg>')] bg-[position:right_14px_center] bg-no-repeat pr-9 pl-4 text-[14.5px] text-ink"
-  >
-    {options.map(([key, label]) => (
-      <option key={key} value={key}>
-        {label}
-      </option>
-    ))}
-  </select>
-)
 
 const QueueWidget = () => {
   const { data: jobs, isLoading } = useJobs()

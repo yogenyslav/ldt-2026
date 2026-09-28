@@ -73,6 +73,10 @@ export interface IJobInfo {
   /* the column exists in the dicom_file table but is missing from the DTO —
      requested in context/backend_requests.md, lists fall back to the job id */
   file_name?: string
+  /* how the scan got here: sent by the densitometer or uploaded by hand.
+     Requested in context/back_annotations.md — without it the annotation
+     queue cannot tell the stream from the clinics from one's own uploads. */
+  source?: 'device' | 'upload'
 }
 
 /* A visit: the scans taken for one patient during a single appointment. */
@@ -130,4 +134,146 @@ export interface IAuthContext {
   setIsAuth: React.Dispatch<React.SetStateAction<boolean>>
   scope: Scope
   setScope: React.Dispatch<React.SetStateAction<Scope>>
+}
+
+/* ============================================================
+   Annotation contour: annotating a frame, training the models on
+   what was annotated, and picking the boundaries that turn a
+   measured number into a verdict.
+
+   Shapes follow dicom-analyzer/examples/annotation/README.md.
+   The backend has no endpoints for any of it yet — see
+   context/backend_requests.md.
+   ============================================================ */
+
+/* Which of the annotation tasks a frame is queued for. */
+export type AnnotTask = 'hip_keypoints' | 'pelvis_crest' | 'foreign_seg'
+
+/* A point of the frame as the annotator sees it:
+     empty     — nothing on the image, the doctor places it
+     suggested — there is a guess nobody has confirmed yet
+     absent    — the anatomy is cut off by the frame edge
+     checked   — settled
+   The marker on the scan follows the same state, so badge and
+   image never disagree. */
+export type PointState = 'empty' | 'suggested' | 'absent' | 'checked'
+
+/* What the annotator says about a point: the suggestion is right, or the
+   anatomy is cut off by the frame edge. */
+export type PointAnswer = 'confirmed' | 'absent'
+
+/* Three states of a criterion across the whole contour:
+   норма · сомнение · нарушение. Doubt is not a violation — the
+   same rule the analyser follows. */
+export type Band = 'norm' | 'warn' | 'viol'
+
+/* Where the frames came from: the stream out of the clinics, or an upload. */
+export type AnnotSource = 'clinic' | 'upload'
+
+export interface IAnnotPrefill {
+  x: number
+  y: number
+  present: boolean
+  confidence: number
+}
+
+export interface IAnnotPoint {
+  name: string
+  title: string
+  /* somebody has already looked at this suggestion: behind the flag sit the
+     contract's origin values — human / model_confirmed versus model */
+  reviewed?: boolean
+  /* what the annotator has answered about this point on the desk, which
+     outranks whatever the model suggested */
+  answer?: PointAnswer
+  /* [x0, y0, x1, y1] — the area of the frame where this point occurs.
+     Absent when the contract has no box for a frame of this size: better no
+     hint than a box drawn around the whole picture. */
+  allowed_box?: [number, number, number, number]
+  prefill: IAnnotPrefill | null
+}
+
+export interface IAnnotPolygon {
+  cls: 'wire' | 'object'
+  points: Point[]
+}
+
+export interface IAnnotCase {
+  key: string
+  task: AnnotTask
+  file: string
+  region: Region
+  rows: number
+  cols: number
+  png: string
+  items?: IAnnotPoint[]
+  polygons?: IAnnotPolygon[]
+  verdict?: string
+  /* the frame arrived without a prefill: everything is placed by hand */
+  blank?: boolean
+}
+
+/* One line of the queue: the frame itself, and why it is here. */
+export interface IQueueItem {
+  key: string
+  task: AnnotTask
+  file: string
+  region: Region
+  rows: number
+  cols: number
+  png: string
+  source: AnnotSource
+  from: string
+  /* the analyser has already looked at this frame */
+  pre: boolean
+  why: string
+  confidence: number | null
+  /* 1 — срочно, 2 — в очереди, 3 — фон */
+  priority: 1 | 2 | 3
+}
+
+/* How much has been collected for one of the four models. */
+export interface ITrainTarget {
+  id: string
+  name: string
+  have: number
+  need: number
+  /* the cases that are scarce and therefore decide when training is worth it */
+  hard: string
+  ready: boolean
+  busy: boolean
+  /* while it is training: how far along, and how much longer */
+  done?: number
+  left_minutes?: number
+}
+
+/* A number a radiologist can argue with. `goal` is the direction it should
+   move, so the difference column is arithmetic and not somebody's reading. */
+export interface IModelMetric {
+  name: string
+  unit: string
+  goal: 'up' | 'down'
+  now: number
+  next: number
+}
+
+export interface IModelVersion {
+  id: string
+  name: string
+  trained: string
+  checked: number
+  metrics: IModelMetric[]
+}
+
+/* A frame of the tuning set with the number that was measured on it. */
+export interface ITuneFrame {
+  key: string
+  file: string
+  region: Region
+  rows: number
+  cols: number
+  png: string
+  dist_mm: number
+  /* the outline of the measured area, in frame pixels */
+  bump: Point[][]
 }

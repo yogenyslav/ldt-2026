@@ -1,4 +1,13 @@
-import type { Decision, JobStatus, Region, VerdictKind } from '@/types'
+import type {
+  AnnotSource,
+  AnnotTask,
+  Band,
+  Decision,
+  JobStatus,
+  PointState,
+  Region,
+  VerdictKind,
+} from '@/types'
 
 /* All UI copy is Russian; API keys never reach the user. */
 
@@ -33,7 +42,20 @@ export const CRITERIA: Record<string, { name: string; norm: string }> = {
   pelvis_crest: { name: 'Гребни подвздошных костей', norm: 'обе' },
   foreign_objects: { name: 'Посторонние предметы', norm: 'нет' },
   hip_keypoints: { name: 'Ключевые точки бедра', norm: '3 точки' },
+  hip_margins: { name: 'Отступы от края кадра', norm: '≥3 см сверху и снизу, ≥2 см по бокам' },
   lesser_trochanter: { name: 'Ротация бедра', norm: '1,0–4,4 мм' },
+}
+
+/* How a criterion arrives at its verdict — the `source` qc_prototype/dicom-analyzer
+   attaches to every criterion result. Read from the data, never guessed: a
+   criterion the service has not reported yet has no row at all. */
+export const ANALYSIS_METHOD: Record<string, string> = {
+  math: 'Расчёт по геометрии снимка',
+  model: 'Модель',
+  vote: 'Голосование нескольких методов',
+  heuristic: 'Эвристика',
+  gate: 'Не измеряется — не найдены опорные точки',
+  none: 'Метод не подключён',
 }
 
 /* Scan markers: a single Cyrillic letter, explained in the key below the scan. */
@@ -88,11 +110,17 @@ export const sidebarLinks = [
     ],
   },
   {
-    group: 'Разбор',
+    group: 'Разметка',
     items: [
-      { route: '/markup', label: 'Разметка', icon: 'pen' },
-      { route: '/analytics', label: 'Аналитика', icon: 'chart' },
-      { route: '/cases', label: 'Кейсы', icon: 'folder' },
+      { route: '/markup', label: 'Очередь заданий', icon: 'inbox' },
+      { route: '/markup/frame', label: 'Разметка снимка', icon: 'pen' },
+    ],
+  },
+  {
+    group: 'Дообучение и подбор параметров',
+    items: [
+      { route: '/training', label: 'Дообучение модели', icon: 'brain' },
+      { route: '/tuning', label: 'Подбор параметров', icon: 'sliders' },
     ],
   },
   {
@@ -101,18 +129,89 @@ export const sidebarLinks = [
   },
 ] as const
 
-/* Sections the backend has no endpoints for yet. */
-export const SOON: Record<string, { title: string; text: string }> = {
-  markup: {
-    title: 'Разметка',
-    text: 'Ручная правка найденной оси позвоночника и ключевых точек бедра с сохранением исправленной геометрии.',
-  },
-  analytics: {
-    title: 'Аналитика качества',
-    text: 'Доля брака по сети, разбивка по аппаратам, зонам и типам нарушений, динамика по неделям.',
-  },
-  cases: {
-    title: 'Библиотека кейсов',
-    text: 'Отобранные примеры нарушений для обучения лаборантов и для демонстрации возможностей сервиса.',
-  },
+/* ============================================================
+   Annotation contour. The reader is a radiologist: nothing here
+   names a model file, a threshold or a coordinate system, and the
+   three states are the same three words used everywhere else —
+   норма · сомнение · нарушение.
+   ============================================================ */
+
+/* Point names as a doctor says them, not as the model files spell them. */
+export const ANNOT_POINT_NAME: Record<string, string> = {
+  greater_trochanter_apex: 'Верхушка большого вертела',
+  femoral_neck: 'Центр шейки бедра',
+  ischium: 'Нижний край седалищной кости',
+  crest_left: 'Гребень подвздошной кости слева',
+  crest_right: 'Гребень подвздошной кости справа',
 }
+
+/* What the queue is asking for on a given frame. The fourth task has no card of
+   its own: its answer is the same checkbox as in the third. */
+export const ANNOT_TASK: Record<AnnotTask, string> = {
+  hip_keypoints: '2 · точки бедра',
+  pelvis_crest: '3 + 4 · гребни и окна',
+  foreign_seg: '5 · посторонний предмет',
+}
+
+export const ANNOT_CASE_TITLE: Record<string, string> = {
+  hip_left: 'Левое бедро',
+  hip_right: 'Правое бедро',
+  spine_ok: 'Поясничный отдел',
+  spine_bad: 'Поясничный отдел · гребень обрезан',
+  spine_foreign: 'Поясничный отдел · предмет',
+}
+
+export const ANNOT_SOURCE: Record<AnnotSource | 'all', string> = {
+  all: 'вся очередь',
+  clinic: 'из поликлиник',
+  upload: 'загруженные',
+}
+
+export const ANNOT_SOURCE_TAG: Record<AnnotSource, string> = {
+  clinic: 'из поликлиники',
+  upload: 'загружено',
+}
+
+export const ANNOT_PRIORITY: Record<number, { title: string; tone: string }> = {
+  1: { title: 'срочно', tone: 'bad' },
+  2: { title: 'в очереди', tone: 'warn' },
+  3: { title: 'фон', tone: 'dead' },
+}
+
+/* How a point reads in the list beside the scan. */
+export const POINT_STATE: Record<PointState, { title: string; tone: string }> = {
+  empty: { title: 'не поставлена', tone: 'dead' },
+  absent: { title: 'нет на снимке', tone: 'bad' },
+  suggested: { title: 'проверьте', tone: 'warn' },
+  checked: { title: 'готово', tone: 'ok' },
+}
+
+/* The three states, wherever they are named. */
+export const BAND: Record<Band, { title: string; tone: string }> = {
+  norm: { title: 'норма', tone: 'ok' },
+  warn: { title: 'сомнение', tone: 'warn' },
+  viol: { title: 'нарушение', tone: 'bad' },
+}
+
+/* What the annotator answers about a foreign object, in the order the buttons
+   sit on the screen. A clean frame is just as needed an answer as a dirty one. */
+export const FOREIGN_ANSWER: Array<{ id: string; title: string }> = [
+  { id: 'ПРЕДМЕТ', title: 'Предмет есть' },
+  { id: 'проверить', title: 'Нужно посмотреть' },
+  { id: 'чисто', title: 'Снимок чистый' },
+]
+
+/* What the annotator obviously has to draw, named as a doctor names it. */
+export const FOREIGN_KIND: Array<{ id: string; title: string; tone: string }> = [
+  { id: 'wire', title: 'Дужка бюстгальтера', tone: 'bad' },
+  { id: 'object', title: 'Застёжка, пуговица, кулон', tone: 'ok' },
+]
+
+/* Things worth saying about a frame that no task asks about. The codes are the
+   ones the annotation contract expects back — see context/back_annotations.md. */
+export const FRAME_FLAG: Array<{ id: string; title: string }> = [
+  { id: 'wrong_region', title: 'не та область тела' },
+  { id: 'implant', title: 'эндопротез' },
+  { id: 'bad_image', title: 'брак снимка' },
+  { id: 'other', title: 'другое' },
+]

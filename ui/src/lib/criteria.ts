@@ -186,3 +186,18 @@ export function brokenNames(job: IJobInfo): string[] {
     .filter((row) => row.level === 'bad' || row.level === 'warn')
     .map((row) => row.name.toLowerCase())
 }
+
+/* One criterion per key, as the most recent job to report it saw it — the
+   same rule settingsOf/modelsOf use for models and settings. A criterion the
+   service has never returned in the loaded window gets no row: the "Служебное"
+   screen shows what is actually running, not the full catalogue from the ML
+   contract. */
+export function methodsOf(jobs?: IJobInfo[]): Record<string, ICriterion> {
+  const found: Record<string, ICriterion> = {}
+  for (const job of jobs ?? []) {
+    for (const [key, criterion] of Object.entries(job.metadata?.criteria ?? {})) {
+      if (!found[key]) found[key] = criterion
+    }
+  }
+  return found
+}

@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=1440" />
+<title>Лаборатория стиля: экран разметки</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Golos+Text:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="annotation.css" />
+<style>
+  /* The lab itself is chrome around the preview, not part of the design. */
+  body { background: var(--bg); }
+  .lab__preview { border: 1px dashed var(--line-2); border-radius: var(--r); padding: 18px; background: var(--surface-2); }
+</style>
+</head>
+<body class="ly-right mk-cross zn-active bg-dark">
+
+<div class="lab__wrap">
+  <h1 style="font-size:25px">Экран разметки: выбор оформления</h1>
+  <p class="lab__lead">Четыре независимых выбора. <b>Раскладка</b> — где панель относительно снимка.
+    <b>Маркер точки</b> — чем отмечена сама точка. <b>Области точек</b> — показывать подсветку только
+    у текущей точки, у всех сразу или не показывать вовсе. <b>Фон холста</b> — тёмное окно
+    просмотрщика или светлая рабочая область. Снимки и точки настоящие.</p>
+
+  <div class="lab__bar">
+    <section>
+      <h4>Раскладка</h4>
+      <button class="pick" type="button" data-set="ly" data-val="ly-right">панель справа</button>
+      <button class="pick" type="button" data-set="ly" data-val="ly-left">панель слева</button>
+      <button class="pick" type="button" data-set="ly" data-val="ly-bottom">панель снизу</button>
+    </section>
+    <section>
+      <h4>Маркер точки</h4>
+      <button class="pick" type="button" data-set="mk" data-val="mk-cross">крест и кольцо</button>
+      <button class="pick" type="button" data-set="mk" data-val="mk-ring">только кольцо</button>
+      <button class="pick" type="button" data-set="mk" data-val="mk-target">мишень</button>
+    </section>
+    <section>
+      <h4>Области точек</h4>
+      <button class="pick" type="button" data-set="zn" data-val="zn-active">только текущая</button>
+      <button class="pick" type="button" data-set="zn" data-val="zn-all">все сразу</button>
+      <button class="pick" type="button" data-set="zn" data-val="zn-none">не показывать</button>
+    </section>
+    <section>
+      <h4>Фон холста</h4>
+      <button class="pick" type="button" data-set="bg" data-val="bg-dark">тёмный</button>
+      <button class="pick" type="button" data-set="bg" data-val="bg-light">светлый</button>
+    </section>
+  </div>
+
+  <div class="annot__cases" id="cases"></div>
+  <div class="lab__preview"><div id="stage"></div></div>
+</div>
+
+<script src="annotation.data.js"></script>
+<script src="annotation.js"></script>
+<script>
+/* Variant switching is class swapping on <body>; the preview itself is the
+   same renderer the working screen uses, so what is chosen here is what ships. */
+(function () {
+  'use strict';
+
+  var GROUPS = { ly: 'ly-right', mk: 'mk-cross', zn: 'zn-active', bg: 'bg-dark' };
+
+  function sync() {
+    Array.prototype.forEach.call(document.querySelectorAll('[data-set]'), function (b) {
+      b.setAttribute('aria-pressed', String(GROUPS[b.dataset.set] === b.dataset.val));
+    });
+  }
+
+  document.addEventListener('click', function (e) {
+    var b = e.target.closest('[data-set]');
+    if (!b) return;
+    document.body.classList.remove(GROUPS[b.dataset.set]);
+    GROUPS[b.dataset.set] = b.dataset.val;
+    document.body.classList.add(b.dataset.val);
+    sync();
+  });
+
+  AnnotUI.mount(document.getElementById('cases'), document.getElementById('stage'), 'spine_bad');
+  sync();
+})();
+</script>
+</body>
+</html>
