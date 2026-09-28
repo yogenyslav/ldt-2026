@@ -80,7 +80,8 @@ const AnnotDeskWidget = () => {
   }, [loaded, isBlank, answers])
 
   const total = work?.items?.length ?? 0
-  const active = pick !== null && pick < total ? pick : Math.max(0, activeIndex(work ?? loaded!))
+  const active =
+    pick !== null && pick < total ? pick : work ? Math.max(0, activeIndex(work)) : 0
 
   /* A new frame on the desk starts empty: nothing answered, nothing said. */
   useEffect(() => {
@@ -242,6 +243,9 @@ const AnnotDeskWidget = () => {
             </div>
           </div>
         </>
+      ) : key ? (
+        /* the frame is on its way — the queue says there is one */
+        <Loader label="Снимок загружается…" />
       ) : (
         <Card>
           <Empty
