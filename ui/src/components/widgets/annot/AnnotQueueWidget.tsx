@@ -13,7 +13,6 @@ import UploadSheet from '@/components/widgets/annot/UploadSheet'
 import { ANNOT_PRIORITY, ANNOT_SOURCE, ANNOT_SOURCE_TAG, ANNOT_TASK, REGION_SHORT } from '@/constants'
 import { useAnnot } from '@/context/AnnotContext'
 import { useAnnotQueue } from '@/hooks/useAnnotation'
-import { ANNOT_CASES } from '@/services/mock/annotCases'
 import { nm, plural } from '@/lib/utils'
 import type { AnnotSource } from '@/types'
 
@@ -29,10 +28,6 @@ import type { AnnotSource } from '@/types'
    ============================================================ */
 
 const SOURCES: Array<AnnotSource | 'all'> = ['all', 'clinic', 'upload']
-
-/* The frames themselves are demo data of the annotation contour; the real
-   service answers with the frame beside its queue line. */
-const frameOf = (key: string) => ANNOT_CASES.find((item) => item.key === key)
 
 const AnnotQueueWidget = () => {
   const { data, isLoading } = useAnnotQueue()
@@ -55,7 +50,7 @@ const AnnotQueueWidget = () => {
       <WorkHead
         title="Очередь заданий"
         sub={`${data.total.all} ${plural(data.total.all, 'снимок', 'снимка', 'снимков')}`}
-        lead="Основной поток — снимки из поликлиник, которые уже прошли анализатор: в очередь из них попадают те, где модель не уверена или расходится с таблицей разметки. Рядом второй вход — загрузка своих снимков, с прогоном через модели или без него."
+        lead="Основной поток — снимки из поликлиник, которые уже прошли анализатор: в очередь из них попадают те, где модель сомневается или расходится с таблицей разметки. Рядом второй вход — загрузка своих снимков, с прогоном через модели или без него."
       />
 
       <Card className="mb-4.5" mark>
@@ -104,8 +99,6 @@ const AnnotQueueWidget = () => {
               </thead>
               <tbody>
                 {shown.map((item) => {
-                  const frame = frameOf(item.key)
-                  if (!frame) return null
                   const priority = ANNOT_PRIORITY[item.priority]
 
                   return (
@@ -116,14 +109,14 @@ const AnnotQueueWidget = () => {
                       <td>
                         <img
                           className="h-10 w-11 rounded-[6px] bg-scan-bg object-cover"
-                          src={frame.png}
+                          src={item.png}
                           alt=""
                         />
                       </td>
                       <td>
-                        <b>{frame.file}</b>
+                        <b>{item.file}</b>
                         <div className="text-[13.5px] text-muted">
-                          {REGION_SHORT[frame.region]} · {frame.cols}×{frame.rows}
+                          {REGION_SHORT[item.region]} · {item.cols}×{item.rows}
                         </div>
                       </td>
                       <td>

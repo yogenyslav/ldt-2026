@@ -90,20 +90,29 @@ export function nextKey(keys: string[], current: string): string | null {
 }
 
 /* ---------- what the annotator answers ----------
-   The desk works on a copy of the frame: the exported case is shared data and
-   is never touched. An answer given twice is an answer taken back — the point
-   returns to whatever the model had said about it. */
+   The answers are kept apart from the frame: the exported case is shared data
+   and is never touched, and the working copy the screen draws is derived from
+   the two. An answer given twice is an answer taken back — the point returns
+   to whatever the model had said about it. */
 
-export function answerPoint(
-  item: IAnnotCase,
+export type PointAnswers = Record<number, PointAnswer>
+
+export function toggleAnswer(
+  answers: PointAnswers,
   index: number,
   answer: PointAnswer,
-): IAnnotCase {
+): PointAnswers {
+  const next = { ...answers }
+  if (next[index] === answer) delete next[index]
+  else next[index] = answer
+  return next
+}
+
+export function withAnswers(item: IAnnotCase, answers: PointAnswers): IAnnotCase {
+  if (!item.items) return item
   return {
     ...item,
-    items: item.items?.map((point, at) =>
-      at === index ? { ...point, answer: point.answer === answer ? undefined : answer } : point,
-    ),
+    items: item.items.map((point, index) => ({ ...point, answer: answers[index] })),
   }
 }
 

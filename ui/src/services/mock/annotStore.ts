@@ -29,7 +29,7 @@ const KEY = 'dxa_qc_annot_v1'
 /* Two ways into the queue. The stream from the clinics has always been through
    the analyser: of those frames only the doubtful ones are queued. Uploaded
    frames arrive either way, depending on the choice made on upload. */
-const SEED_QUEUE: IQueueItem[] = [
+const SEED_QUEUE: Array<Omit<IQueueItem, 'file' | 'region' | 'rows' | 'cols' | 'png'>> = [
   {
     key: 'spine_foreign',
     task: 'foreign_seg',
@@ -262,9 +262,17 @@ function crestWindows(item: IAnnotCase): Point[][] {
 }
 
 const annotStore = {
-  /* The queue as the doctor sees it: what has been sent is gone from it. */
+  /* The queue as the doctor sees it: every line carries its own frame, and
+     what has been sent is gone from the list. */
   queue(): IQueueItem[] {
     return SEED_QUEUE.filter((item) => !state.done.includes(item.key))
+      .map((item) => {
+        const frame = byKey.get(item.key)
+        if (!frame) return null
+        const { file, region, rows, cols, png } = frame
+        return { ...item, file, region, rows, cols, png }
+      })
+      .filter((item): item is IQueueItem => item !== null)
   },
 
   /* How long the queue is in total, per source. Everything already sent from

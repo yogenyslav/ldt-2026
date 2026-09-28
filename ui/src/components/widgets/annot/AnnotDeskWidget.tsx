@@ -18,15 +18,17 @@ import { useAnnot } from '@/context/AnnotContext'
 import { useAnnotCase, useAnnotQueue, useSubmitAnnot } from '@/hooks/useAnnotation'
 import {
   activeIndex,
-  answerPoint,
   blankCase,
   nextKey,
   nextPoint,
   placeInQueue,
   queueKeys,
+  toggleAnswer,
+  withAnswers,
+  type PointAnswers,
 } from '@/lib/annotation'
 import type { AnnotOutcome } from '@/services/apiAnnotation'
-import type { AnnotSource, IAnnotCase } from '@/types'
+import type { AnnotSource, PointAnswer } from '@/types'
 
 /* ============================================================
    Разметка снимка — a conveyor, not a form.
@@ -61,22 +63,35 @@ const AnnotDeskWidget = () => {
   const queued = queue?.queue.find((item) => item.key === key)
   const isBlank = current === key && blank !== null ? blank : !queued?.pre
 
-  const [work, setWork] = useState<IAnnotCase | null>(null)
-  const [active, setActive] = useState(0)
+  const [answers, setAnswers] = useState<PointAnswers>({})
+  /* The point the annotator stepped onto by hand; without one the conveyor
+     picks the first that still needs attention. */
+  const [pick, setPick] = useState<number | null>(null)
   const [answer, setAnswer] = useState<string | null>(null)
   const [features, setFeatures] = useState<string[]>([])
   const [comment, setComment] = useState('')
 
-  /* A fresh frame on the desk: the exported case is shared data, so the desk
-     works on a copy of it and never touches the original. */
+  /* The frame the screen draws: the exported case plus whatever has been
+     answered about it. Derived, not stored — so the first paint is already
+     the right one. */
+  const work = useMemo(() => {
+    if (!loaded) return null
+    return withAnswers(isBlank ? blankCase(loaded) : loaded, answers)
+  }, [loaded, isBlank, answers])
+
+  const total = work?.items?.length ?? 0
+  const active = pick !== null && pick < total ? pick : Math.max(0, activeIndex(work ?? loaded!))
+
+  /* A new frame on the desk starts empty: nothing answered, nothing said. */
   useEffect(() => {
-    if (!loaded) return
-    const item = isBlank ? blankCase(loaded) : { ...loaded }
-    setWork(item)
-    setActive(Math.max(0, activeIndex(item)))
-    setAnswer(item.blank ? null : (item.verdict ?? null))
+    setAnswers({})
+    setPick(null)
     setFeatures([])
     setComment('')
+  }, [key, isBlank])
+
+  useEffect(() => {
+    setAnswer(loaded && !isBlank ? (loaded.verdict ?? null) : null)
   }, [loaded, isBlank])
 
   const finish = useCallback(
@@ -99,18 +114,14 @@ const AnnotDeskWidget = () => {
     [key, keys, submit, features, comment, toast, open],
   )
 
-  const setPoint = useCallback((index: number) => setActive(index), [])
-
   const answerAt = useCallback(
-    (index: number, value: 'confirmed' | 'absent') => {
-      setWork((item) => {
-        if (!item) return item
-        const next = answerPoint(item, index, value)
-        setActive(nextPoint(next, index))
-        return next
-      })
+    (index: number, value: PointAnswer) => {
+      if (!work) return
+      const next = toggleAnswer(answers, index, value)
+      setAnswers(next)
+      setPick(nextPoint(withAnswers(work, next), index))
     },
-    [],
+    [work, answers],
   )
 
   /* The keyboard is the conveyor. It is listened to on the document, because
@@ -129,7 +140,6 @@ const AnnotDeskWidget = () => {
         return
       }
 
-      const total = work.items?.length ?? 0
       if (event.key === ' ' && total) {
         event.preventDefault()
         answerAt(active, 'absent')
@@ -139,13 +149,13 @@ const AnnotDeskWidget = () => {
       const digit = Number(event.key)
       if (digit >= 1 && digit <= total) {
         event.preventDefault()
-        setActive(digit - 1)
+        setPick(digit - 1)
       }
     }
 
     document.addEventListener('keydown', onKey)
     return () => document.removeEventListener('keydown', onKey)
-  }, [work, active, finish, answerAt])
+  }, [work, total, active, finish, answerAt])
 
   if (!queue) return <Loader />
 
@@ -211,7 +221,7 @@ const AnnotDeskWidget = () => {
                 <PointsCard
                   item={work}
                   active={active}
-                  onPick={setPoint}
+                  onPick={setPick}
                   onAbsent={(index) => answerAt(index, 'absent')}
                   onConfirm={(index) => answerAt(index, 'confirmed')}
                 />

@@ -209,10 +209,15 @@ export interface IAnnotCase {
   blank?: boolean
 }
 
-/* One line of the queue. */
+/* One line of the queue: the frame itself, and why it is here. */
 export interface IQueueItem {
   key: string
   task: AnnotTask
+  file: string
+  region: Region
+  rows: number
+  cols: number
+  png: string
   source: AnnotSource
   from: string
   /* the analyser has already looked at this frame */
