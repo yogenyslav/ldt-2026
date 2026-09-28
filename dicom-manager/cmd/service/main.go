@@ -10,6 +10,7 @@ import (
 	api_dicom_get_image "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/get_image"
 	api_dicom_upload "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/upload"
 	api_dicom_upload_batch "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/upload_batch"
+	api_job_get_by_dicom_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_by_dicom_id"
 	api_job_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_by_id"
 	api_job_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_paginated"
 	api_job_result_decision "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/result_decision"
@@ -28,6 +29,7 @@ import (
 	uc_dicom_get_image "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/get_image"
 	uc_dicom_upload "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/upload"
 	uc_job_decision "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/decision"
+	uc_job_get_by_dicom_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_dicom_id"
 	uc_job_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_id"
 	uc_job_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_paginated"
 	uc_organization_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_by_id"
@@ -159,6 +161,8 @@ func run() error {
 		logger, metrics, uow, dicomStorage, jobStorage, orthancClient, dicomWorkerClient.Client(),
 	)
 	dicomRouter := srv.Router("dicom")
+	getJobsByDicomID := uc_job_get_by_dicom_id.New(logger, metrics, jobStorage, dicomStorage)
+	dicomRouter.Get("/:dicom_id/jobs", api_job_get_by_dicom_id.New(logger, metrics, getJobsByDicomID).GetByDicomID)
 	dicomRouter.Get("/:dicom_id/image", api_dicom_get_image.New(logger, metrics, getDicomImage).GetImage)
 	dicomRouter.Post("/upload", api_dicom_upload.New(logger, metrics, uploadDicom).Upload)
 	dicomRouter.Post("/upload/batch", api_dicom_upload_batch.New(logger, metrics, uploadDicom).UploadBatch)

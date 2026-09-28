@@ -101,3 +101,25 @@ func (s *Storage) UpdateJobResultDecision(ctx context.Context, data UpdateDecisi
 
 	return s.db.Exec(ctx, query, args...)
 }
+
+// GetJobsByDicomID возвращает все попытки обработки файла, начиная с новых.
+func (s *Storage) GetJobsByDicomID(ctx context.Context, dicomID string) ([]DicomJobResult, error) {
+	const query = `select job_id, dicom_file_id, job_status, anatomical_region,
+ confidence, violations, duration_ms, metadata, specialist_decision,
+ specialist_id, comment, created_at, updated_at
+ from dicom_job_result where dicom_file_id = $1
+ order by created_at desc, job_id desc`
+	jobs := make([]DicomJobResult, 0)
+	err := s.db.QuerySlice(ctx, &jobs, query, dicomID)
+	return jobs, err
+}
+
+// GetActiveDicomIDs возвращает ID файлов с незавершёнными задачами одним запросом.
+// Вызывается после блокировки записей dicom_file в текущей транзакции.
+func (s *Storage) GetActiveDicomIDs(ctx context.Context, dicomIDs []string) ([]string, error) {
+	const query = `select distinct dicom_file_id from dicom_job_result
+ where dicom_file_id = any($1::text[]) and job_status not in ('completed', 'failed')`
+	var activeIDs []string
+	err := s.db.TxQuerySlice(ctx, &activeIDs, query, dicomIDs)
+	return activeIDs, err
+}

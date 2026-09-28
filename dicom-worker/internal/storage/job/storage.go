@@ -2,6 +2,7 @@ package job
 
 import (
 	"context"
+	"time"
 
 	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/database"
 )
@@ -9,6 +10,19 @@ import (
 // Storage репозиторий задач обработки DICOM-файлов.
 type Storage struct {
 	db database.DB
+}
+
+// GetExpiredForUpdate блокирует одну задачу с истекшим таймаутом текущего статуса.
+func (s *Storage) GetExpiredForUpdate(ctx context.Context, pendingTimeout, runningTimeout time.Duration) (Job, error) {
+	const query = `select id, dicom_id, status, created_at, updated_at
+                from analyzer_jobs
+                where (status = 'pending' and updated_at <= now() - $1 * interval '1 second')
+                   or (status = 'running' and updated_at <= now() - $2 * interval '1 second')
+                order by updated_at, id
+                limit 1 for update skip locked`
+	var job Job
+	err := s.db.TxQueryRow(ctx, &job, query, pendingTimeout.Seconds(), runningTimeout.Seconds())
+	return job, err
 }
 
 // New создает новый экземпляр репозитория задач.

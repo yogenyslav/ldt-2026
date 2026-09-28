@@ -27,7 +27,7 @@ func main() {
 func run() error {
 	ctx, stop := signal.NotifyContext(context.Background(), syscall.SIGINT, syscall.SIGTERM)
 	defer stop()
-	
+
 	obs, err := observability.New()
 	if err != nil {
 		return fmt.Errorf("init observability: %w", err)
@@ -42,6 +42,7 @@ func run() error {
 	if err := obs.StartMetricsServer(); err != nil {
 		return err
 	}
+
 	logger := obs.Logger()
 	metrics := obs.Metrics()
 
@@ -56,6 +57,7 @@ func run() error {
 	if err != nil {
 		return err
 	}
+	
 	client, err := messaging.New(logger, metrics, cfg)
 	if err != nil {
 		return fmt.Errorf("init NATS client: %w", err)
