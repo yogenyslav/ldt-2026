@@ -137,3 +137,7 @@ func (s repoStub) GetByIDForUpdate(context.Context, string) (storage.Dicom, erro
 func (s jobsStub) GetActiveDicomIDs(context.Context, []string) ([]string, error) {
 	return nil, nil
 }
+
+func (s repoStub) GetByID(context.Context, string) (storage.Dicom, error) {
+	return storage.Dicom{}, s.err
+}

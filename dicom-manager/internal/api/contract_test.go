@@ -82,7 +82,7 @@ func (jobStub) GetByID(_ context.Context, in jobuc.GetJobRequest) (jobuc.Job, er
 type jobsStub struct{}
 
 func (jobsStub) GetPaginated(_ context.Context, in jobsuc.GetJobsRequest) ([]jobsuc.Job, error) {
-	if in.CreatorID != 42 || in.Offset != 2 || in.Limit != 3 {
+	if in.CreatorID != 42 || in.OrganizationID != 218 || in.RequesterRole != "specialist" || in.Offset != 2 || in.Limit != 3 {
 		return nil, fmt.Errorf("wrong pagination or creator: %+v", in)
 	}
 	return []jobsuc.Job{{ID: "failed", Status: "failed", Metadata: []byte(`{"error":"analysis failed"}`)}}, nil
@@ -208,7 +208,7 @@ func TestBrowserAPIContract(t *testing.T) {
 			t.Fatalf("wrong upload: %+v", uploads.last)
 		}
 	})
-	t.Run("authenticated Orthanc callback does not upload again", func(t *testing.T) {
+	t.Run("legacy Orthanc callback is rejected", func(t *testing.T) {
 		for _, token := range []string{"", "token"} {
 			req := httptest.NewRequest("POST", "/dicom/upload", strings.NewReader("dicom data"))
 			req.Header.Set("Content-Type", "application/dicom")
@@ -227,22 +227,35 @@ func TestBrowserAPIContract(t *testing.T) {
 				}
 				continue
 			}
-			if resp.StatusCode != 201 || uploads.last.SyncOrthanc ||
-				len(uploads.last.RawDicoms) != 1 || uploads.last.RawDicoms[0].InstanceID != "orthanc-instance" ||
-				uploads.last.CreatorID != 42 || uploads.last.OrganizationID != 218 {
-				t.Fatalf("wrong Orthanc callback: status=%d request=%+v", resp.StatusCode, uploads.last)
+			if resp.StatusCode != 400 {
+				t.Fatalf("legacy Orthanc callback accepted: %d", resp.StatusCode)
 			}
 		}
 	})
 	t.Run("browser multipart ZIP", func(t *testing.T) {
 		var archive bytes.Buffer
 		zw := zip.NewWriter(&archive)
-		f, err := zw.Create("scan.DCM")
-		if err != nil {
-			t.Fatal(err)
+		// Каталоги могут иметь отдельные записи или быть представлены только
+		// путями файлов. Оба варианта должны сохранять любую глубину вложенности.
+		entries := []struct{ name, payload string }{
+			{"scan.DCM", "root dicom"},
+			{"patient/", ""},
+			{"patient/study/", ""},
+			{"patient/study/series/scan.dcm", "nested dicom"},
+			{"other/study/series/scan.dcm", "other dicom"},
+			{"patient/study/series/image.DcM", "mixed case dicom"},
+			{"patient/readme.txt", "ignore"},
+			{"patient/study/series/image.png", "ignore"},
+			{"empty/", ""},
 		}
-		if _, err := f.Write([]byte("dicom data")); err != nil {
-			t.Fatal(err)
+		for _, entry := range entries {
+			f, err := zw.Create(entry.name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Write([]byte(entry.payload)); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if err := zw.Close(); err != nil {
 			t.Fatal(err)
@@ -260,8 +273,24 @@ func TestBrowserAPIContract(t *testing.T) {
 			t.Fatal(err)
 		}
 		request("POST", "/dicom/upload/batch", mw.FormDataContentType(), &body, "token", 201)
-		if len(uploads.last.RawDicoms) != 1 || string(uploads.last.RawDicoms[0].Payload) != "dicom data" || uploads.last.OrganizationID != 218 {
+		want := map[string]string{
+			"scan.DCM":                       "root dicom",
+			"patient/study/series/scan.dcm":  "nested dicom",
+			"other/study/series/scan.dcm":    "other dicom",
+			"patient/study/series/image.DcM": "mixed case dicom",
+		}
+		if len(uploads.last.RawDicoms) != len(want) || uploads.last.OrganizationID != 218 {
 			t.Fatalf("wrong ZIP upload: %+v", uploads.last)
+		}
+		for _, file := range uploads.last.RawDicoms {
+			payload, ok := want[file.FileName]
+			if !ok || string(file.Payload) != payload {
+				t.Fatalf("unexpected DICOM: %+v", file)
+			}
+			delete(want, file.FileName)
+		}
+		if len(want) != 0 {
+			t.Fatalf("missing files: %v", want)
 		}
 	})
 }

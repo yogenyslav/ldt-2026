@@ -159,7 +159,12 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 		)
 	}
 
+	// ZIP содержит плоский список записей всех уровней вложенности.
+	// Пропускаем только саму запись каталога: его файлы идут отдельными записями.
 	for _, file := range zipReader.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
 		if !strings.HasSuffix(strings.ToLower(file.Name), ".dcm") {
 			h.log.Warn().Str("file_name", file.Name).Msg("skipping non-DICOM file in zip")
 			continue
@@ -175,6 +180,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 		}
 
 		rawDicom, errReadDicom := io.ReadAll(fileData)
+		fileData.Close()
 		if errReadDicom != nil {
 			h.metrics.Counter("handler.dicom.upload.zip_file_read.error").Inc()
 			h.log.Error().Err(errReadDicom).Str("file_name", file.Name).Msg("failed to read file in zip")
@@ -186,7 +192,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 		req.RawDicoms = append(
 			req.RawDicoms, upload.RawDicomData{
 				Payload:  rawDicom,
-				FileName: file.Name,
+				FileName: file.Name, // Полный путь сохраняет вложенность при упаковке для Orthanc.
 			},
 		)
 	}

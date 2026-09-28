@@ -9,6 +9,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/model"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/query"
 	user_model "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_id"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
@@ -38,16 +39,18 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 // GetByID обработчик для получения информации о задаче на обработку DICOM-файла по ID.
 //
 //	@Summary		Получить информацию о задаче на обработку DICOM-файла по ID
-//	@Description	Получить информацию о задаче на обработку DICOM-файла по ID
+//	@Description	Получить задачу по ID вместе с upload_source. При несовпадении organization_ids или upload_source возвращается 404.
 //	@Tags			job
 //	@Accept			json
 //	@Produce		json
-//	@Param			job_id	path		string		true	"ID задачи на обработку DICOM-файла"
-//	@Success		200		{object}	GetByIDOut	"Информация о задаче успешно получена."
-//	@Failure		400		string		"Некорректный запрос."
-//	@Failure		403		string		"Доступ запрещен."
-//	@Failure		404		string		"Задача не найдена."
-//	@Failure		500		string		"Внутренняя ошибка сервера."
+//	@Param			job_id				path		string		true	"ID задачи на обработку DICOM-файла"
+//	@Param			organization_ids	query		[]int64		false	"ID организаций через запятую"				collectionFormat(csv)
+//	@Param			upload_source		query		[]string	false	"Источники загрузки DICOM через запятую"	Enums(manual,orthanc)	collectionFormat(csv)
+//	@Success		200					{object}	GetByIDOut	"Информация о задаче успешно получена."
+//	@Failure		400					string		"Некорректный запрос."
+//	@Failure		403					string		"Доступ запрещен."
+//	@Failure		404					string		"Задача не найдена."
+//	@Failure		500					string		"Внутренняя ошибка сервера."
 //	@Router			/job/info/{job_id} [get]
 func (h *Handler) GetByID(c fiber.Ctx) error {
 	jobID := c.Params("job_id")
@@ -70,7 +73,13 @@ func (h *Handler) GetByID(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusInternalServerError, "token_claim is invalid")
 	}
 
+	organizationIDs, sources, err := query.ParseFilters(c)
+	if err != nil {
+		return err
+	}
+
 	req := get_by_id.GetJobRequest{
+		OrganizationIDs: organizationIDs, UploadSources: sources,
 		JobID:         jobID,
 		RequesterID:   claims.UserID,
 		RequesterRole: user_model.UserRole(claims.Role),
@@ -124,6 +133,7 @@ func convertToOut(job get_by_id.Job) (GetByIDOut, error) {
 			Error:              errorMessage,
 			ID:                 job.ID,
 			DicomID:            job.DicomFileID,
+			UploadSource:       job.UploadSource,
 			Status:             model.ToJobStatus(job.Status),
 			AnatomicalRegion:   job.AnatomicalRegion,
 			Confidence:         job.Confidence,

@@ -30,6 +30,7 @@ var (
 )
 
 type dicomRepo interface {
+	GetByID(ctx context.Context, id string) (storage.Dicom, error)
 	GetByIDForUpdate(ctx context.Context, id string) (storage.Dicom, error)
 	SaveDicomFiles(ctx context.Context, dicoms []storage.Dicom) error
 }
@@ -105,6 +106,11 @@ func (uc *Usecase) UploadDicomFiles(
 		return nil, fmt.Errorf("failed to get DICOM properties: %w", err)
 	}
 
+	source := storage.UploadSourceOrthanc
+	if in.SyncOrthanc {
+		source = storage.UploadSourceManual
+	}
+
 	saveDicoms := make([]storage.Dicom, 0, len(dicomProperties))
 	dicomIDs := make([]string, 0, len(saveDicoms))
 	seen := make(map[string]bool)
@@ -116,6 +122,9 @@ func (uc *Usecase) UploadDicomFiles(
 		dicomIDs = append(dicomIDs, prop.ID)
 		saveDicoms = append(
 			saveDicoms, storage.Dicom{
+				UploadSource:   source,
+				DeviceModel:    prop.DeviceModel,
+				PatientID:      prop.PatientID,
 				ID:             prop.ID,
 				FileName:       prop.FileName,
 				SeriesID:       prop.ParentSeries,
@@ -141,53 +150,13 @@ func (uc *Usecase) UploadDicomFiles(
 				return fmt.Errorf("failed to save DICOM files: %w", errSaveDicoms)
 			}
 
-			for _, id := range dicomIDs {
-				stored, err := uc.dicomRepo.GetByIDForUpdate(ctx, id)
-				if err != nil {
-					return fmt.Errorf("lock DICOM file: %w", err)
-				}
-
-				if stored.CreatorID != in.CreatorID || stored.OrganizationID != in.OrganizationID {
-					return ErrDicomForbidden
-				}
+			if err := uc.lockDicoms(ctx, dicomIDs, in.CreatorID, in.OrganizationID); err != nil {
+				return err
 			}
 
-			// Проверяем весь батч после блокировки всех файлов в текущей транзакции.
-			active, err := uc.jobCreator.GetActiveDicomIDs(ctx, dicomIDs)
-			if err != nil {
-				return fmt.Errorf("check active DICOM jobs: %w", err)
-			}
-
-			activeIDs := make(map[string]struct{}, len(active))
-			for _, id := range active {
-				activeIDs[id] = struct{}{}
-			}
-
-			readyIDs := make([]string, 0, len(dicomIDs))
-			for _, id := range dicomIDs {
-				if _, busy := activeIDs[id]; !busy {
-					readyIDs = append(readyIDs, id)
-				}
-			}
-			if len(readyIDs) == 0 {
-				return ErrActiveJob
-			}
-
-			dicomToJobs, errProcessDicoms := uc.worker.ProcessDicomFiles(ctx, readyIDs)
-			if errProcessDicoms != nil {
-				uc.metrics.Counter("usecases.dicom.upload.process.error").Inc()
-				return fmt.Errorf("failed to process DICOM files: %w", errProcessDicoms)
-			}
-
-			errCreateJobs := uc.jobCreator.CreateJobs(ctx, dicomToJobs)
-			if errCreateJobs != nil {
-				uc.metrics.Counter("usecases.dicom.upload.create_jobs.error").Inc()
-				return fmt.Errorf("failed to create DICOM jobs: %w", errCreateJobs)
-			}
-
-			dicomJobs = maps.Clone(dicomToJobs)
-
-			return nil
+			var err error
+			dicomJobs, err = uc.processDicoms(ctx, dicomIDs)
+			return err
 		},
 	)
 	if err != nil {
@@ -273,4 +242,58 @@ func dicomsToZip(dicoms []RawDicomData) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+// lockDicoms проверяет владельца под блокировкой внутри транзакции.
+func (uc *Usecase) lockDicoms(ctx context.Context, dicomIDs []string, creatorID, organizationID int64) error {
+	for _, id := range dicomIDs {
+		stored, err := uc.dicomRepo.GetByIDForUpdate(ctx, id)
+		if err != nil {
+			return fmt.Errorf("lock DICOM file: %w", err)
+		}
+
+		if stored.CreatorID != creatorID || stored.OrganizationID != organizationID {
+			return ErrDicomForbidden
+		}
+	}
+
+	return nil
+}
+
+// processDicoms вызывается внутри транзакции после блокировки файлов.
+func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string) (map[string]uuid.UUID, error) {
+	// Проверяем весь батч после блокировки всех файлов в текущей транзакции.
+	active, err := uc.jobCreator.GetActiveDicomIDs(ctx, dicomIDs)
+	if err != nil {
+		return nil, fmt.Errorf("check active DICOM jobs: %w", err)
+	}
+
+	activeIDs := make(map[string]struct{}, len(active))
+	for _, id := range active {
+		activeIDs[id] = struct{}{}
+	}
+
+	readyIDs := make([]string, 0, len(dicomIDs))
+	for _, id := range dicomIDs {
+		if _, busy := activeIDs[id]; !busy {
+			readyIDs = append(readyIDs, id)
+		}
+	}
+	if len(readyIDs) == 0 {
+		return nil, ErrActiveJob
+	}
+
+	dicomToJobs, errProcessDicoms := uc.worker.ProcessDicomFiles(ctx, readyIDs)
+	if errProcessDicoms != nil {
+		uc.metrics.Counter("usecases.dicom.upload.process.error").Inc()
+		return nil, fmt.Errorf("failed to process DICOM files: %w", errProcessDicoms)
+	}
+
+	errCreateJobs := uc.jobCreator.CreateJobs(ctx, dicomToJobs)
+	if errCreateJobs != nil {
+		uc.metrics.Counter("usecases.dicom.upload.create_jobs.error").Inc()
+		return nil, fmt.Errorf("failed to create DICOM jobs: %w", errCreateJobs)
+	}
+
+	return maps.Clone(dicomToJobs), nil
 }

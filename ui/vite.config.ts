@@ -9,6 +9,12 @@ export default defineConfig({
     host: '0.0.0.0',
     port: 5173,
     proxy: {
+      '/report-files': {
+        target: 'http://localhost:9010',
+        // Docker backend signs URLs with the internal MinIO host.
+        headers: { host: 'reports:9000' },
+        rewrite: (url) => url.replace(/^\/report-files/, ''),
+      },
       '/api': {
         target: 'http://localhost:10000',
         changeOrigin: true,

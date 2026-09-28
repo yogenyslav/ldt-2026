@@ -7,13 +7,16 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	api_dicom_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/get_by_id"
 	api_dicom_get_image "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/get_image"
 	api_dicom_upload "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/upload"
 	api_dicom_upload_batch "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/upload_batch"
+	api_dicom_upload_orthanc "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/upload_orthanc"
 	api_job_get_by_dicom_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_by_dicom_id"
 	api_job_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_by_id"
 	api_job_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/get_paginated"
 	api_job_result_decision "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/result_decision"
+	api_organization_get_all "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/organization/get_all"
 	api_organization_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/organization/get_by_id"
 	api_organization_get_users_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/organization/get_users_paginated"
 	api_report_generate "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/report/generate"
@@ -26,12 +29,14 @@ import (
 	storage_organization "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/organization"
 	storage_report "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/report"
 	storage_user "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/user"
+	uc_dicom_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/get_by_id"
 	uc_dicom_get_image "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/get_image"
 	uc_dicom_upload "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/upload"
 	uc_job_decision "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/decision"
 	uc_job_get_by_dicom_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_dicom_id"
 	uc_job_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_by_id"
 	uc_job_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_paginated"
+	uc_organization_get_all "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_all"
 	uc_organization_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_by_id"
 	uc_organization_get_users "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/organization/get_users"
 	uc_report_generate "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/report/generate"
@@ -145,9 +150,11 @@ func run() error {
 	userRouter.Get("/:user_id", api_user_get_by_id.New(logger, metrics, userByID).GetByID)
 
 	// Бизнес-логика и маршруты организаций.
+	allOrganizations := uc_organization_get_all.New(logger, metrics, organizationStorage)
 	organizationByID := uc_organization_get_by_id.New(logger, metrics, organizationStorage)
 	organizationUsers := uc_organization_get_users.New(logger, metrics, organizationStorage)
 	organizationRouter := srv.Router("organization")
+	organizationRouter.Get("/", api_organization_get_all.New(logger, metrics, allOrganizations).GetAll)
 	organizationRouter.Get(
 		"/:org_id", api_organization_get_by_id.New(logger, metrics, organizationByID).GetByID,
 	)
@@ -161,9 +168,14 @@ func run() error {
 		logger, metrics, uow, dicomStorage, jobStorage, orthancClient, dicomWorkerClient.Client(),
 	)
 	dicomRouter := srv.Router("dicom")
+	getDicomByID := uc_dicom_get_by_id.New(logger, metrics, dicomStorage)
+	dicomRouter.Get("/:dicom_id", api_dicom_get_by_id.New(logger, metrics, getDicomByID).GetByID)
 	getJobsByDicomID := uc_job_get_by_dicom_id.New(logger, metrics, jobStorage, dicomStorage)
 	dicomRouter.Get("/:dicom_id/jobs", api_job_get_by_dicom_id.New(logger, metrics, getJobsByDicomID).GetByDicomID)
 	dicomRouter.Get("/:dicom_id/image", api_dicom_get_image.New(logger, metrics, getDicomImage).GetImage)
+	orthancUpload := api_dicom_upload_orthanc.New(logger, uploadDicom)
+	dicomRouter.Post("/upload/orthanc", orthancUpload.Upload)
+	dicomRouter.Post("/upload/orthanc/:dicom_id/process", orthancUpload.Start)
 	dicomRouter.Post("/upload", api_dicom_upload.New(logger, metrics, uploadDicom).Upload)
 	dicomRouter.Post("/upload/batch", api_dicom_upload_batch.New(logger, metrics, uploadDicom).UploadBatch)
 

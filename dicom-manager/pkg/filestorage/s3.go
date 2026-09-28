@@ -7,6 +7,7 @@ import (
 	"errors"
 	"fmt"
 	"net"
+	"strings"
 	"time"
 
 	"github.com/ilyakaznacheev/cleanenv"
@@ -21,11 +22,12 @@ var (
 
 // Config конфигурация для подключения к S3.
 type Config struct {
-	Host      string `env:"DICOM_MANAGER_S3_HOST"`
-	Port      string `env:"DICOM_MANAGER_S3_PORT"`
-	AccessKey string `env:"S3_ACCESS_KEY"`
-	SecretKey string `env:"S3_SECRET_KEY"`
-	Bucket    string `env:"DICOM_MANAGER_S3_BUCKET"`
+	Host              string `env:"DICOM_MANAGER_S3_HOST"`
+	Port              string `env:"DICOM_MANAGER_S3_PORT"`
+	AccessKey         string `env:"S3_ACCESS_KEY"`
+	SecretKey         string `env:"S3_SECRET_KEY"`
+	Bucket            string `env:"DICOM_MANAGER_S3_BUCKET"`
+	DownloadProxyPath string `env:"DICOM_MANAGER_S3_DOWNLOAD_PROXY_PATH"`
 }
 
 // S3 структура для работы с хранилищем S3.
@@ -78,6 +80,11 @@ func (s3 *S3) PresignedGetObject(ctx context.Context, bucket, obj string, exp ti
 	objURL, err := s3.conn.PresignedGetObject(ctx, bucket, obj, exp, nil)
 	if err != nil {
 		return "", fmt.Errorf("failed to get presigned object: %w", err)
+	}
+	if s3.cfg.DownloadProxyPath != "" {
+		// Прокси должен убрать префикс и восстановить подписанный Host S3.
+		// RequestURI сохраняет экранирование пути и параметры подписи без изменений.
+		return strings.TrimRight(s3.cfg.DownloadProxyPath, "/") + objURL.RequestURI(), nil
 	}
 	return objURL.String(), nil
 }

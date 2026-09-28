@@ -53,27 +53,45 @@ func (s *Storage) GetByID(ctx context.Context, jobID string) (DicomJobResult, er
 	return job, nil
 }
 
-// GetJobsByCreator возвращает список задач обработки DICOM-файлов, созданных пользователем с указанным ID.
-func (s *Storage) GetJobsByCreator(
-	ctx context.Context, creatorID int64, offset, limit uint64,
-) ([]DicomJobResult, error) {
-	const query = `select 
-						job_id, dicom_file_id, job_status, anatomical_region, 
-						confidence, violations, duration_ms, metadata, specialist_decision, 
-						specialist_id,comment, created_at, updated_at 
-					from dicom_job_result 
-					where 
-					    dicom_file_id in (select id from dicom_file where creator_id = $1)
-					order by created_at desc
-					offset $2 limit $3;`
+// JobFilter задаёт фильтры списка задач; источник хранится только в dicom_file.
+type JobFilter struct {
+	CreatorID       *int64
+	OrganizationIDs []int64
+	UploadSources   []string
+	Offset, Limit   uint64
+}
 
-	var jobs []DicomJobResult
-	err := s.db.QuerySlice(ctx, &jobs, query, creatorID, offset, limit)
+// GetJobs фильтрует задачи до применения пагинации.
+func (s *Storage) GetJobs(ctx context.Context, filter JobFilter) ([]DicomJobResult, error) {
+	query := sq.Select("j.job_id, j.dicom_file_id, j.job_status, j.anatomical_region, j.confidence, j.violations, j.duration_ms, j.metadata, j.specialist_decision, j.specialist_id, j.comment, j.created_at, j.updated_at, d.upload_source").From("dicom_job_result j").
+		Join("dicom_file d on d.id = j.dicom_file_id").
+		OrderBy("j.created_at desc", "j.job_id desc").Offset(filter.Offset).Limit(filter.Limit)
+	if filter.CreatorID != nil {
+		query = query.Where(sq.Eq{"d.creator_id": *filter.CreatorID})
+	}
+	if len(filter.OrganizationIDs) > 0 {
+		query = query.Where(sq.Eq{"d.organization_id": filter.OrganizationIDs})
+	}
+	if len(filter.UploadSources) > 0 {
+		query = query.Where(sq.Eq{"d.upload_source": filter.UploadSources})
+	}
+	sql, args, err := query.PlaceholderFormat(sq.Dollar).ToSql()
 	if err != nil {
 		return nil, err
 	}
+	jobs := make([]DicomJobResult, 0)
+	err = s.db.QuerySlice(ctx, &jobs, sql, args...)
+	return jobs, err
+}
 
-	return jobs, nil
+// GetJobsByCreator возвращает задачи файлов пользователя.
+func (s *Storage) GetJobsByCreator(ctx context.Context, creatorID int64, offset, limit uint64) ([]DicomJobResult, error) {
+	return s.GetJobs(ctx, JobFilter{CreatorID: &creatorID, Offset: offset, Limit: limit})
+}
+
+// GetJobsByOrganization возвращает задачи файлов организации.
+func (s *Storage) GetJobsByOrganization(ctx context.Context, organizationID int64, offset, limit uint64) ([]DicomJobResult, error) {
+	return s.GetJobs(ctx, JobFilter{OrganizationIDs: []int64{organizationID}, Offset: offset, Limit: limit})
 }
 
 // UpdateJobResultDecision обновляет решение специалиста по результату обработки DICOM-файла в БД.

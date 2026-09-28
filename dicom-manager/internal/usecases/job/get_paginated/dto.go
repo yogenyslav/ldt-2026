@@ -2,17 +2,24 @@ package get_paginated
 
 import (
 	"time"
+
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 )
 
 // GetJobsRequest структура запроса для получения списка задач.
 type GetJobsRequest struct {
-	Offset    uint64
-	Limit     uint64
-	CreatorID int64
+	OrganizationIDs []int64
+	UploadSources   []string
+	Offset          uint64
+	Limit           uint64
+	CreatorID       int64
+	OrganizationID  int64
+	RequesterRole   model.UserRole
 }
 
 // Job структура для хранения информации о задаче.
 type Job struct {
+	UploadSource       string
 	ID                 string
 	DicomFileID        string
 	Status             string

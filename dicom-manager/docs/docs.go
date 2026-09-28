@@ -129,6 +129,159 @@ const docTemplate = `{
                 }
             }
         },
+        "/dicom/upload/orthanc": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dicom"
+                ],
+                "summary": "Зарегистрировать файл из Orthanc",
+                "parameters": [
+                    {
+                        "description": "Метаданные файла в Orthanc",
+                        "name": "file",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/upload_orthanc.UploadIn"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/upload_orthanc.UploadOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/dicom/upload/orthanc/{dicom_id}/process": {
+            "post": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dicom"
+                ],
+                "summary": "Запустить обработку зарегистрированного файла Orthanc",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID экземпляра Orthanc",
+                        "name": "dicom_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "202": {
+                        "description": "Accepted",
+                        "schema": {
+                            "$ref": "#/definitions/upload_orthanc.UploadOut"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/dicom/{dicom_id}": {
+            "get": {
+                "description": "Получить DICOM-файл по его идентификатору, включая метаданные пациента и аппарата, без updated_at.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "dicom"
+                ],
+                "summary": "Получить DICOM-файл",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "DICOM ID",
+                        "name": "dicom_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "DICOM-файл успешно получен.",
+                        "schema": {
+                            "$ref": "#/definitions/internal_api_dicom_get_by_id.GetByIDOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректный запрос.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "DICOM-файл не найден.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
         "/dicom/{dicom_id}/image": {
             "get": {
                 "description": "Получить изображение DICOM по его идентификатору. Можно указать флаг raw, чтобы получить байты изображения вместо base64.",
@@ -193,7 +346,7 @@ const docTemplate = `{
         },
         "/dicom/{dicom_id}/jobs": {
             "get": {
-                "description": "Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору.",
+                "description": "Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору. Каждая задача содержит upload_source; при несовпадении фильтров возвращается пустой список.",
                 "produces": [
                     "application/json"
                 ],
@@ -208,6 +361,31 @@ const docTemplate = `{
                         "name": "dicom_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ID организаций через запятую",
+                        "name": "organization_ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "manual",
+                                "orthanc"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Источники загрузки DICOM через запятую",
+                        "name": "upload_source",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -215,6 +393,12 @@ const docTemplate = `{
                         "description": "Список задач",
                         "schema": {
                             "$ref": "#/definitions/get_by_dicom_id.GetByDicomIDOut"
+                        }
+                    },
+                    "400": {
+                        "description": "Некорректные фильтры.",
+                        "schema": {
+                            "type": "string"
                         }
                     },
                     "401": {
@@ -246,7 +430,7 @@ const docTemplate = `{
         },
         "/job/info": {
             "get": {
-                "description": "Получить информацию о задачах на обработку DICOM-файлов по их ID с пагинацией",
+                "description": "Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка через UI, orthanc — поступление из Orthanc.",
                 "consumes": [
                     "application/json"
                 ],
@@ -268,6 +452,31 @@ const docTemplate = `{
                         "type": "integer",
                         "description": "Limit для пагинации (по умолчанию 10)",
                         "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ID организаций через запятую",
+                        "name": "organization_ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "manual",
+                                "orthanc"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Источники загрузки DICOM через запятую",
+                        "name": "upload_source",
                         "in": "query"
                     }
                 ],
@@ -295,7 +504,7 @@ const docTemplate = `{
         },
         "/job/info/{job_id}": {
             "get": {
-                "description": "Получить информацию о задаче на обработку DICOM-файла по ID",
+                "description": "Получить задачу по ID вместе с upload_source. При несовпадении organization_ids или upload_source возвращается 404.",
                 "consumes": [
                     "application/json"
                 ],
@@ -313,6 +522,31 @@ const docTemplate = `{
                         "name": "job_id",
                         "in": "path",
                         "required": true
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "type": "integer",
+                            "format": "int64"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "ID организаций через запятую",
+                        "name": "organization_ids",
+                        "in": "query"
+                    },
+                    {
+                        "type": "array",
+                        "items": {
+                            "enum": [
+                                "manual",
+                                "orthanc"
+                            ],
+                            "type": "string"
+                        },
+                        "collectionFormat": "csv",
+                        "description": "Источники загрузки DICOM через запятую",
+                        "name": "upload_source",
+                        "in": "query"
                     }
                 ],
                 "responses": {
@@ -388,6 +622,44 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "Задачи не найдены.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/organization": {
+            "get": {
+                "description": "Возвращает все организации, отсортированные по ID. Доступно только администратору.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "organization"
+                ],
+                "summary": "Получить все организации.",
+                "responses": {
+                    "200": {
+                        "description": "Список организаций.",
+                        "schema": {
+                            "$ref": "#/definitions/get_all.GetAllOut"
+                        }
+                    },
+                    "401": {
+                        "description": "Требуется авторизация.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещен.",
                         "schema": {
                             "type": "string"
                         }
@@ -815,6 +1087,17 @@ const docTemplate = `{
                 }
             }
         },
+        "get_all.GetAllOut": {
+            "type": "object",
+            "properties": {
+                "organizations": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/internal_api_organization_get_all.Organization"
+                    }
+                }
+            }
+        },
         "get_by_dicom_id.GetByDicomIDOut": {
             "type": "object",
             "properties": {
@@ -888,6 +1171,60 @@ const docTemplate = `{
                 }
             }
         },
+        "internal_api_dicom_get_by_id.GetByIDOut": {
+            "type": "object",
+            "properties": {
+                "created_at": {
+                    "type": "string"
+                },
+                "creator_id": {
+                    "type": "integer"
+                },
+                "device_model": {
+                    "type": "string"
+                },
+                "dicom_image_uid": {
+                    "description": "Внутреннее поле из DICOM файла.",
+                    "type": "string"
+                },
+                "dicom_series_uid": {
+                    "description": "Внутреннее поле из DICOM файла.",
+                    "type": "string"
+                },
+                "dicom_study_uid": {
+                    "description": "Внутреннее поле из DICOM файла.",
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "organization_id": {
+                    "type": "integer"
+                },
+                "patient_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "description": "Поле из Orthanc.",
+                    "type": "string"
+                },
+                "study_id": {
+                    "description": "Поле из Orthanc.",
+                    "type": "string"
+                },
+                "upload_source": {
+                    "type": "string",
+                    "enum": [
+                        "unknown",
+                        "manual",
+                        "orthanc"
+                    ]
+                }
+            }
+        },
         "internal_api_job_get_by_id.GetByIDOut": {
             "type": "object",
             "properties": {
@@ -898,6 +1235,17 @@ const docTemplate = `{
                             "$ref": "#/definitions/model.JobInfo"
                         }
                     ]
+                }
+            }
+        },
+        "internal_api_organization_get_all.Organization": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "integer"
+                },
+                "name": {
+                    "type": "string"
                 }
             }
         },
@@ -1073,6 +1421,14 @@ const docTemplate = `{
                 "updated_at": {
                     "type": "string"
                 },
+                "upload_source": {
+                    "type": "string",
+                    "enum": [
+                        "unknown",
+                        "manual",
+                        "orthanc"
+                    ]
+                },
                 "violations": {
                     "description": "Список нарушений, обнаруженных в DICOM-файле.",
                     "type": "array",
@@ -1202,6 +1558,46 @@ const docTemplate = `{
                     "items": {
                         "$ref": "#/definitions/upload_batch.DicomData"
                     }
+                }
+            }
+        },
+        "upload_orthanc.UploadIn": {
+            "type": "object",
+            "properties": {
+                "device_model": {
+                    "type": "string"
+                },
+                "dicom_id": {
+                    "type": "string"
+                },
+                "dicom_image_uid": {
+                    "type": "string"
+                },
+                "dicom_series_uid": {
+                    "type": "string"
+                },
+                "dicom_study_uid": {
+                    "type": "string"
+                },
+                "file_name": {
+                    "type": "string"
+                },
+                "patient_id": {
+                    "type": "string"
+                },
+                "series_id": {
+                    "type": "string"
+                },
+                "study_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "upload_orthanc.UploadOut": {
+            "type": "object",
+            "properties": {
+                "dicom_id": {
+                    "type": "string"
                 }
             }
         }
