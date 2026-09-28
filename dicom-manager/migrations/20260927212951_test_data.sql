@@ -1,19 +1,19 @@
 -- +goose Up
 -- Демонстрационные данные. Пароль всех пользователей: test123456.
 insert into organization (id, name)
-values (-272901, 'Тестовый диагностический центр'),
-       (-272902, 'Тестовая городская поликлиника');
+values (12345, 'Тестовый диагностический центр'),
+       (12346, 'Тестовая городская поликлиника');
 
 insert into "user" (id, organization_id, full_name, email, password_hash, role)
-values (-272901, -272901, 'Тестовый администратор центра', 'admin.center@example.test',
+values (12345, 12345, 'Тестовый администратор центра', 'admin.center@example.test',
         '$2a$10$gTLPIjZlg7.gRSbazk5mEOzWvaOJAEg/w9cfV5pbLaNFI7B.lIX8q', 'admin'),
-       (-272902, -272901, 'Тестовый лаборант центра', 'specialist.center@example.test',
+       (12346, 12345, 'Тестовый лаборант центра', 'specialist.center@example.test',
         '$2a$10$gTLPIjZlg7.gRSbazk5mEOzWvaOJAEg/w9cfV5pbLaNFI7B.lIX8q', 'specialist'),
-       (-272903, -272902, 'Тестовый администратор поликлиники', 'admin.clinic@example.test',
+       (12347, 12346, 'Тестовый администратор поликлиники', 'admin.clinic@example.test',
         '$2a$10$gTLPIjZlg7.gRSbazk5mEOzWvaOJAEg/w9cfV5pbLaNFI7B.lIX8q', 'admin'),
-       (-272904, -272902, 'Тестовый лаборант поликлиники', 'specialist.clinic@example.test',
+       (12348, 12346, 'Тестовый лаборант поликлиники', 'specialist.clinic@example.test',
         '$2a$10$gTLPIjZlg7.gRSbazk5mEOzWvaOJAEg/w9cfV5pbLaNFI7B.lIX8q', 'specialist');
 
 -- +goose Down
-delete from "user" where id in (-272901, -272902, -272903, -272904);
-delete from organization where id in (-272901, -272902);
+delete from "user" where id in (12345, 12345, 12346, 12347);
+delete from organization where id in (12345, 12345);
