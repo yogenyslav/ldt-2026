@@ -112,7 +112,7 @@ run-ui:
 	@docker compose -f docker/ui-compose.yaml --env-file .env up -d
 
 .PHONY: run-ui-build
-run-ui:
+run-ui-build:
 	@echo "running ui service"
 	@docker compose -f docker/ui-compose.yaml --env-file .env up -d --build
 
