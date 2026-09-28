@@ -92,7 +92,7 @@ const TuneWidget = () => {
 
       <Card className="mb-4.5" mark>
         <CardBody className="pt-4.5">
-          <div className="mb-4.5 text-[16px] font-semibold">
+          <div className="mb-7 text-[16px] font-semibold">
             На сколько миллиметров малый вертел выступает за край кости
           </div>
 
@@ -159,7 +159,7 @@ const TuneWidget = () => {
       </Card>
 
       {frames.length ? (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(190px,1fr))] gap-3.5">
+        <div className="grid grid-cols-4 gap-3.5">
           {frames.map((frame) => (
             <ScanTile
               key={frame.jobId}

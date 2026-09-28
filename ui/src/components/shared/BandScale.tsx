@@ -70,7 +70,7 @@ const BandScale = ({
       aria-label={`${tone === 'centre' ? 'центр нормы' : 'граница'} ${label(value, step)} ${unit}`}
       className={cn(
         'absolute -ml-3.5 w-7 cursor-ew-resize touch-none border-0 bg-transparent p-0',
-        tone === 'centre' ? 'centre-grip top-2.5 h-12' : 'grip -top-[7px] h-15',
+        tone === 'centre' ? 'centre-grip top-[46px] h-4' : 'grip -top-[7px] h-15',
       )}
       style={{ left: `${at(value)}%` }}
       onPointerDown={(event) => {
@@ -94,7 +94,7 @@ const BandScale = ({
         className={cn(
           'absolute left-1/2 -translate-x-1/2 rounded-[6px] border-[1.5px] bg-surface px-[7px] text-[12.5px] font-normal',
           tone === 'centre'
-            ? 'top-[52px] border-ink-2 text-ink-2'
+            ? 'top-[16px] border-ink-2 text-ink-2'
             : 'bottom-[-8px] border-brand text-brand-700',
         )}
       >
