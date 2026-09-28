@@ -10,6 +10,7 @@ from .types import Criterion
 
 import hip_roi_margins as hm          # vendor
 import lesser_trochanter_math as lt   # vendor
+from . import implant_trochanter as impl_lt   # снаружи vendor: другой метод только для протеза-«глыбы» (branch="implant")
 
 KP_MIN_CONF = 0.5
 
@@ -56,6 +57,31 @@ def margins_criterion(img: np.ndarray, side: str, found: dict) -> Criterion:
                      details={"top_cm": top, "bottom_cm": bottom, "side_cm": sidecm, "implant": bool(m.implant)}, note=m.note)
 
 
+def _exact_region(meas, shape):
+    """Копия lt.bump_region БЕЗ отступа на прорисовку (REGION_ADD_PX): ширина области на строке пика в точности равна value (в px = ex[peak]), контур и расстояние совпадают буквально."""
+    R = np.zeros(shape, bool)
+    res = meas.get("res")
+    if res is None or meas.get("peak_y") is None:
+        return R
+    ys = np.asarray(res["ys"]).astype(int); ex = np.clip(res["ex"], 0, None); edge = res["edge"]
+    i = int(np.argmin(np.abs(ys - meas["peak_y"])))
+    pk = ex[i]
+    if pk <= 0:
+        return R
+    t = i
+    while t > 0 and ex[t - 1] >= lt.REGION_FRAC * pk:
+        t -= 1
+    u = i
+    while u < len(ys) - 1 and ex[u + 1] >= lt.REGION_FRAC * pk:
+        u += 1
+    t, u = max(t, i - lt.REGION_MAX_HALF_ROWS), min(u, i + lt.REGION_MAX_HALF_ROWS)
+    for k in range(max(t - lt.REGION_PAD_ROWS, 0), min(u + lt.REGION_PAD_ROWS, len(ys) - 1) + 1):
+        x0 = max(int(round(edge[k])), 0)
+        x1 = max(int(round(edge[k] + ex[k] * lt.REGION_MULT)), 0)          # без + REGION_ADD_PX
+        R[ys[k], x0:x1 + 1] = True
+    return R
+
+
 def trochanter_criterion(img: np.ndarray, side: str, kp: Criterion, found: dict, settings: dict | None = None) -> Criterion:
     """Малый вертел: расстояние (мм), область, признак импланта и вердикт (ok + цвет). Внутреннюю логику наружу не отдаём."""
     if kp.ok == 0:                                        # модель точек есть, три точки не найдены: ротацию не меряем (0: снимок непригоден)
@@ -65,11 +91,30 @@ def trochanter_criterion(img: np.ndarray, side: str, kp: Criterion, found: dict,
     meas = lt.measure_ridge(canon, neck_y=neck_y)
     if not meas["ok"]:
         return Criterion("lesser_trochanter", None, source="math", note=meas.get("reason") or "бугор не измерен", details={"status": "не измерен", "implant": bool(meas["implant"])})
-    d = 0.0 if not meas["has_peak"] else float(meas["dist_mm"])
+
+    if meas["implant"]:   # любой протез (и «глыба», и стержень) — метод по силуэту кости, без яркости/металла (проверено: совпадает с экспертом на всех 3)
+        # протез: гребень белого (или подставная прямая) цепляется за сам металл — метод по силуэту кости (qc/implant_trochanter.py), без обращения к яркости
+        bone_mask = lt.bone_mask(canon)
+        impl_res = impl_lt.measure(canon, bone_mask, neck_y)
+        if impl_res is None:
+            return Criterion("lesser_trochanter", None, source="math", note="бугор не измерен (протез)", details={"status": "не измерен", "implant": True})
+        region_mask = impl_lt.region(impl_res, canon.shape)
+        peak_y = impl_res["peak"]
+    else:
+        region_mask = _exact_region(meas, canon.shape)                             # область БЕЗ отступа на прорисовку — ширина = ровно value, всегда
+        peak_y = meas.get("peak_y")
+
+    pts = {}
+    if peak_y is not None and region_mask[peak_y].any():
+        xs = np.nonzero(region_mask[peak_y])[0]
+        w = canon.shape[1]
+        pts = {"near": [_px(float(xs.min()), w, flipped), float(peak_y)], "far": [_px(float(xs.max()), w, flipped), float(peak_y)]}
+    d = float(np.hypot(pts["near"][0] - pts["far"][0], pts["near"][1] - pts["far"][1]) * lt.MM_X) if pts else 0.0   # расстояние строго между точками контура
+
     s = settings or DEFAULTS
     st = lt.distance_status(d, center=s["trochanter_center_mm"], tol=s["trochanter_tol_percent"] / 100.0, yellow=s["trochanter_yellow_percent"] / 100.0)
-    ok = int(st["status"] != "плохой")                         # норма и «проверить» (жёлтый) — не нарушение: красных 35% при экспертной доле брака ротации ~30%, с жёлтыми было бы 63%
-    return Criterion("lesser_trochanter", ok, "math", d, "mm", regions=_contours(lt.bump_region(meas, canon.shape), flipped), details={"status": st["status"], "implant": bool(meas["implant"])})
+    ok, status = int(st["status"] != "плохой"), st["status"]      # норма и «проверить» (жёлтый) — не нарушение: красных 35% при экспертной доле брака ротации ~30%, с жёлтыми было бы 63%
+    return Criterion("lesser_trochanter", ok, "math", d, "mm", points=pts, regions=_contours(region_mask, flipped), details={"status": status, "implant": bool(meas["implant"])})
 
 
 def analyze_hip(img: np.ndarray, side: str, hub: ModelHub, settings: dict | None = None) -> list[Criterion]:
