@@ -10,6 +10,8 @@ import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
 import { useStartTraining, useSwitchVersions, useTraining } from '@/hooks/useAnnotation'
 import { useJobs } from '@/hooks/useJobs'
+import Modal from '@/components/ui/modal'
+import { TRAINING_LOCKED } from '@/config'
 import { MODEL_NAME } from '@/constants'
 import { modelsOf } from '@/lib/settings'
 import { delta } from '@/lib/tune'
@@ -38,6 +40,7 @@ const TrainWidget = () => {
   const start = useStartTraining()
   const change = useSwitchVersions()
   const { toast } = useToast()
+  const [locked, setLocked] = useState(false)
   const navigate = useNavigate()
 
   const models = modelsOf(jobs)
@@ -57,6 +60,19 @@ const TrainWidget = () => {
 
   return (
     <>
+      <Modal open={locked} title="Действие недоступно" onClose={() => setLocked(false)}>
+        <div className="flex flex-col gap-4 p-5">
+          <p className="m-0 base-regular">
+            На тестовом стенде отключена возможность дообучать и заменять модели, чтобы не сбивать
+            калибровку моделей.
+          </p>
+          <div>
+            <Button variant="primary" onClick={() => setLocked(false)}>
+              Понятно
+            </Button>
+          </div>
+        </div>
+      </Modal>
       <WorkHead
         title="Дообучение модели"
         sub="каждая модель обучается и обновляется отдельно"
@@ -145,6 +161,7 @@ const TrainWidget = () => {
             variant="primary"
             disabled={!toTrain.length || start.isPending}
             onClick={async () => {
+              if (TRAINING_LOCKED) return setLocked(true)
               await start.mutateAsync(toTrain)
               setTrainPick({})
               toast({ title: 'Дообучение запущено' })
@@ -244,6 +261,7 @@ const TrainWidget = () => {
                 variant="primary"
                 disabled={!toSwitch.length || change.isPending}
                 onClick={async () => {
+                  if (TRAINING_LOCKED) return setLocked(true)
                   await change.mutateAsync(toSwitch)
                   setVersionPick({})
                   toast({ title: 'Модель переведена на новую версию' })

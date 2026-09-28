@@ -13,14 +13,28 @@ export function nm(value: number | null | undefined, digits = 1) {
   return value.toFixed(digits).replace('.', ',').replace('-', '\u2212')
 }
 
+const MSK_OFFSET_MS = 3 * 3600 * 1000
+
+/* The backend sends UTC; people read Moscow time (UTC+3). A stamp with no zone
+   is a local one written by the browser itself (the station journal) and is
+   shown as is. Returns 'YYYY-MM-DDTHH:MM'. */
+function mskStamp(iso: string) {
+  if (!/(Z|[+-]\d{2}:?\d{2})$/.test(iso)) return iso.slice(0, 16)
+  return new Date(Date.parse(iso) + MSK_OFFSET_MS).toISOString().slice(0, 16)
+}
+
 export function timeOf(iso: string) {
-  return iso.slice(11, 16)
+  return mskStamp(iso).slice(11, 16)
+}
+
+/* Calendar day in Moscow time; without an argument — today. */
+export function dayOf(iso?: string) {
+  return mskStamp(iso ?? new Date().toISOString()).slice(0, 10)
 }
 
 export function whenOf(iso: string) {
-  const today = new Date().toISOString().slice(0, 10)
-  const day = iso.slice(0, 10)
-  if (day === today) return `сегодня, ${timeOf(iso)}`
+  const day = dayOf(iso)
+  if (day === dayOf()) return `сегодня, ${timeOf(iso)}`
   const [, month, date] = day.split('-')
   return `${date}.${month}, ${timeOf(iso)}`
 }

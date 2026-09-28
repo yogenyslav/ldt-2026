@@ -52,7 +52,7 @@ const useClock = () => {
    do know: when the last scan arrived. */
 const Intake = () => {
   const { cabinet } = useCabinet()
-  const { data: jobs } = useLatestJobs(cabinet.intake === 'device')
+  const { data: jobs } = useLatestJobs(cabinet.intake === 'device', cabinet.intake)
 
   if (cabinet.intake === 'upload') {
     return (

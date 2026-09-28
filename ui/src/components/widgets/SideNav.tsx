@@ -24,18 +24,16 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
 }
 
 interface SideNavProps {
-  queueCount?: number
   markupCount?: number
   todayCount?: number
 }
 
 /* Which links carry a count, and where it comes from. */
-const COUNTED: Record<string, 'queue' | 'markup'> = {
-  '/': 'queue',
+const COUNTED: Record<string, 'markup'> = {
   '/markup': 'markup',
 }
 
-const SideNav = ({ queueCount, markupCount, todayCount }: SideNavProps) => {
+const SideNav = ({ markupCount, todayCount }: SideNavProps) => {
   return (
     <aside className="flex flex-col border-r border-line bg-surface">
       <nav className="flex flex-col gap-0.5 p-3">
@@ -60,12 +58,7 @@ const SideNav = ({ queueCount, markupCount, todayCount }: SideNavProps) => {
                   }
                 >
                   {({ isActive }) => {
-                    const count =
-                      COUNTED[item.route] === 'queue'
-                        ? queueCount
-                        : COUNTED[item.route] === 'markup'
-                          ? markupCount
-                          : undefined
+                    const count = COUNTED[item.route] === 'markup' ? markupCount : undefined
 
                     return (
                     <>

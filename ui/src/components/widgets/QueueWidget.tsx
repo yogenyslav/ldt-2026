@@ -9,15 +9,20 @@ import Loader from '@/components/shared/Loader'
 import VerdictBadge from '@/components/shared/VerdictBadge'
 import ZoneChip from '@/components/shared/ZoneChip'
 import { useToast } from '@/components/ui/toast'
+import { QUEUE_POLL_INTERVAL } from '@/config'
 import { useDecideJob, useJobs } from '@/hooks/useJobs'
+import { useEnrichedJobs } from '@/hooks/useDicomInfo'
+import { useOrgId } from '@/hooks/useUser'
+import { useOrganizations, useOrgNames } from '@/hooks/useOrganizations'
 import { useGenerateReport } from '@/hooks/useReports'
 import { cn, plural, whenOf } from '@/lib/utils'
 import { groupByStudy, studyVerdict, verdictOf } from '@/lib/verdict'
 import type { Decision, IJobInfo, VerdictKind } from '@/types'
 
-const COLUMNS = 'grid grid-cols-[44px_128px_146px_1fr_236px_116px_24px] items-center gap-3.5'
+const COLUMNS = 'grid grid-cols-[44px_128px_170px_146px_1fr_236px_116px_24px] items-center gap-3.5'
 
 interface IFilters {
+  org: string
   region: string
   verdict: string
   decision: string
@@ -25,20 +30,44 @@ interface IFilters {
 }
 
 const QueueWidget = () => {
-  const { data: jobs, isLoading } = useJobs()
-  const decide = useDecideJob()
-  const generate = useGenerateReport()
-  const { toast } = useToast()
-  const navigate = useNavigate()
-
   const [filters, setFilters] = useState<IFilters>({
+    org: '',
     region: '',
     verdict: '',
     decision: '',
     query: '',
   })
+  /* the organisation filter is a query parameter of /job/info: without it an
+     admin gets the jobs of their own organisation only */
+  const { data: rawJobs, isLoading } = useJobs(50, 0, QUEUE_POLL_INTERVAL, {
+    organizationIds: filters.org ? [Number(filters.org)] : undefined,
+  })
+  const { jobs, dicoms } = useEnrichedJobs(rawJobs)
+  const decide = useDecideJob()
+  const generate = useGenerateReport()
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
   const [picked, setPicked] = useState<Record<string, boolean>>({})
   const [limit, setLimit] = useState(8)
+
+  /* Every organisation of the centre comes from the list endpoint; until it
+     answers (or where it does not exist) fall back to the ones seen so far. */
+  const { data: orgList } = useOrganizations()
+  const ownOrg = useOrgId()
+  const orgIds = useMemo(() => {
+    if (orgList?.length) return orgList.map((org) => org.id)
+    const ids = new Set<number>(ownOrg ? [ownOrg] : [])
+    Object.values(dicoms).forEach((dicom) => dicom?.organization_id && ids.add(dicom.organization_id))
+    if (filters.org) ids.add(Number(filters.org))
+    return [...ids]
+  }, [orgList, dicoms, ownOrg, filters.org])
+  const fetchedNames = useOrgNames(orgList?.length ? [] : orgIds)
+  const orgNames: Record<number, string> = {
+    ...fetchedNames,
+    ...Object.fromEntries((orgList ?? []).map((org) => [org.id, org.name])),
+  }
+  const orgLabel = (id?: number | null) => (id ? (orgNames[id] ?? `Организация № ${id}`) : '—')
 
   const visible = useMemo(() => {
     return (jobs ?? []).filter((job) => {
@@ -118,6 +147,11 @@ const QueueWidget = () => {
 
       <div className="mb-4.5 flex flex-wrap items-center gap-2.5">
         <Select
+          value={filters.org}
+          onChange={(org) => setFilters({ ...filters, org })}
+          options={[['', 'Все организации'], ...orgIds.map((id): [string, string] => [String(id), orgLabel(id)])]}
+        />
+        <Select
           value={filters.region}
           onChange={(region) => setFilters({ ...filters, region })}
           options={[
@@ -188,6 +222,7 @@ const QueueWidget = () => {
       <div className={cn(COLUMNS, 'px-5 pb-2 text-[13.5px] text-muted')}>
         <span />
         <span>Поступило</span>
+        <span>Организация</span>
         <span>Пациент</span>
         <span>Зоны исследования</span>
         <span>Вердикт</span>
@@ -236,6 +271,8 @@ const QueueWidget = () => {
                 <div className="tabular small-regular whitespace-nowrap text-ink-2">
                   {whenOf(study.created_at)}
                 </div>
+
+                <div className="small-regular text-ink-2">{orgLabel(dicoms[study.jobs[0].dicom_id]?.organization_id)}</div>
 
                 <div className="base-semibold">
                   {study.patient_ref ?? '—'}

@@ -3,7 +3,7 @@ import { BarChart3 } from 'lucide-react'
 import Card, { CardBody, CardHead } from '@/components/ui/card'
 import { useJobs } from '@/hooks/useJobs'
 import { criteriaRows } from '@/lib/criteria'
-import { nm, plural } from '@/lib/utils'
+import { dayOf, nm, plural } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 import type { IJobInfo } from '@/types'
 
@@ -59,9 +59,9 @@ function summarise(jobs: IJobInfo[]) {
 const StatsCard = () => {
   const { data: jobs } = useJobs(200)
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = dayOf()
   const stats = useMemo(
-    () => summarise((jobs ?? []).filter((job) => job.created_at.startsWith(today))),
+    () => summarise((jobs ?? []).filter((job) => dayOf(job.created_at) === today)),
     [jobs, today],
   )
 
