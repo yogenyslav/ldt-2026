@@ -8,6 +8,7 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/model"
+	user_model "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_paginated"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
@@ -57,9 +58,11 @@ func (h *Handler) GetPaginated(c fiber.Ctx) error {
 
 	jobs, err := h.uc.GetPaginated(
 		c.Context(), get_paginated.GetJobsRequest{
-			CreatorID: claims.UserID,
-			Offset:    offset,
-			Limit:     limit,
+			CreatorID:      claims.UserID,
+			OrganizationID: claims.OrganizationID,
+			RequesterRole:  user_model.UserRole(claims.Role),
+			Offset:         offset,
+			Limit:          limit,
 		},
 	)
 	if err != nil {

@@ -82,7 +82,7 @@ func (jobStub) GetByID(_ context.Context, in jobuc.GetJobRequest) (jobuc.Job, er
 type jobsStub struct{}
 
 func (jobsStub) GetPaginated(_ context.Context, in jobsuc.GetJobsRequest) ([]jobsuc.Job, error) {
-	if in.CreatorID != 42 || in.Offset != 2 || in.Limit != 3 {
+	if in.CreatorID != 42 || in.OrganizationID != 218 || in.RequesterRole != "specialist" || in.Offset != 2 || in.Limit != 3 {
 		return nil, fmt.Errorf("wrong pagination or creator: %+v", in)
 	}
 	return []jobsuc.Job{{ID: "failed", Status: "failed", Metadata: []byte(`{"error":"analysis failed"}`)}}, nil

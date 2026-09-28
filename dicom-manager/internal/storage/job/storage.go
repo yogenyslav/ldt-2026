@@ -76,6 +76,26 @@ func (s *Storage) GetJobsByCreator(
 	return jobs, nil
 }
 
+// GetJobsByOrganization возвращает задачи всех файлов организации, включая поступившие из Orthanc.
+func (s *Storage) GetJobsByOrganization(
+	ctx context.Context, organizationID int64, offset, limit uint64,
+) ([]DicomJobResult, error) {
+	const query = `select
+		job_id, dicom_file_id, job_status, anatomical_region,
+		confidence, violations, duration_ms, metadata, specialist_decision,
+		specialist_id, comment, created_at, updated_at
+		from dicom_job_result
+		where dicom_file_id in (select id from dicom_file where organization_id = $1)
+		order by created_at desc, job_id desc
+		offset $2 limit $3;`
+
+	var jobs []DicomJobResult
+	if err := s.db.QuerySlice(ctx, &jobs, query, organizationID, offset, limit); err != nil {
+		return nil, err
+	}
+	return jobs, nil
+}
+
 // UpdateJobResultDecision обновляет решение специалиста по результату обработки DICOM-файла в БД.
 func (s *Storage) UpdateJobResultDecision(ctx context.Context, data UpdateDecisionData) (rowsUpdated int64, err error) {
 	baseQuery := sq.Update("dicom_job_result").
