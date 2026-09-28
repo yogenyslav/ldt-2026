@@ -10,7 +10,13 @@
   "RemoteAccessAllowed": true,
   "AuthenticationEnabled": true,
   "RegisteredUsers": {
-    "dicom-orthanc": "${ORTHANC_PASSWORD}"
+    "dicom-orthanc": "${ORTHANC_PASSWORD}",
+    "dicom-manager": "${ORTHANC_PASSWORD}"
+  },
+  "Autoroute": {
+    "ManagerUrl": "${ORTHANC_AUTOROUTE_MANAGER_URL}",
+    "Email": "${ORTHANC_AUTOROUTE_EMAIL}",
+    "Password": "${ORTHANC_AUTOROUTE_PASSWORD}"
   },
   "LuaScripts": [
     "/etc/orthanc/autoroute.lua"

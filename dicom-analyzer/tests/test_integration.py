@@ -9,6 +9,7 @@ import unittest
 from unittest.mock import Mock, patch
 
 from service import DURABLE, REQUESTED, STREAM, run
+from observability import Observability
 from test_service import request, result
 
 
@@ -30,7 +31,8 @@ class NatsIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 patch.dict(sys.modules, {"main": types.SimpleNamespace(QCService=Mock(return_value=qc))}), \
                 patch.object(loop, "add_signal_handler", side_effect=lambda sig, callback: stops.append(callback)), \
                 patch("service.urlopen", side_effect=lambda *a, **kw: io.BytesIO(b"DICOM")):
-            task = asyncio.create_task(run())
+            obs = Observability()
+            task = asyncio.create_task(run(obs))
             try:
                 for _ in range(100):
                     if task.done():
@@ -59,6 +61,9 @@ class NatsIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 # Allow the service to finish its request ACK and stop via its signal callback.
                 stops[0]()
                 await asyncio.wait_for(task, timeout=5)
+                self.assertEqual(obs.registry.get_sample_value("dicom_analyzer_messaging_total", {"operation": "publish", "outcome": "ok"}), 2)
+                self.assertEqual(obs.registry.get_sample_value("dicom_analyzer_messaging_total", {"operation": "ack", "outcome": "ok"}), 2)
+                self.assertEqual(obs.registry.get_sample_value("dicom_analyzer_consumer_ready"), 0)
                 analyzer = await nats.connect(url, user="dicom-analyzer", password="test")
                 try:
                     info = await analyzer.jetstream().consumer_info(STREAM, DURABLE)

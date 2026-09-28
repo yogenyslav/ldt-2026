@@ -80,7 +80,8 @@ class ContractTests(unittest.TestCase):
 class DeliveryTests(unittest.IsolatedAsyncioTestCase):
     def setUp(self):
         self.message = Mock(data=json.dumps(request()).encode(), ack_sync=AsyncMock(),
-                            nak=AsyncMock(), term=AsyncMock(), in_progress=AsyncMock())
+                            nak=AsyncMock(), term=AsyncMock(), in_progress=AsyncMock(),
+                            headers={}, metadata=Mock(num_delivered=1))
         self.js = Mock(publish=AsyncMock())
         self.analyzer = Mock(process=Mock(return_value=result()))
 
