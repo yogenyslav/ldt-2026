@@ -10,14 +10,16 @@ import VerdictBadge from '@/components/shared/VerdictBadge'
 import ZoneChip from '@/components/shared/ZoneChip'
 import { useToast } from '@/components/ui/toast'
 import { useDecideJob, useJobs } from '@/hooks/useJobs'
+import { useOrgNames } from '@/hooks/useOrganizations'
 import { useGenerateReport } from '@/hooks/useReports'
 import { cn, plural, whenOf } from '@/lib/utils'
 import { groupByStudy, studyVerdict, verdictOf } from '@/lib/verdict'
 import type { Decision, IJobInfo, VerdictKind } from '@/types'
 
-const COLUMNS = 'grid grid-cols-[44px_128px_146px_1fr_236px_116px_24px] items-center gap-3.5'
+const COLUMNS = 'grid grid-cols-[44px_128px_170px_146px_1fr_236px_116px_24px] items-center gap-3.5'
 
 interface IFilters {
+  org: string
   region: string
   verdict: string
   decision: string
@@ -32,6 +34,7 @@ const QueueWidget = () => {
   const navigate = useNavigate()
 
   const [filters, setFilters] = useState<IFilters>({
+    org: '',
     region: '',
     verdict: '',
     decision: '',
@@ -40,9 +43,17 @@ const QueueWidget = () => {
   const [picked, setPicked] = useState<Record<string, boolean>>({})
   const [limit, setLimit] = useState(8)
 
+  const orgIds = useMemo(
+    () => [...new Set((jobs ?? []).map((job) => job.organization_id).filter((id): id is number => !!id))],
+    [jobs],
+  )
+  const orgNames = useOrgNames(orgIds)
+  const orgLabel = (id?: number | null) => (id ? (orgNames[id] ?? `Организация № ${id}`) : '—')
+
   const visible = useMemo(() => {
     return (jobs ?? []).filter((job) => {
       const level = verdictOf(job)
+      if (filters.org && String(job.organization_id ?? '') !== filters.org) return false
       if (filters.region && job.anatomical_region !== filters.region) return false
       if (filters.verdict && level !== filters.verdict) return false
       if (filters.decision === '_none' && job.specialist_decision) return false
@@ -118,6 +129,11 @@ const QueueWidget = () => {
 
       <div className="mb-4.5 flex flex-wrap items-center gap-2.5">
         <Select
+          value={filters.org}
+          onChange={(org) => setFilters({ ...filters, org })}
+          options={[['', 'Все организации'], ...orgIds.map((id): [string, string] => [String(id), orgLabel(id)])]}
+        />
+        <Select
           value={filters.region}
           onChange={(region) => setFilters({ ...filters, region })}
           options={[
@@ -188,6 +204,7 @@ const QueueWidget = () => {
       <div className={cn(COLUMNS, 'px-5 pb-2 text-[13.5px] text-muted')}>
         <span />
         <span>Поступило</span>
+        <span>Организация</span>
         <span>Пациент</span>
         <span>Зоны исследования</span>
         <span>Вердикт</span>
@@ -236,6 +253,8 @@ const QueueWidget = () => {
                 <div className="tabular small-regular whitespace-nowrap text-ink-2">
                   {whenOf(study.created_at)}
                 </div>
+
+                <div className="small-regular text-ink-2">{orgLabel(study.jobs[0].organization_id)}</div>
 
                 <div className="base-semibold">
                   {study.patient_ref ?? '—'}

@@ -15,6 +15,7 @@ import Viewer from '@/components/shared/Viewer'
 import { useToast } from '@/components/ui/toast'
 import { DECISION, REGION, STATUS } from '@/constants'
 import { useDecideJob, useJob, useJobs } from '@/hooks/useJobs'
+import { useUserName } from '@/hooks/useUser'
 import { nm, whenOf } from '@/lib/utils'
 import { groupByStudy, verdictOf } from '@/lib/verdict'
 import type { Decision, IJobInfo } from '@/types'
@@ -43,23 +44,34 @@ const DecisionBlock = ({ job }: { job: IJobInfo }) => {
   const decide = useDecideJob()
   const { toast } = useToast()
   const [comment, setComment] = useState('')
+  const [editing, setEditing] = useState(false)
+  const { data: authorName } = useUserName(job.specialist_id)
+  const author = job.specialist_name || authorName
 
-  if (job.specialist_decision) {
+  if (job.specialist_decision && !editing) {
     const level =
       job.specialist_decision === 'rejected' ? 'bad' : job.specialist_decision === 'force_approved' ? 'warn' : 'ok'
     return (
-      <>
+      <div className="flex flex-col gap-3">
         <div className="flex items-start gap-3 rounded-soft border border-line bg-surface-2 px-4 py-3.5">
           <StateIcon level={level} />
           <div>
             <div className="base-semibold">{DECISION[job.specialist_decision]}</div>
-            <div className="mt-0.5 small-regular text-muted">{job.specialist_name}</div>
             {job.comment ? (
               <div className="mt-2 border-l-2 border-line-2 pl-3 small-regular text-ink-2">{job.comment}</div>
             ) : null}
+            {author ? <div className="mt-2 small-regular text-muted">— {author}</div> : null}
           </div>
         </div>
-      </>
+        <Button
+          onClick={() => {
+            setComment(job.comment ?? '')
+            setEditing(true)
+          }}
+        >
+          Изменить решение
+        </Button>
+      </div>
     )
   }
 
@@ -70,6 +82,7 @@ const DecisionBlock = ({ job }: { job: IJobInfo }) => {
   const apply = async (decision: Decision) => {
     await decide.mutateAsync({ jobIds: [job.id], decision, comment })
     setComment('')
+    setEditing(false)
     toast({ title: DECISION[decision], variant: decision === 'rejected' ? 'destructive' : 'default' })
   }
 
@@ -96,6 +109,11 @@ const DecisionBlock = ({ job }: { job: IJobInfo }) => {
         <Button className="col-span-2" onClick={() => apply('force_approved')}>
           Принять вопреки рекомендации
         </Button>
+        {job.specialist_decision ? (
+          <Button variant="quiet" className="col-span-2" onClick={() => setEditing(false)}>
+            Отмена
+          </Button>
+        ) : null}
       </div>
     </div>
   )
@@ -138,8 +156,13 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
         <h1 className="h1-bold">{job.anatomical_region ? REGION[job.anatomical_region] : 'Исследование'}</h1>
         <VerdictBadge level={level} />
         <span className="flex-1" />
-        <span className="small-regular text-muted">
+        <span className="text-right small-regular text-muted">
           задача <span className="tabular">{job.id}</span>
+          {studyId ? (
+            <span className="block">
+              исследование <span className="tabular">{studyId}</span>
+            </span>
+          ) : null}
         </span>
       </div>
 
@@ -157,8 +180,8 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
         </div>
       ) : null}
 
-      <div className="grid grid-cols-[minmax(360px,1fr)_minmax(470px,560px)] items-start gap-5">
-        <Viewer job={job} className="h-[520px]" />
+      <div className="grid grid-cols-[minmax(360px,1fr)_minmax(470px,560px)] items-stretch gap-5">
+        <Viewer job={job} className="h-full min-h-[520px]" />
 
         <div className="flex flex-col gap-3.5">
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-line bg-line">

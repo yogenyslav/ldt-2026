@@ -60,6 +60,9 @@ export interface IJobInfo {
   violations?: string[]
   duration_ms?: number | null
   metadata?: IJobMetadata
+  /* the organisation that sent the scan — not in the backend DTO yet,
+     see context/backend_requests.md */
+  organization_id?: number | null
   specialist_id?: number | null
   specialist_decision?: Decision | null
   specialist_name?: string
