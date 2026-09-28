@@ -60,7 +60,7 @@ const Picker = ({ current, items, onPick, label, count, dark }: PickerProps) => 
       </button>
 
       {open ? (
-        <div className="absolute top-[calc(100%+6px)] left-0 z-20 max-h-80 min-w-full overflow-auto rounded-panel border border-line bg-surface p-1.5 shadow-menu">
+        <div className="menu-pop absolute top-[calc(100%+6px)] left-0 z-20 max-h-80 min-w-full overflow-auto rounded-panel border border-line bg-surface p-1.5 shadow-menu">
           {items.map((item) => (
             <button
               key={item.id}

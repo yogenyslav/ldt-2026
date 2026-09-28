@@ -90,7 +90,7 @@ const TuneWidget = () => {
         sub={`${frames.length} ${plural(frames.length, 'снимок', 'снимка', 'снимков')} бедра, которые прошли через сервис`}
       />
 
-      <Card className="mb-4.5" mark>
+      <Card className="mt-4 mb-4.5" mark>
         <CardBody className="pt-4.5">
           <div className="mb-7 text-[16px] font-semibold">
             На сколько миллиметров малый вертел выступает за край кости

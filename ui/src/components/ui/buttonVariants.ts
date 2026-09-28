@@ -4,7 +4,7 @@ import { cva } from 'class-variance-authority'
    download has to be a real <a href>, or the browser will not save the file. */
 export const buttonVariants = cva(
   'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-control base-semibold ' +
-    'cursor-pointer transition-colors disabled:pointer-events-none disabled:opacity-45',
+    'cursor-pointer transition duration-150 ease-out active:scale-[0.97] disabled:pointer-events-none disabled:opacity-45 disabled:active:scale-100',
   {
     variants: {
       variant: {

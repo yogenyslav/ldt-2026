@@ -1,9 +1,7 @@
 import { NavLink } from 'react-router-dom'
 import {
-  BarChart3,
   BrainCircuit,
   FileText,
-  FolderClosed,
   HardDrive,
   Inbox,
   Layers,
@@ -22,8 +20,6 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   inbox: Inbox,
   brain: BrainCircuit,
   sliders: SlidersHorizontal,
-  chart: BarChart3,
-  folder: FolderClosed,
   drive: HardDrive,
 }
 
@@ -58,7 +54,7 @@ const SideNav = ({ queueCount, markupCount, todayCount }: SideNavProps) => {
                   end
                   className={({ isActive }) =>
                     cn(
-                      'flex h-11 items-center gap-2.5 rounded-control px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors',
+                      'flex h-11 items-center gap-2.5 rounded-control px-3.5 text-[15px] font-medium whitespace-nowrap transition duration-150 ease-out active:scale-[0.97]',
                       isActive ? 'bg-brand text-white' : 'text-ink hover:bg-hover',
                     )
                   }

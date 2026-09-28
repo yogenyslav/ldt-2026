@@ -42,7 +42,20 @@ export const CRITERIA: Record<string, { name: string; norm: string }> = {
   pelvis_crest: { name: 'Гребни подвздошных костей', norm: 'обе' },
   foreign_objects: { name: 'Посторонние предметы', norm: 'нет' },
   hip_keypoints: { name: 'Ключевые точки бедра', norm: '3 точки' },
+  hip_margins: { name: 'Отступы от края кадра', norm: '≥3 см сверху и снизу, ≥2 см по бокам' },
   lesser_trochanter: { name: 'Ротация бедра', norm: '1,0–4,4 мм' },
+}
+
+/* How a criterion arrives at its verdict — the `source` qc_prototype/dicom-analyzer
+   attaches to every criterion result. Read from the data, never guessed: a
+   criterion the service has not reported yet has no row at all. */
+export const ANALYSIS_METHOD: Record<string, string> = {
+  math: 'Расчёт по геометрии снимка',
+  model: 'Модель',
+  vote: 'Голосование нескольких методов',
+  heuristic: 'Эвристика',
+  gate: 'Не измеряется — не найдены опорные точки',
+  none: 'Метод не подключён',
 }
 
 /* Scan markers: a single Cyrillic letter, explained in the key below the scan. */
@@ -111,29 +124,10 @@ export const sidebarLinks = [
     ],
   },
   {
-    group: 'Разбор',
-    items: [
-      { route: '/analytics', label: 'Аналитика', icon: 'chart' },
-      { route: '/cases', label: 'Кейсы', icon: 'folder' },
-    ],
-  },
-  {
     group: 'Система',
     items: [{ route: '/service', label: 'Служебное', icon: 'drive' }],
   },
 ] as const
-
-/* Sections the backend has no endpoints for yet. */
-export const SOON: Record<string, { title: string; text: string }> = {
-  analytics: {
-    title: 'Аналитика качества',
-    text: 'Доля брака по сети, разбивка по аппаратам, зонам и типам нарушений, динамика по неделям.',
-  },
-  cases: {
-    title: 'Библиотека кейсов',
-    text: 'Отобранные примеры нарушений для обучения лаборантов и для демонстрации возможностей сервиса.',
-  },
-}
 
 /* ============================================================
    Annotation contour. The reader is a radiologist: nothing here

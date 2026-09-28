@@ -1,10 +1,11 @@
-import { Outlet } from 'react-router-dom'
+import { Outlet, useLocation } from 'react-router-dom'
 import SideNav from '@/components/widgets/SideNav'
 import TopBar from '@/components/widgets/TopBar'
 import { useAnnotQueue } from '@/hooks/useAnnotation'
 import { useJobs } from '@/hooks/useJobs'
 
 const RootLayout = () => {
+  const { pathname } = useLocation()
   const { data: jobs } = useJobs()
   const { pending: markup } = useAnnotQueue()
   const undecided = jobs?.filter((job) => !job.specialist_decision).length
@@ -23,7 +24,9 @@ const RootLayout = () => {
       <div className="grid min-h-0 flex-1 grid-cols-[258px_1fr]">
         <SideNav queueCount={undecided} markupCount={markup.length} todayCount={todayCount} />
         <main className="min-w-0 overflow-auto px-8 pt-7 pb-12">
-          <Outlet />
+          <div key={pathname} className="page-enter">
+            <Outlet />
+          </div>
         </main>
       </div>
     </div>

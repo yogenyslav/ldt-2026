@@ -11,7 +11,6 @@ import {
   Batch,
   Reports,
   Service,
-  Soon,
   Post,
   Setup,
   AnnotQueue,
@@ -60,8 +59,6 @@ const App = () => {
             </Route>
             <Route path="/training" element={<Training />} />
             <Route path="/tuning" element={<Tuning />} />
-            <Route path="/analytics" element={<Soon section="analytics" />} />
-            <Route path="/cases" element={<Soon section="cases" />} />
           </Route>
         </Route>
 
