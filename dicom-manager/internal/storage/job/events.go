@@ -1,8 +1,7 @@
 package job
 
 import (
- "context"
-
+	"context"
 )
 
 // GetStateForUpdate блокирует состояние задачи до завершения текущей транзакции.

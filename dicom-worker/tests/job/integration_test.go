@@ -164,3 +164,55 @@ func TestIntegrationOutboxAndResults(t *testing.T) {
 		t.Fatalf("failure not stored: %v %v", jobs, err)
 	}
 }
+
+// TestIntegrationRetryFailedJob проверяет новую попытку и событие для analyzer без запуска брокера.
+func TestIntegrationRetryFailedJob(t *testing.T) {
+	db := integrationDB(t)
+	ctx := context.Background()
+	logger := zerolog.Nop()
+	metricClient, err := metrics_pkg.New("retry_test")
+	if err != nil {
+		t.Fatal(err)
+	}
+	repo := job_storage.New(db)
+	createEvent := create.New(&logger, metricClient, outbox_storage.New(db))
+	uc := process.New(&logger, metricClient, database.NewUnitOfWork(db), repo, createEvent)
+	apply := apply_result.New(&logger, metricClient, database.NewUnitOfWork(db), repo, createEvent)
+	first, err := uc.ProcessDicomFiles(ctx, []string{"retry-instance"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	oldID := first["retry-instance"]
+	failure := events.New(oldID, "retry-instance", events.StatusFailed)
+	failure.Error = "analyzer failed"
+	if err := apply.ApplyResult(ctx, failure); err != nil {
+		t.Fatal(err)
+	}
+	second, err := uc.ProcessDicomFiles(ctx, []string{"retry-instance"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	newID := second["retry-instance"]
+	if newID == oldID || newID == "" {
+		t.Fatalf("job IDs: old=%s new=%s", oldID, newID)
+	}
+	jobs, err := repo.GetByIDs(ctx, []string{oldID, newID})
+	if err != nil || len(jobs) != 2 {
+		t.Fatalf("jobs=%v err=%v", jobs, err)
+	}
+	for _, job := range jobs {
+		want := "pending"
+		if job.ID == oldID {
+			want = "failed"
+		}
+		if job.Status != want {
+			t.Fatalf("job=%+v want=%s", job, want)
+		}
+	}
+	var count int
+	if err := db.QueryRow(ctx, &count,
+		"select count(*) from outbox_events where job_id=$1 and event_type=$2",
+		newID, events.AnalysisRequested); err != nil || count != 1 {
+		t.Fatalf("new analyzer events=%d err=%v", count, err)
+	}
+}

@@ -52,6 +52,18 @@ const docTemplate = `{
                             "type": "string"
                         }
                     },
+                    "403": {
+                        "description": "Нет доступа к файлу.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "Обработка файла ещё не завершена.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
                     "500": {
                         "description": "Внутренняя ошибка сервера.",
                         "schema": {
@@ -63,7 +75,7 @@ const docTemplate = `{
         },
         "/dicom/upload/batch": {
             "post": {
-                "description": "Загрузить несколько DICOM файлов на сервер в одном запросе.",
+                "description": "Загрузить несколько DICOM файлов. Файлы с активными задачами пропускаются; ответ содержит только новые задачи.",
                 "consumes": [
                     "multipart/form-data"
                 ],
@@ -92,6 +104,18 @@ const docTemplate = `{
                     },
                     "400": {
                         "description": "Некорректный запрос.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Нет доступа к файлу.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "409": {
+                        "description": "У всех файлов батча уже есть активные задачи.",
                         "schema": {
                             "type": "string"
                         }
@@ -154,6 +178,59 @@ const docTemplate = `{
                     },
                     "404": {
                         "description": "DICOM изображение не найдено.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "500": {
+                        "description": "Внутренняя ошибка сервера.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                }
+            }
+        },
+        "/dicom/{dicom_id}/jobs": {
+            "get": {
+                "description": "Возвращает все попытки обработки от новых к старым. Доступ разрешён владельцу файла и администратору.",
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "job"
+                ],
+                "summary": "Получить все задачи DICOM-файла",
+                "parameters": [
+                    {
+                        "type": "string",
+                        "description": "ID DICOM-файла",
+                        "name": "dicom_id",
+                        "in": "path",
+                        "required": true
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Список задач",
+                        "schema": {
+                            "$ref": "#/definitions/get_by_dicom_id.GetByDicomIDOut"
+                        }
+                    },
+                    "401": {
+                        "description": "Требуется авторизация.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "403": {
+                        "description": "Доступ запрещён.",
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    "404": {
+                        "description": "DICOM-файл не найден.",
                         "schema": {
                             "type": "string"
                         }
@@ -735,6 +812,18 @@ const docTemplate = `{
                 "report_id": {
                     "description": "ID сгенерированного отчета по результатам обработки DICOM-файлов.",
                     "type": "integer"
+                }
+            }
+        },
+        "get_by_dicom_id.GetByDicomIDOut": {
+            "type": "object",
+            "properties": {
+                "jobs": {
+                    "description": "Список информации о задачах на обработку DICOM-файлов.",
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.JobInfo"
+                    }
                 }
             }
         },

@@ -35,6 +35,8 @@ func NewOrthanc(client orthanc.ClientInterface) *Orthanc {
 }
 
 // UploadInstances загружает DICOM-файлы в Orthanc.
+// При ошибке возвращает известные ID и признак Created для компенсирующего удаления.
+// Для различения новых и существующих экземпляров требуется OverwriteInstances=false.
 func (o *Orthanc) UploadInstances(ctx context.Context, dicoms []byte) ([]dto.OrthancDicomProperties, error) {
 	const (
 		contentType = "application/zip"
@@ -66,41 +68,58 @@ func (o *Orthanc) UploadInstances(ctx context.Context, dicoms []byte) ([]dto.Ort
 		}
 	}
 
-	propsCh := make(chan dto.OrthancDicomProperties, len(uploadResponses))
-	eg, gCtx := errgroup.WithContext(ctx)
-	for _, instance := range uploadResponses {
-		if instance.Status != instanceStatusSuccess {
-			return nil, fmt.Errorf("%w: %s", ErrCreateInstance, instance.Status)
+	// Сохраняем ID всех созданных экземпляров даже при ошибке получения метаданных.
+	props := make([]dto.OrthancDicomProperties, len(uploadResponses))
+	var statusErr error
+	for i, instance := range uploadResponses {
+		props[i] = dto.OrthancDicomProperties{ID: instance.ID, Created: instance.Status == instanceStatusSuccess}
+		if instance.ID == "" || (instance.Status != instanceStatusSuccess && instance.Status != "AlreadyStored") {
+			statusErr = errors.Join(statusErr, fmt.Errorf("%w: %s", ErrCreateInstance, instance.Status))
 		}
-
-		func(instance dto.OrthancNewDicom) {
-			eg.Go(
-				func() error {
-					props, errCollectProps := o.collectProperties(gCtx, instance)
-					if errCollectProps != nil {
-						return fmt.Errorf(
-							"failed to collect properties for instance %s: %w", instance.ID, errCollectProps,
-						)
-					}
-					propsCh <- props
-					return nil
-				},
-			)
-		}(instance)
+	}
+	if statusErr != nil {
+		return props, statusErr
 	}
 
+	eg, gCtx := errgroup.WithContext(ctx)
+	for i, instance := range uploadResponses {
+		eg.Go(func() error {
+			collected, err := o.collectProperties(gCtx, instance)
+			if err != nil {
+				return fmt.Errorf("failed to collect properties for instance %s: %w", instance.ID, err)
+			}
+			collected.Created = props[i].Created
+			props[i] = collected
+			return nil
+		})
+	}
 	if err := eg.Wait(); err != nil {
-		return nil, fmt.Errorf("error occurred while processing instances: %w", err)
-	}
-
-	close(propsCh)
-
-	props := make([]dto.OrthancDicomProperties, 0, len(uploadResponses))
-	for prop := range propsCh {
-		props = append(props, prop)
+		return props, fmt.Errorf("error occurred while processing instances: %w", err)
 	}
 
 	return props, nil
+}
+
+// DeleteInstances удаляет экземпляры по всем ID, продолжая работу при ошибках отдельных удалений.
+// Отсутствующий экземпляр считается уже удалённым.
+func (o *Orthanc) DeleteInstances(ctx context.Context, ids []string) error {
+	var result error
+
+	for _, id := range ids {
+		resp, err := o.client.DeleteInstancesId(ctx, id)
+		if err != nil {
+			result = errors.Join(result, fmt.Errorf("delete instance %s: %w", id, err))
+			continue
+		}
+
+		resp.Body.Close()
+
+		if resp.StatusCode != 200 && resp.StatusCode != 204 && resp.StatusCode != 404 {
+			result = errors.Join(result, fmt.Errorf("delete instance %s: orthanc API returned code %d", id, resp.StatusCode))
+		}
+	}
+
+	return result
 }
 
 // GetDicomProperties получает свойства DICOM-файла из Orthanc по ID.
