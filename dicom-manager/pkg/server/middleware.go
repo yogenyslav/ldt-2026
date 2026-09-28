@@ -39,12 +39,19 @@ func AuthMiddleware(fn jwtParserFn) fiber.Handler {
 // MetricsMiddleware миддлварь для сбора метрик HTTP-запросов.
 func MetricsMiddleware(metrics observability.MetricsClient) fiber.Handler {
 	return func(c fiber.Ctx) error {
-		methodMetricPrefix := fmt.Sprintf("http.requests.%s_%s.", c.Method(), c.Path())
-		metrics.Counter(methodMetricPrefix + "total").Inc()
-
 		start := time.Now()
 		err := c.Next()
-		metrics.Gauge(methodMetricPrefix + "response_time").Set(time.Since(start).Seconds())
+		duration := time.Since(start).Seconds()
+
+		path := "unmatched"
+		if c.Matched() && !c.IsMiddleware() {
+			path = c.Route().Path
+		}
+
+		methodMetricPrefix := fmt.Sprintf("http.requests.%s_%s.", c.Method(), path)
+		metrics.Counter(methodMetricPrefix + "total").Inc()
+		metrics.Gauge(methodMetricPrefix + "response_time").Set(duration)
+
 		if err != nil {
 			metrics.Counter(methodMetricPrefix + "error").Inc()
 			return err
