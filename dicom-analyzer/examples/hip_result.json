@@ -1,0 +1,275 @@
+{
+ "status": "completed",
+ "anatomical_region": "hip_left",
+ "confidence": 0.8935806155204773,
+ "violations": [
+  "Неправильная ротация бедра (малый вертел)"
+ ],
+ "duration_ms": 5367,
+ "metadata": {
+  "shape": [
+   291,
+   280
+  ],
+  "classification": {
+   "source": "vote",
+   "votes": {
+    "cnn": "hip",
+    "mask": "hip",
+    "width": "hip"
+   },
+   "agreement": 1.0,
+   "unanimous": true,
+   "n_peaks": 2,
+   "cnn_confidence": 0.7871612310409546
+  },
+  "criteria": {
+   "hip_margins": {
+    "name": "hip_margins",
+    "ok": 1,
+    "source": "math",
+    "value": null,
+    "unit": "cm",
+    "points": {
+     "apex": [
+      198.0,
+      73.0
+     ],
+     "lateral": [
+      230.0,
+      125.5
+     ],
+     "ischium": [
+      52.0,
+      187.0
+     ]
+    },
+    "regions": [],
+    "details": {
+     "top_cm": 7.665000000000001,
+     "bottom_cm": 10.815000000000001,
+     "side_cm": 2.94,
+     "implant": false
+    },
+    "note": ""
+   },
+   "hip_keypoints": {
+    "name": "hip_keypoints",
+    "ok": 1,
+    "source": "model",
+    "value": null,
+    "unit": "",
+    "points": {
+     "greater_trochanter_apex": [
+      209.15624246910545,
+      96.13392857142857
+     ],
+     "femoral_neck": [
+      155.89285152976805,
+      113.02232142857142
+     ],
+     "ischium": [
+      77.94642576488403,
+      157.19196428571428
+     ]
+    },
+    "regions": [],
+    "details": {
+     "confidence": {
+      "greater_trochanter_apex": 1.0,
+      "femoral_neck": 1.0,
+      "ischium": 0.9996742010116577
+     }
+    },
+    "note": ""
+   },
+   "lesser_trochanter": {
+    "name": "lesser_trochanter",
+    "ok": 0,
+    "source": "math",
+    "value": 8.4,
+    "unit": "mm",
+    "points": {
+     "near": [
+      133.0,
+      184.0
+     ],
+     "far": [
+      147.0,
+      184.0
+     ]
+    },
+    "regions": [
+     [
+      [
+       139.0,
+       162.0
+      ],
+      [
+       138.0,
+       163.0
+      ],
+      [
+       138.0,
+       165.0
+      ],
+      [
+       136.0,
+       167.0
+      ],
+      [
+       136.0,
+       168.0
+      ],
+      [
+       134.0,
+       170.0
+      ],
+      [
+       134.0,
+       172.0
+      ],
+      [
+       133.0,
+       173.0
+      ],
+      [
+       133.0,
+       185.0
+      ],
+      [
+       134.0,
+       186.0
+      ],
+      [
+       134.0,
+       187.0
+      ],
+      [
+       135.0,
+       188.0
+      ],
+      [
+       135.0,
+       189.0
+      ],
+      [
+       147.0,
+       201.0
+      ],
+      [
+       147.0,
+       202.0
+      ],
+      [
+       148.0,
+       203.0
+      ],
+      [
+       150.0,
+       203.0
+      ],
+      [
+       150.0,
+       200.0
+      ],
+      [
+       149.0,
+       199.0
+      ],
+      [
+       149.0,
+       192.0
+      ],
+      [
+       148.0,
+       191.0
+      ],
+      [
+       148.0,
+       185.0
+      ],
+      [
+       147.0,
+       184.0
+      ],
+      [
+       147.0,
+       180.0
+      ],
+      [
+       146.0,
+       179.0
+      ],
+      [
+       146.0,
+       177.0
+      ],
+      [
+       145.0,
+       176.0
+      ],
+      [
+       145.0,
+       174.0
+      ],
+      [
+       144.0,
+       173.0
+      ],
+      [
+       144.0,
+       172.0
+      ],
+      [
+       143.0,
+       171.0
+      ],
+      [
+       143.0,
+       170.0
+      ],
+      [
+       141.0,
+       168.0
+      ],
+      [
+       141.0,
+       167.0
+      ],
+      [
+       139.0,
+       165.0
+      ],
+      [
+       139.0,
+       164.0
+      ],
+      [
+       138.0,
+       163.0
+      ]
+     ]
+    ],
+    "details": {
+     "status": "плохой",
+     "implant": false
+    },
+    "note": ""
+   }
+  },
+  "verdict": 0,
+  "models": {
+   "region": "подключена",
+   "hip_keypoints": "подключена",
+   "pelvis_crest": "подключена",
+   "pelvis_presence": "подключена",
+   "foreign_seg": "подключена"
+  },
+  "settings": {
+   "trochanter_center_mm": 2.7,
+   "trochanter_tol_percent": 63.0,
+   "trochanter_yellow_percent": 30.0
+  }
+ }
+}

@@ -62,6 +62,11 @@ def render(img_u8: np.ndarray, result: dict, scale: int = 2) -> np.ndarray:
     if c and c.get("regions") and c.get("value") is not None:
         p0 = c["regions"][0][0]
         _text(v, "%.1f mm" % c["value"], (S(p0)[0] + 8, S(p0)[1]), _col(c), 0.5, 1)
+    if c and c.get("points", {}).get("near") and c["points"].get("far"):
+        e, r = c["points"]["near"], c["points"]["far"]                        # точки пересечения линии измерения с границей нарисованной области (regions)
+        cv2.line(v, S(e), S(r), _col(c), 1, cv2.LINE_AA)
+        cv2.circle(v, S(e), 3, _col(c), -1, cv2.LINE_AA)
+        cv2.circle(v, S(r), 3, _col(c), -1, cv2.LINE_AA)
 
     # позвоночник: ось и четыре точки
     c = crit.get("spine_axis")
@@ -101,7 +106,10 @@ def render(img_u8: np.ndarray, result: dict, scale: int = 2) -> np.ndarray:
         if "apex" in P:
             segs.append((P["apex"], [P["apex"][0], 0], D.get("top_cm")))
         if "lateral" in P:
-            segs.append((P["lateral"], [0 if P["lateral"][0] < w / 2 else w - 1, P["lateral"][1]], D.get("side_cm")))
+            # до какого края тянуть — по СТОРОНЕ бедра (anatomical_region), не по тому, какой край ближе в пикселях: на кривом снимке точка
+            # может оказаться ближе к чужому краю, и «ближайший» дал бы неверную сторону.
+            side_edge = (w - 1) if result.get("anatomical_region") == "hip_left" else 0   # по нашим данным: hip_left -> lateral у правого края, hip_right -> у левого
+            segs.append((P["lateral"], [side_edge, P["lateral"][1]], D.get("side_cm")))
         if "ischium" in P:
             segs.append((P["ischium"], [P["ischium"][0], h - 1], D.get("bottom_cm")))
         for a, b, cm in segs:
