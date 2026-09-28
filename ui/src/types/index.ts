@@ -38,6 +38,22 @@ export interface IClassification {
   cnn_confidence?: number | null
 }
 
+/* manual — uploaded through the UI, orthanc — arrived from the device. */
+export type UploadSource = 'manual' | 'orthanc'
+
+/* GET /dicom/{dicom_id} */
+export interface IDicomInfo {
+  id: string
+  study_id?: string
+  patient_id?: string
+  device_model?: string
+  file_name?: string
+  organization_id?: number
+  creator_id?: number
+  upload_source?: UploadSource | 'unknown'
+  created_at?: string
+}
+
 export interface IJobMetadata {
   shape?: [number, number]
   verdict?: 0 | 1 | null
@@ -60,9 +76,7 @@ export interface IJobInfo {
   violations?: string[]
   duration_ms?: number | null
   metadata?: IJobMetadata
-  /* the organisation that sent the scan — not in the backend DTO yet,
-     see context/backend_requests.md */
-  organization_id?: number | null
+  upload_source?: UploadSource
   specialist_id?: number | null
   specialist_decision?: Decision | null
   specialist_name?: string

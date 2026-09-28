@@ -1,4 +1,4 @@
-import { useQueries } from '@tanstack/react-query'
+import { useQueries, useQuery } from '@tanstack/react-query'
 import { api } from '@/lib/api'
 
 /* id → name for the organisations that occur in the loaded jobs.
@@ -19,3 +19,23 @@ export const useOrgNames = (ids: number[]) => {
   })
   return names
 }
+
+export interface IOrganization {
+  id: number
+  name: string
+}
+
+/* GET /organization → { organizations: [{ id: string, name }] }. The id comes
+   as a string; everywhere else (organization_ids, dicom info) it is a number. */
+export const useOrganizations = () =>
+  useQuery({
+    queryKey: ['organizations'],
+    queryFn: () =>
+      api
+        .get<{ organizations: { id: string | number; name: string }[] }>('/organization')
+        .then((r): IOrganization[] =>
+          (r.data.organizations ?? []).map((org) => ({ id: Number(org.id), name: org.name })),
+        ),
+    staleTime: 5 * 60_000,
+    retry: false,
+  })

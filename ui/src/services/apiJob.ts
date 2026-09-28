@@ -1,7 +1,14 @@
 import { api } from '@/lib/api'
-import type { Decision, IJobInfo } from '@/types'
+import type { Decision, IJobInfo, UploadSource } from '@/types'
 
-interface GetJobsData {
+/* Server-side filters of GET /job/info. Without organizationIds an admin gets
+   the jobs of their own organisation only. */
+export interface IJobFilter {
+  organizationIds?: number[]
+  uploadSource?: UploadSource[]
+}
+
+interface GetJobsData extends IJobFilter {
   limit: number
   offset: number
 }
@@ -14,9 +21,10 @@ interface DecideData {
 
 const ApiJob = {
   async getJobs(data: GetJobsData) {
-    return await api.get<{ jobs: IJobInfo[] }>(
-      `/job/info?offset=${data.offset}&limit=${data.limit}`,
-    )
+    const params = new URLSearchParams({ offset: String(data.offset), limit: String(data.limit) })
+    if (data.organizationIds?.length) params.set('organization_ids', data.organizationIds.join(','))
+    if (data.uploadSource?.length) params.set('upload_source', data.uploadSource.join(','))
+    return await api.get<{ jobs: IJobInfo[] }>(`/job/info?${params.toString().replace(/%2C/g, ',')}`)
   },
 
   async getJob(jobId: string) {

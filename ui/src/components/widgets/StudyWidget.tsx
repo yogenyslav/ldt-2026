@@ -15,6 +15,7 @@ import Viewer from '@/components/shared/Viewer'
 import { useToast } from '@/components/ui/toast'
 import { DECISION, REGION, STATUS } from '@/constants'
 import { useDecideJob, useJob, useJobs } from '@/hooks/useJobs'
+import { useDicomInfo, useEnrichedJobs } from '@/hooks/useDicomInfo'
 import { useUserName } from '@/hooks/useUser'
 import { nm, whenOf } from '@/lib/utils'
 import { groupByStudy, verdictOf } from '@/lib/verdict'
@@ -121,12 +122,14 @@ const DecisionBlock = ({ job }: { job: IJobInfo }) => {
 
 const StudyWidget = ({ jobId }: { jobId?: string }) => {
   const { data: job, isLoading } = useJob(jobId)
-  const { data: jobs } = useJobs()
+  const { data: rawJobs } = useJobs()
+  const { jobs } = useEnrichedJobs(rawJobs)
+  const { data: dicom } = useDicomInfo(job?.dicom_id)
   const navigate = useNavigate()
 
   if (isLoading || !job) return <Loader />
 
-  const studyId = job.study_id ?? job.metadata?.study_id
+  const studyId = dicom?.study_id ?? job.study_id ?? job.metadata?.study_id
   const siblings =
     groupByStudy(jobs ?? []).find((study) => study.study_id === studyId)?.jobs ?? [job]
   const index = siblings.findIndex((item) => item.id === job.id)
@@ -185,14 +188,14 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
 
         <div className="flex flex-col gap-3.5">
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-line bg-line">
-            <Cell label="Пациент" value={job.patient_ref ?? '—'} />
+            <Cell label="Пациент" value={dicom?.patient_id ?? job.patient_ref ?? '—'} />
             <Cell label="Поступило" value={whenOf(job.created_at)} />
             <Cell label="Область" value={job.anatomical_region ? REGION[job.anatomical_region] : '—'} />
             <Cell label="Состояние" value={STATUS[job.status]} />
             {/* The referring organisation is in the dicom_file table but not in
                 the DTO — context/backend_requests.md. The file name is. */}
-            <Cell label="Файл" value={job.file_name ?? '—'} />
-            <Cell label="Аппарат" value={job.metadata?.device ?? '—'} />
+            <Cell label="Файл" value={dicom?.file_name ?? job.file_name ?? '—'} />
+            <Cell label="Аппарат" value={dicom?.device_model ?? job.metadata?.device ?? '—'} />
           </div>
 
           {job.status === 'failed' ? (

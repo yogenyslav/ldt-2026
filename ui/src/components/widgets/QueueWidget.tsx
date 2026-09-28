@@ -9,8 +9,11 @@ import Loader from '@/components/shared/Loader'
 import VerdictBadge from '@/components/shared/VerdictBadge'
 import ZoneChip from '@/components/shared/ZoneChip'
 import { useToast } from '@/components/ui/toast'
+import { QUEUE_POLL_INTERVAL } from '@/config'
 import { useDecideJob, useJobs } from '@/hooks/useJobs'
-import { useOrgNames } from '@/hooks/useOrganizations'
+import { useEnrichedJobs } from '@/hooks/useDicomInfo'
+import { useOrgId } from '@/hooks/useUser'
+import { useOrganizations, useOrgNames } from '@/hooks/useOrganizations'
 import { useGenerateReport } from '@/hooks/useReports'
 import { cn, plural, whenOf } from '@/lib/utils'
 import { groupByStudy, studyVerdict, verdictOf } from '@/lib/verdict'
@@ -27,12 +30,6 @@ interface IFilters {
 }
 
 const QueueWidget = () => {
-  const { data: jobs, isLoading } = useJobs()
-  const decide = useDecideJob()
-  const generate = useGenerateReport()
-  const { toast } = useToast()
-  const navigate = useNavigate()
-
   const [filters, setFilters] = useState<IFilters>({
     org: '',
     region: '',
@@ -40,20 +37,41 @@ const QueueWidget = () => {
     decision: '',
     query: '',
   })
+  /* the organisation filter is a query parameter of /job/info: without it an
+     admin gets the jobs of their own organisation only */
+  const { data: rawJobs, isLoading } = useJobs(50, 0, QUEUE_POLL_INTERVAL, {
+    organizationIds: filters.org ? [Number(filters.org)] : undefined,
+  })
+  const { jobs, dicoms } = useEnrichedJobs(rawJobs)
+  const decide = useDecideJob()
+  const generate = useGenerateReport()
+  const { toast } = useToast()
+  const navigate = useNavigate()
+
   const [picked, setPicked] = useState<Record<string, boolean>>({})
   const [limit, setLimit] = useState(8)
 
-  const orgIds = useMemo(
-    () => [...new Set((jobs ?? []).map((job) => job.organization_id).filter((id): id is number => !!id))],
-    [jobs],
-  )
-  const orgNames = useOrgNames(orgIds)
+  /* Every organisation of the centre comes from the list endpoint; until it
+     answers (or where it does not exist) fall back to the ones seen so far. */
+  const { data: orgList } = useOrganizations()
+  const ownOrg = useOrgId()
+  const orgIds = useMemo(() => {
+    if (orgList?.length) return orgList.map((org) => org.id)
+    const ids = new Set<number>(ownOrg ? [ownOrg] : [])
+    Object.values(dicoms).forEach((dicom) => dicom?.organization_id && ids.add(dicom.organization_id))
+    if (filters.org) ids.add(Number(filters.org))
+    return [...ids]
+  }, [orgList, dicoms, ownOrg, filters.org])
+  const fetchedNames = useOrgNames(orgList?.length ? [] : orgIds)
+  const orgNames: Record<number, string> = {
+    ...fetchedNames,
+    ...Object.fromEntries((orgList ?? []).map((org) => [org.id, org.name])),
+  }
   const orgLabel = (id?: number | null) => (id ? (orgNames[id] ?? `Организация № ${id}`) : '—')
 
   const visible = useMemo(() => {
     return (jobs ?? []).filter((job) => {
       const level = verdictOf(job)
-      if (filters.org && String(job.organization_id ?? '') !== filters.org) return false
       if (filters.region && job.anatomical_region !== filters.region) return false
       if (filters.verdict && level !== filters.verdict) return false
       if (filters.decision === '_none' && job.specialist_decision) return false
@@ -254,7 +272,7 @@ const QueueWidget = () => {
                   {whenOf(study.created_at)}
                 </div>
 
-                <div className="small-regular text-ink-2">{orgLabel(study.jobs[0].organization_id)}</div>
+                <div className="small-regular text-ink-2">{orgLabel(dicoms[study.jobs[0].dicom_id]?.organization_id)}</div>
 
                 <div className="base-semibold">
                   {study.patient_ref ?? '—'}

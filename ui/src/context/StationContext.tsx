@@ -56,7 +56,7 @@ const StationProvider = ({ children }: { children: ReactNode }) => {
 
   /* Listening happens only while a scan is expected — see shouldListen. */
   const watching = shouldListen(session, cabinet.intake)
-  const { data: jobs } = useLatestJobs(watching)
+  const { data: jobs } = useLatestJobs(watching, cabinet.intake)
 
   const attempts = useMemo(() => {
     if (!session || !jobs) return []
@@ -67,7 +67,7 @@ const StationProvider = ({ children }: { children: ReactNode }) => {
 
   /* A second observer of the same query: it adds no request of its own, it only
      keeps the polling on while an attempt of ours is still being processed. */
-  useLatestJobs(watching || attempts.some(isBusy))
+  useLatestJobs(watching || attempts.some(isBusy), cabinet.intake)
 
   /* A scan that arrives while the station is waiting joins the visit. */
   useEffect(() => {

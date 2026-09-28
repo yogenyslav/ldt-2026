@@ -10,3 +10,7 @@ export const POLL_INTERVAL = 3000
 /* The centre queue is not watched by someone with a patient on the table, so it
    refreshes at a much calmer pace. */
 export const QUEUE_POLL_INTERVAL = 15_000
+
+/* The test stand must not retrain or replace models: it would knock the
+   calibration off. Only the demo mode (no backend) may pretend to do it. */
+export const TRAINING_LOCKED = !USE_MOCKS
