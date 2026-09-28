@@ -63,7 +63,11 @@ const ForeignCard = ({
             <div
               key={item.id}
               className={cn(
-                'border-t border-line pt-3 pb-0.5 first:border-t-0 first:pt-0.5',
+                'border-t border-line pt-3 pb-0.5',
+                /* hugs the card head above it — but only at rest: active
+                   needs the full p-3 below, and first:pt-0.5 would otherwise
+                   beat it on specificity and pin the top edge at 2px */
+                index === 0 && !on && 'border-t-0 pt-0.5',
                 on &&
                   '-mx-3 my-2 rounded-soft border-t-0 bg-brand-050 p-3 shadow-[inset_0_0_0_1.5px_var(--color-brand)]',
               )}
@@ -112,12 +116,16 @@ const ForeignCard = ({
                   key={index}
                   className="flex items-center gap-2.5 rounded-soft bg-surface-2 px-2.5 py-1.5"
                 >
+                  {/* Same number as on the frame — otherwise every wire reads
+                      the same and "убрать" is a coin flip. */}
                   <span
                     className={cn(
-                      'h-2.5 w-2.5 flex-none rounded-[3px]',
-                      polygon.cls === 'wire' ? 'bg-bad' : 'bg-ok',
+                      'flex-center h-5.5 w-5.5 flex-none rounded-[6px] text-[12px] font-bold tabular',
+                      polygon.cls === 'wire' ? 'bg-bad-bg text-bad' : 'bg-ok-bg text-ok',
                     )}
-                  />
+                  >
+                    {index + 1}
+                  </span>
                   <span className="flex-1 text-[14px]">
                     {FOREIGN_KIND.find((item) => item.id === polygon.cls)?.title ?? polygon.cls}
                   </span>

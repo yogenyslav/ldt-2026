@@ -1,6 +1,16 @@
+import { MODEL_NAME } from '@/constants'
 import { DEMO_JOBS } from '@/services/mock/demoJobs'
 import { rotationBand, type IRotationSettings } from '@/lib/settings'
-import type { Decision, ICriterion, IJobInfo, IReport, JobStatus, Region } from '@/types'
+import type {
+  Decision,
+  ICriterion,
+  IJobInfo,
+  IModelVersion,
+  IReport,
+  ITrainTarget,
+  JobStatus,
+  Region,
+} from '@/types'
 
 /* Demo mode keeps state instead of returning canned answers: an uploaded file
    really becomes a job, and the job really goes through pending → processing →
@@ -37,6 +47,12 @@ interface MockState {
   /* limits picked on the tuning screen; until they are, every result carries
      the ones it was produced with */
   settings?: IRotationSettings
+  /* which of the four models are training now, and which new versions have
+     already been switched to and so drop off the "new version" list */
+  training?: {
+    busy: Record<string, { startedAt: string }>
+    switched: string[]
+  }
 }
 
 /* Templates: everything the ML service has already chewed through once. */
@@ -204,6 +220,70 @@ function createJob(fileName: string, source: 'device' | 'upload') {
   return { job_id: job.id, dicom_id: template.dicom_id }
 }
 
+/* ---- обучение: та же идея, что у джобов — стадия и прогресс читаются из
+   времени, а не из таймера, так что вкладку можно закрыть и вернуться. ---- */
+const TRAIN_MS = 90_000
+
+const TRAIN_BASE: Record<string, { have: number; need: number; hard: string }> = {
+  hip_keypoints: { have: 96, need: 250, hard: 'снимков с обрезанной анатомией: 7 из 60' },
+  pelvis_crest: { have: 132, need: 120, hard: 'гребень у самого края кадра: 9 из 60' },
+  pelvis_presence: { have: 58, need: 120, hard: 'чистых снимков для сравнения: 22 из 60' },
+  foreign_seg: { have: 121, need: 120, hard: 'чистых снимков для сравнения: 61 из 60' },
+}
+
+const VERSION_BASE: IModelVersion[] = [
+  {
+    id: 'pelvis_crest',
+    name: MODEL_NAME.pelvis_crest,
+    trained: '2026-09-28T04:10:00Z',
+    checked: 40,
+    metrics: [
+      { name: 'Доля верных решений', unit: '%', goal: 'up', now: 86, next: 93 },
+      { name: 'Находит нарушение укладки', unit: '%', goal: 'up', now: 71, next: 88 },
+      { name: 'Тревога на корректном снимке', unit: '%', goal: 'down', now: 4, next: 5 },
+      { name: 'Средний промах точки', unit: 'мм', goal: 'down', now: 22, next: 13 },
+    ],
+  },
+  {
+    id: 'foreign_seg',
+    name: MODEL_NAME.foreign_seg,
+    trained: '2026-09-27T21:40:00Z',
+    checked: 55,
+    metrics: [
+      { name: 'Доля верных решений', unit: '%', goal: 'up', now: 91, next: 95 },
+      { name: 'Ложная тревога на чистом снимке', unit: '%', goal: 'down', now: 6, next: 3 },
+    ],
+  },
+]
+
+function trainingTargets(): ITrainTarget[] {
+  const busy = state.training?.busy ?? {}
+  return Object.keys(TRAIN_BASE).map((id) => {
+    const base = TRAIN_BASE[id]
+    const ready = base.have >= base.need
+    const run = busy[id]
+    const elapsed = run ? Date.now() - Date.parse(run.startedAt) : Infinity
+
+    if (!run || elapsed >= TRAIN_MS) {
+      return { id, name: MODEL_NAME[id] ?? id, ...base, ready, busy: false }
+    }
+    return {
+      id,
+      name: MODEL_NAME[id] ?? id,
+      ...base,
+      ready,
+      busy: true,
+      done: Math.round((elapsed / TRAIN_MS) * 100) / 100,
+      left_minutes: Math.max(1, Math.ceil((TRAIN_MS - elapsed) / 60_000)),
+    }
+  })
+}
+
+function trainingVersions(): IModelVersion[] {
+  const switched = state.training?.switched ?? []
+  return VERSION_BASE.filter((version) => !switched.includes(version.id))
+}
+
 const SHORT: Record<Region, string> = {
   spine: 'ПОП',
   hip_left: 'ЛПОБ',
@@ -231,6 +311,22 @@ const store = {
      result read after this is judged by them. */
   setSettings(settings: IRotationSettings) {
     state.settings = settings
+    save()
+  },
+
+  trainingTargets,
+  trainingVersions,
+
+  startTraining(models: string[]) {
+    const busy = { ...(state.training?.busy ?? {}) }
+    for (const id of models) busy[id] = { startedAt: stamp() }
+    state.training = { busy, switched: state.training?.switched ?? [] }
+    save()
+  },
+
+  switchVersions(models: string[]) {
+    const switched = [...new Set([...(state.training?.switched ?? []), ...models])]
+    state.training = { busy: state.training?.busy ?? {}, switched }
     save()
   },
 

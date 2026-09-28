@@ -183,28 +183,35 @@ const AnnotDeskWidget = () => {
      same outline, only heavier. What survives is thinned again on release. */
   const STEP_PX = 1.2
 
+  /* Mirrors `drawing` so strokeEnd can read the finished stroke without a
+     functional setState updater: React (StrictMode in particular) is free to
+     call an updater twice to check it is pure, and setDrawn used to live
+     inside one — every second stroke came out doubled. */
+  const strokeRef = useRef<Point[] | null>(null)
+
   const strokeStart = useCallback((x: number, y: number) => {
-    setDrawing([[x, y]])
+    strokeRef.current = [[x, y]]
+    setDrawing(strokeRef.current)
   }, [])
 
   const strokeMove = useCallback((x: number, y: number) => {
-    setDrawing((current) => {
-      if (!current?.length) return current
-      const [lastX, lastY] = current[current.length - 1]
-      if (Math.hypot(x - lastX, y - lastY) < STEP_PX) return current
-      return [...current, [x, y] as Point]
-    })
+    const current = strokeRef.current
+    if (!current?.length) return
+    const [lastX, lastY] = current[current.length - 1]
+    if (Math.hypot(x - lastX, y - lastY) < STEP_PX) return
+    const next = [...current, [x, y] as Point]
+    strokeRef.current = next
+    setDrawing(next)
   }, [])
 
   const strokeEnd = useCallback(() => {
-    setDrawing((stroke) => {
-      if (!stroke || !drawingKind) return null
-      /* a stray click while the pencil is armed must not leave a speck */
-      if (!isStrokeWorthKeeping(stroke)) return null
-      const outline = outlineOf(stroke)
-      setDrawn((list) => [...(list ?? base?.polygons ?? []), { cls: drawingKind, points: outline }])
-      return null
-    })
+    const stroke = strokeRef.current
+    strokeRef.current = null
+    setDrawing(null)
+    /* a stray click while the pencil is armed must not leave a speck */
+    if (!stroke || !drawingKind || !isStrokeWorthKeeping(stroke)) return
+    const outline = outlineOf(stroke)
+    setDrawn((list) => [...(list ?? base?.polygons ?? []), { cls: drawingKind, points: outline }])
   }, [drawingKind, base])
 
   const removePolygon = useCallback(

@@ -203,20 +203,31 @@ const Overlay = ({ job }: OverlayProps) => {
     )
   }
 
-  /* --- lesser trochanter region --- */
+  /* --- lesser trochanter: the area the analyser measured across, and — once
+     the analyser sends them — the two edge points that area was measured
+     between, drawn as a line rather than left to be read off the fill. */
   const trochanter = criteria.lesser_trochanter
-  if (trochanter?.regions?.length) {
-    const first = trochanter.regions[0][0]
+  if (trochanter?.regions?.length || (trochanter?.points?.near && trochanter?.points?.far)) {
+    const near = trochanter.points?.near
+    const far = trochanter.points?.far
+    const anchor = near ?? trochanter.regions?.[0]?.[0]
     groups.push(
       <g key="trochanter" className={tone(levelOfCriterion(trochanter))}>
-        {trochanter.regions.map((polygon, index) => (
+        {trochanter.regions?.map((polygon, index) => (
           <polygon
             key={index}
             className="mk-area"
             points={polygon.map((point) => `${point[0]},${point[1]}`).join(' ')}
           />
         ))}
-        {trochanter.value ? label(first[0] + 7, first[1] - 2, `${nm(trochanter.value)} мм`) : null}
+        {near && far ? (
+          <>
+            <line className="mk-line" x1={near[0]} y1={near[1]} x2={far[0]} y2={far[1]} />
+            {dot(near, 2.2, 'near')}
+            {dot(far, 2.2, 'far')}
+          </>
+        ) : null}
+        {trochanter.value && anchor ? label(anchor[0] + 7, anchor[1] - 2, `${nm(trochanter.value)} мм`) : null}
       </g>,
     )
   }

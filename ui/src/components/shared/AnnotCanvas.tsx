@@ -229,23 +229,34 @@ const AnnotCanvas = ({
             )}
 
             {item.polygons?.map((polygon, index) => (
-              <polygon
-                key={`poly-${index}`}
-                className={cn(
-                  polygon.cls === 'wire' ? 'poly-wire' : 'poly-object',
-                  drawable && !drawingKind && 'cursor-pointer',
-                )}
-                points={path(polygon.points)}
-                /* While an outline is being laid down, everything already on
-                   the frame steps out of the way — otherwise a corner cannot
-                   be put inside or next to an existing shape. */
-                pointerEvents={drawable && !drawingKind ? 'auto' : 'none'}
-                onPointerDown={(event) => {
-                  if (!drawable || drawingKind) return
-                  event.stopPropagation()
-                  onRemovePolygon(index)
-                }}
-              />
+              <g key={`poly-${index}`}>
+                <polygon
+                  className={cn(
+                    polygon.cls === 'wire' ? 'poly-wire' : 'poly-object',
+                    drawable && !drawingKind && 'cursor-pointer',
+                  )}
+                  points={path(polygon.points)}
+                  /* While an outline is being laid down, everything already on
+                     the frame steps out of the way — otherwise a corner cannot
+                     be put inside or next to an existing shape. */
+                  pointerEvents={drawable && !drawingKind ? 'auto' : 'none'}
+                  onPointerDown={(event) => {
+                    if (!drawable || drawingKind) return
+                    event.stopPropagation()
+                    onRemovePolygon(index)
+                  }}
+                />
+                {/* The number is the only thing telling two wires apart in the
+                    list beside the frame — without it "remove" is a guess. */}
+                <text
+                  className={cn('mark-name', polygon.cls === 'wire' ? 'text-mark-bad' : 'text-mark-ok')}
+                  x={polygon.points[0][0] + 6}
+                  y={polygon.points[0][1] - 6}
+                  pointerEvents="none"
+                >
+                  {index + 1}
+                </text>
+              </g>
             ))}
 
             {/* The outline being laid down: the line so far and its corners. */}
