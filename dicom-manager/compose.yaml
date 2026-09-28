@@ -34,32 +34,6 @@ services:
     networks:
       - dicom-network
 
-  dicom-manager-poller:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: prod
-    container_name: dicom-manager-poller
-    restart: unless-stopped
-    command: ["./poller"]
-    depends_on:
-      postgres:
-        condition: service_healthy
-    env_file:
-      - ../.env
-    environment:
-      - NATS_URL=nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
-      - NATS_REPLICAS=3
-      - METRICS_ADDR=:9100
-      - APP_NAME=dicom-manager-poller
-      - DB_USER=${DICOM_MANAGER_DB_USER}
-      - DB_PASSWORD=${DICOM_MANAGER_DB_PASSWORD}
-      - DB_NAME=${DICOM_MANAGER_DB_NAME}
-      - DB_HOST=dicom-manager-postgres
-      - DB_PORT=5432
-    networks:
-      - dicom-network
-
   dicom-manager-job-listener:
     build:
       context: .
