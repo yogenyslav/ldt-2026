@@ -109,20 +109,24 @@ export interface IPointEdit {
   y?: number
   /* the anatomy is cut off by the frame edge — there is nothing to put */
   absent?: boolean
+  /* how the point got here, in the contract's words: a point nobody touched
+     stays `model` and is of no use for training — the model would be learning
+     from itself */
+  origin?: 'model_confirmed' | 'human'
 }
 
 export type PointEdits = Record<number, IPointEdit>
 
 /* Placing a point clears «нет на снимке»: the two answers contradict. */
 export function placePoint(edits: PointEdits, index: number, x: number, y: number): PointEdits {
-  return { ...edits, [index]: { x, y } }
+  return { ...edits, [index]: { x, y, origin: 'human' } }
 }
 
 /* Said twice, it is taken back: the point returns to the model's guess. */
 export function toggleAbsent(edits: PointEdits, index: number): PointEdits {
   const next = { ...edits }
   if (next[index]?.absent) delete next[index]
-  else next[index] = { absent: true }
+  else next[index] = { absent: true, origin: 'human' }
   return next
 }
 
@@ -131,7 +135,7 @@ export function toggleAbsent(edits: PointEdits, index: number): PointEdits {
 export function confirmPoint(item: IAnnotCase, edits: PointEdits, index: number): PointEdits {
   const guess = item.items?.[index]?.prefill
   if (!guess) return edits
-  return placePoint(edits, index, guess.x, guess.y)
+  return { ...edits, [index]: { x: guess.x, y: guess.y, origin: 'model_confirmed' } }
 }
 
 export function clearPoint(edits: PointEdits, index: number): PointEdits {
@@ -186,4 +190,12 @@ export const MIN_POLYGON = 3
 
 export function canClose(points: Point[]): boolean {
   return points.length >= MIN_POLYGON
+}
+
+/* What the annotator did to each point, in the words of the contract:
+   `human` — placed or moved by hand, `model_confirmed` — the guess was
+   explicitly accepted, `model` — nobody touched it. Only the first two are
+   worth training on. */
+export function originOf(edits: PointEdits, index: number): 'model' | 'model_confirmed' | 'human' {
+  return edits[index]?.origin ?? 'model'
 }

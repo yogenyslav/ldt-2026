@@ -182,8 +182,10 @@ export interface IAnnotPoint {
   /* what the annotator has answered about this point on the desk, which
      outranks whatever the model suggested */
   answer?: PointAnswer
-  /* [x0, y0, x1, y1] — the area of the frame where this point occurs */
-  allowed_box: [number, number, number, number]
+  /* [x0, y0, x1, y1] — the area of the frame where this point occurs.
+     Absent when the contract has no box for a frame of this size: better no
+     hint than a box drawn around the whole picture. */
+  allowed_box?: [number, number, number, number]
   prefill: IAnnotPrefill | null
 }
 

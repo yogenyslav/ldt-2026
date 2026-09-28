@@ -1,7 +1,7 @@
 import Card, { CardBody, CardHead } from '@/components/ui/card'
 import Chip from '@/components/ui/chip'
 import Textarea from '@/components/ui/textarea'
-import { FRAME_FEATURE } from '@/constants'
+
 
 /* Whatever is worth saying about the frame that no task asks about. Always
    open, at the bottom of the panel: folding it would mean it is never filled. */
@@ -9,11 +9,12 @@ import { FRAME_FEATURE } from '@/constants'
 interface NotesCardProps {
   features: string[]
   comment: string
+  options: Array<{ id: string; title: string }>
   onToggle: (feature: string) => void
   onComment: (comment: string) => void
 }
 
-const NotesCard = ({ features, comment, onToggle, onComment }: NotesCardProps) => {
+const NotesCard = ({ features, comment, options, onToggle, onComment }: NotesCardProps) => {
   return (
     <Card>
       <CardHead>
@@ -22,13 +23,13 @@ const NotesCard = ({ features, comment, onToggle, onComment }: NotesCardProps) =
 
       <CardBody className="pt-0">
         <div className="flex flex-wrap gap-2">
-          {FRAME_FEATURE.map((feature) => (
+          {options.map((option) => (
             <Chip
-              key={feature}
-              on={features.includes(feature)}
-              onClick={() => onToggle(feature)}
+              key={option.id}
+              on={features.includes(option.id)}
+              onClick={() => onToggle(option.id)}
             >
-              {feature}
+              {option.title}
             </Chip>
           ))}
         </div>

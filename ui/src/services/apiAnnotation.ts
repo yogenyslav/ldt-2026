@@ -1,12 +1,64 @@
 import { api } from '@/lib/api'
-import type { IAnnotCase, IAnnotPolygon, IModelVersion, IQueueItem, ITrainTarget } from '@/types'
+import type { AnnotTask, IModelVersion, ITrainTarget, Point, Region } from '@/types'
 
-/* The annotation contour as it will be asked of the backend. Nothing of this
-   is implemented on the server yet — the routes are listed in
-   context/backend_requests.md and answered by the demo adapter meanwhile. */
+/* ============================================================
+   Приём разметки и состояние дообучения.
 
-export interface QueueAnswer {
-  queue: IQueueItem[]
+   The submission follows dicom-analyzer/examples/annotation/README.md
+   to the letter: one JSON per frame, coordinates in pixels of the
+   original frame, every point carrying how it got there. A submission
+   is immutable — a correction is a new one with `supersedes`.
+
+   Neither of these routes exists on the server yet. They are listed
+   in context/backend_requests.md; until they are there the call fails
+   and the screen says so, which is the truth.
+   ============================================================ */
+
+export const SCHEMA_VERSION = '1.0'
+
+/* `done` — размечено полностью, `uncertain` — размечено, но разметчик не
+   уверен (нужен комментарий), `skipped` — не смог (нужен комментарий). */
+export type SubmissionStatus = 'done' | 'uncertain' | 'skipped'
+
+/* Whether the point got where it is by itself. Only `human` and
+   `model_confirmed` are worth training on: `model` would be the model
+   learning from itself. */
+export type PointOrigin = 'model' | 'model_confirmed' | 'human'
+
+export interface ISubmitPoint {
+  name: string
+  /* the anatomy is visible in the frame at all — not «я её нашёл» */
+  present: boolean
+  /* only when present; otherwise no coordinates at all */
+  x: number | null
+  y: number | null
+  origin: PointOrigin
+}
+
+export interface ISubmitPolygon {
+  cls: 'wire' | 'object'
+  points: Point[]
+}
+
+export interface ISubmission {
+  schema_version: string
+  submission_id: string
+  task_id: string
+  job_id: string
+  image: { rows: number; cols: number; region: Region | null }
+  created_at: string
+  duration_ms: number
+  /* wrong_region | implant | bad_image | other */
+  image_flags: string[]
+  status: SubmissionStatus
+  comment: string
+  annotations: Partial<
+    Record<
+      AnnotTask,
+      { points?: ISubmitPoint[]; polygons?: ISubmitPolygon[]; verdict?: string }
+    >
+  >
+  supersedes: string | null
 }
 
 export interface TrainingAnswer {
@@ -14,62 +66,42 @@ export interface TrainingAnswer {
   versions: IModelVersion[]
 }
 
-/* How the annotator let go of the frame. «Сомневаюсь» is not a violation and
-   not a refusal: the frame goes to a second pair of eyes. */
-export type AnnotOutcome = 'done' | 'doubt' | 'skip'
-
-/* One point as the contract wants it back: the name it came under, whether
-   the anatomy is in the frame at all, and where it ended up — in pixels of
-   the original frame, the same system the prediction arrived in. */
-export interface ISubmitPoint {
-  name: string
-  present: boolean
-  x: number | null
-  y: number | null
-}
-
-export interface SubmitData {
-  key: string
-  outcome: AnnotOutcome
-  points?: ISubmitPoint[]
-  polygons?: IAnnotPolygon[]
-  /* what the annotator says is on the frame, for the foreign-object task */
-  verdict?: string
-  features?: string[]
-  comment?: string
+/* A submission as it comes back: the whole thing, so an annotation can be
+   opened and corrected without a second request. */
+export interface ISubmissionRecord extends ISubmission {
+  annotator?: { id: string; role: string }
+  /* set on the older submission once a correction supersedes it */
+  superseded_by?: string | null
 }
 
 const ApiAnnotation = {
-  async getQueue() {
-    return await api.get<QueueAnswer>('/annotation/queue')
+  async submit(submission: ISubmission) {
+    return await api.post<{ warnings?: Array<{ code: string; item: string }> }>(
+      '/annotation/submission',
+      submission,
+    )
   },
 
-  /* Whether to run the models is decided here, once, because it decides what
-     the annotator sees on the desk afterwards. */
-  async addToQueue(data: { count: number; pre: boolean; urgent: boolean }) {
-    return await api.post<{ added: number }>('/annotation/queue', data)
-  },
-
-  async getCase(key: string) {
-    return await api.get<{ case: IAnnotCase }>(`/annotation/case/${key}`)
-  },
-
-  async submit(data: SubmitData) {
-    return await api.post('/annotation/submit', data)
+  /* What has already been annotated: it leaves the queue of work and joins the
+     list that can be corrected. Only the latest submission per frame is
+     returned — the ones it supersedes stay in history. */
+  async listSubmissions(limit = 50, offset = 0) {
+    return await api.get<{ submissions: ISubmissionRecord[] }>(
+      `/annotation/submissions?limit=${limit}&offset=${offset}`,
+    )
   },
 
   async getTraining() {
     return await api.get<TrainingAnswer>('/annotation/training')
   },
 
-  async startTraining(ids: string[]) {
-    return await api.post('/annotation/training/start', { ids })
+  async startTraining(models: string[]) {
+    return await api.post('/annotation/training/start', { models })
   },
 
-  async switchVersions(ids: string[]) {
-    return await api.post('/annotation/training/switch', { ids })
+  async switchVersions(models: string[]) {
+    return await api.post('/annotation/training/switch', { models })
   },
-
 }
 
 export default ApiAnnotation

@@ -1,15 +1,19 @@
 import type { AxiosAdapter, AxiosResponse, InternalAxiosRequestConfig } from 'axios'
 import { DEMO_SCANS } from '@/services/mock/demoJobs'
 import { csvDataUrl, reportCsv } from '@/services/mock/csv'
-import annotStore from '@/services/mock/annotStore'
 import store from '@/services/mock/store'
-import { rotationSettings } from '@/lib/settings'
 import { zipEntries } from '@/services/mock/zip'
 import type { Decision } from '@/types'
 
 /* Demo mode. The adapter replaces the axios transport, so the services in
    services/apiXxx.ts stay real: with VITE_USE_MOCKS=false the very same methods
    hit dicom-manager without a single edit.
+
+   It answers the routes dicom-manager is contracted to have, and only those.
+   The annotation contour asks for routes that do not exist anywhere yet
+   (context/back_annotations.md): those calls fall through to the 404 below and
+   the screen says so, which is the truth — inventing an answer here would only
+   hide that the work is not done.
 
    This file handles routing and request parsing; the state lives in services/mock/store.ts. */
 
@@ -177,53 +181,6 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     const jobs = jobIds.map((id) => store.job(id)).filter((job) => !!job)
     if (!jobs.length) return fail(config, 400, 'Не выбрано ни одной задачи')
     return reply(config, { report_id: store.addReport(csvDataUrl(reportCsv(jobs))) })
-  }
-
-  /* --- limits the analyser applies --- */
-  if (method === 'post' && url === '/settings') {
-    const settings = rotationSettings(body(config) as Record<string, number>)
-    if (!settings) return fail(config, 400, 'Границы переданы не полностью')
-    store.setSettings(settings)
-    return reply(config, '', 204)
-  }
-
-  /* --- annotation: queue, desk, training, boundaries --- */
-  if (method === 'get' && url === '/annotation/queue') {
-    return reply(config, { queue: annotStore.queue() })
-  }
-
-  if (method === 'post' && url === '/annotation/queue') {
-    const { count, pre } = body(config) as { count?: number; pre?: boolean }
-    return reply(config, annotStore.add(Number(count) || 1, pre !== false), 201)
-  }
-
-  if (method === 'get' && url.startsWith('/annotation/case/')) {
-    const item = annotStore.case(url.split('/')[3])
-    if (!item) return fail(config, 404, 'Снимок не найден')
-    return reply(config, { case: item })
-  }
-
-  if (method === 'post' && url === '/annotation/submit') {
-    const { key } = body(config) as { key?: string }
-    if (!key || !annotStore.case(key)) return fail(config, 400, 'Снимок не передан')
-    annotStore.finish(key)
-    return reply(config, '', 204)
-  }
-
-  if (method === 'get' && url === '/annotation/training') {
-    return reply(config, { targets: annotStore.targets(), versions: annotStore.versions() })
-  }
-
-  if (method === 'post' && url === '/annotation/training/start') {
-    const { ids } = body(config) as { ids?: string[] }
-    annotStore.train(ids ?? [])
-    return reply(config, '', 204)
-  }
-
-  if (method === 'post' && url === '/annotation/training/switch') {
-    const { ids } = body(config) as { ids?: string[] }
-    annotStore.switchOver(ids ?? [])
-    return reply(config, '', 204)
   }
 
   return fail(config, 404, `Демо-режим: ручка ${method.toUpperCase()} ${url} не описана`)

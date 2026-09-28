@@ -1,38 +1,73 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import ApiAnnotation, { type SubmitData } from '@/services/apiAnnotation'
+import ApiAnnotation, {
+  type ISubmission,
+  type ISubmissionRecord,
+} from '@/services/apiAnnotation'
+import { useJob, useJobs } from '@/hooks/useJobs'
+import { annotTasks } from '@/lib/annotQueue'
 
-/* Nobody is standing over these screens with a patient on the table, so
-   nothing here polls: the data is asked for once and refreshed when the
-   annotator changes something. */
+/* ============================================================
+   The annotation queue is not a list somebody keeps: it is the
+   studies the service has already been through, narrowed to the ones
+   worth a pair of eyes. So it is read from /job/info, the endpoint
+   the whole centre already runs on.
 
-export const useAnnotQueue = () =>
+   What is annotated does not disappear — it moves to the second
+   list and can be corrected, which the contract calls a new
+   submission superseding the old one.
+
+   Sending and reading submissions needs endpoints, and there are
+   none yet: those calls fail and the screen says so.
+   ============================================================ */
+
+export const useSubmissions = () =>
   useQuery({
-    queryKey: ['annot', 'queue'],
-    queryFn: () => ApiAnnotation.getQueue().then((response) => response.data),
+    queryKey: ['annot', 'submissions'],
+    queryFn: () => ApiAnnotation.listSubmissions().then((response) => response.data.submissions),
+    retry: false,
   })
 
-export const useAnnotCase = (key?: string) =>
-  useQuery({
-    queryKey: ['annot', 'case', key],
-    queryFn: () => ApiAnnotation.getCase(key as string).then((response) => response.data.case),
-    enabled: !!key,
-  })
+export const useAnnotQueue = () => {
+  const jobs = useJobs(50)
+  const submissions = useSubmissions()
 
-export const useAddToQueue = () => {
-  const queryClient = useQueryClient()
-  return useMutation({
-    mutationFn: (data: { count: number; pre: boolean; urgent: boolean }) =>
-      ApiAnnotation.addToQueue(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annot', 'queue'] }),
-  })
+  const all = useMemo(() => annotTasks(jobs.data), [jobs.data])
+
+  /* One frame is one task, and the latest submission for it is what decides
+     which of the two lists it belongs to. */
+  const byKey = useMemo(() => {
+    const map = new Map<string, ISubmissionRecord>()
+    for (const item of submissions.data ?? []) map.set(item.task_id, item)
+    return map
+  }, [submissions.data])
+
+  return {
+    isLoading: jobs.isLoading,
+    /* the list of submissions is optional: without it everything is unannotated,
+       which is the truth before the endpoint exists */
+    pending: all.filter((task) => !byKey.has(task.key)),
+    done: all.filter((task) => byKey.has(task.key)),
+    submissionOf: (key: string) => byKey.get(key),
+    /* whether the second list could be read at all */
+    submissionsFailed: submissions.isError,
+  }
 }
 
-/* The frame leaves the queue, so the queue behind the desk is asked again. */
+/* One frame of the queue: the study behind it, with the analysis it carries. */
+export const useAnnotTask = (key?: string) => {
+  const jobId = key?.split(':')[0]
+  return useJob(jobId)
+}
+
 export const useSubmitAnnot = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (data: SubmitData) => ApiAnnotation.submit(data),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annot', 'queue'] }),
+    mutationFn: (submission: ISubmission) => ApiAnnotation.submit(submission),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['annot', 'submissions'] })
+      queryClient.invalidateQueries({ queryKey: ['jobs'] })
+    },
   })
 }
 
@@ -40,12 +75,13 @@ export const useTraining = () =>
   useQuery({
     queryKey: ['annot', 'training'],
     queryFn: () => ApiAnnotation.getTraining().then((response) => response.data),
+    retry: false,
   })
 
 export const useStartTraining = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (ids: string[]) => ApiAnnotation.startTraining(ids),
+    mutationFn: (models: string[]) => ApiAnnotation.startTraining(models),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annot', 'training'] }),
   })
 }
@@ -53,7 +89,7 @@ export const useStartTraining = () => {
 export const useSwitchVersions = () => {
   const queryClient = useQueryClient()
   return useMutation({
-    mutationFn: (ids: string[]) => ApiAnnotation.switchVersions(ids),
+    mutationFn: (models: string[]) => ApiAnnotation.switchVersions(models),
     onSuccess: () => queryClient.invalidateQueries({ queryKey: ['annot', 'training'] }),
   })
 }

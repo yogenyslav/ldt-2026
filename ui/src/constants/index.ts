@@ -213,5 +213,11 @@ export const FOREIGN_KIND: Array<{ id: string; title: string; tone: string }> = 
   { id: 'object', title: 'Застёжка, пуговица, кулон', tone: 'ok' },
 ]
 
-/* Things worth saying about a frame that no task asks about. */
-export const FRAME_FEATURE = ['не та область тела', 'эндопротез', 'брак снимка'] as const
+/* Things worth saying about a frame that no task asks about. The codes are the
+   ones the annotation contract expects back — see context/back_annotations.md. */
+export const FRAME_FLAG: Array<{ id: string; title: string }> = [
+  { id: 'wrong_region', title: 'не та область тела' },
+  { id: 'implant', title: 'эндопротез' },
+  { id: 'bad_image', title: 'брак снимка' },
+  { id: 'other', title: 'другое' },
+]

@@ -176,18 +176,20 @@ const AnnotCanvas = ({
               onPointerDown={onBackdropDown}
             />
 
-            {points.map((point, index) => (
-              <rect
-                key={`zone-${point.name}`}
-                className={cn('zone', index === active && !drawable && 'is-active')}
-                x={point.allowed_box[0]}
-                y={point.allowed_box[1]}
-                width={point.allowed_box[2] - point.allowed_box[0]}
-                height={point.allowed_box[3] - point.allowed_box[1]}
-                rx={2}
-                pointerEvents="none"
-              />
-            ))}
+            {points.map((point, index) =>
+              point.allowed_box ? (
+                <rect
+                  key={`zone-${point.name}`}
+                  className={cn('zone', index === active && !drawable && 'is-active')}
+                  x={point.allowed_box[0]}
+                  y={point.allowed_box[1]}
+                  width={point.allowed_box[2] - point.allowed_box[0]}
+                  height={point.allowed_box[3] - point.allowed_box[1]}
+                  rx={2}
+                  pointerEvents="none"
+                />
+              ) : null,
+            )}
 
             {item.polygons?.map((polygon, index) => (
               <polygon

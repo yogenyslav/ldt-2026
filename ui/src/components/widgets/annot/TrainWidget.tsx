@@ -6,7 +6,6 @@ import Check from '@/components/ui/check'
 import Tag from '@/components/ui/tag'
 import Bar from '@/components/shared/Bar'
 import Empty from '@/components/shared/Empty'
-import Loader from '@/components/shared/Loader'
 import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
 import { useStartTraining, useSwitchVersions, useTraining } from '@/hooks/useAnnotation'
@@ -34,7 +33,7 @@ const TONE: Record<string, string> = { ok: 'ok', bad: 'bad', dead: 'dead' }
 const picked = (map: Record<string, boolean>) => Object.keys(map).filter((key) => map[key])
 
 const TrainWidget = () => {
-  const { data, isLoading } = useTraining()
+  const { data, isError } = useTraining()
   const { data: jobs } = useJobs()
   const start = useStartTraining()
   const change = useSwitchVersions()
@@ -46,16 +45,15 @@ const TrainWidget = () => {
   const [trainPick, setTrainPick] = useState<Record<string, boolean>>({ crest: true })
   const [versionPick, setVersionPick] = useState<Record<string, boolean>>({ crest: true })
 
-  if (isLoading || !data) return <Loader />
+  const targets = data?.targets ?? []
+  const versions = data?.versions ?? []
 
   const toTrain = picked(trainPick).filter((id) =>
-    data.targets.some((target) => target.id === id && target.ready && !target.busy),
+    targets.some((target) => target.id === id && target.ready && !target.busy),
   )
-  const toSwitch = picked(versionPick).filter((id) =>
-    data.versions.some((version) => version.id === id),
-  )
+  const toSwitch = picked(versionPick).filter((id) => versions.some((version) => version.id === id))
 
-  const busy = data.targets.filter((target) => target.busy)
+  const busy = targets.filter((target) => target.busy)
 
   return (
     <>
@@ -97,7 +95,7 @@ const TrainWidget = () => {
         <div className="pb-1">
           <table className="w-full border-collapse text-[14px]">
             <tbody>
-              {data.targets.map((target) => {
+              {targets.map((target) => {
                 const percent = Math.min(100, Math.round((target.have / target.need) * 100))
                 const pickable = target.ready && !target.busy
 
@@ -173,7 +171,13 @@ const TrainWidget = () => {
           <span className="text-[13.5px] text-muted">отметьте те, на которые переходим</span>
         </CardHead>
 
-        {data.versions.length ? (
+        {isError ? (
+          <Empty
+            icon={<BrainCircuit size={22} />}
+            title="Не удалось получить состояние дообучения"
+            text="Список моделей выше — из последнего разбора снимка. Сбор и новые версии появятся, когда сервис начнёт их отдавать."
+          />
+        ) : versions.length ? (
           <>
             <div className="pb-1">
               <table className="w-full border-collapse text-[14px]">
@@ -187,7 +191,7 @@ const TrainWidget = () => {
                   </tr>
                 </thead>
 
-                {data.versions.map((version) => (
+                {versions.map((version) => (
                   <tbody key={version.id}>
                     <tr
                       onClick={() =>
