@@ -53,6 +53,6 @@ node_modules/
 dist/
 .vite/
 
-context/
+./context/
 qc_prototype
 **/models/*.pt
