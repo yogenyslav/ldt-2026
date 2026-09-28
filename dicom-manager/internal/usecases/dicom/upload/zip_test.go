@@ -1,11 +1,10 @@
 package upload
 
 import (
- "archive/zip"
- "bytes"
- "io"
- "testing"
-
+	"archive/zip"
+	"bytes"
+	"io"
+	"testing"
 )
 
 func TestDicomZipIsFinalized(t *testing.T) {
@@ -28,7 +27,7 @@ func TestDicomZipIsFinalized(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer r.Close()
-	
+
 	got, err := io.ReadAll(r)
 	if err != nil || string(got) != "dicom" {
 		t.Fatalf("incorrect DICOM payload: %q %v", got, err)

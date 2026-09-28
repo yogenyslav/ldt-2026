@@ -17,13 +17,14 @@ func New(db database.DB) *Storage {
 	return &Storage{db: db}
 }
 
-// SaveDicomFiles сохраняет несколько DICOM файлов в БД.
+// SaveDicomFiles сохраняет новые DICOM-файлы, не изменяя уже существующие записи.
 func (s *Storage) SaveDicomFiles(ctx context.Context, dicoms []Dicom) error {
 	baseQuery := sq.Insert("dicom_file").
 		Columns(
 			"id", "file_name", "series_id", "study_id", "dicom_series_uid", "dicom_study_uid",
 			"dicom_image_uid", "creator_id", "organization_id",
 		).
+		Suffix("on conflict (id) do nothing").
 		PlaceholderFormat(sq.Dollar)
 
 	for _, dicom := range dicoms {
@@ -56,4 +57,12 @@ func (s *Storage) GetByID(ctx context.Context, id string) (Dicom, error) {
 	}
 
 	return dicom, nil
+}
+
+// GetByIDForUpdate блокирует файл до конца транзакции для согласования повторных загрузок.
+func (s *Storage) GetByIDForUpdate(ctx context.Context, id string) (Dicom, error) {
+	const query = `select id, creator_id, organization_id from dicom_file where id = $1 for update`
+	var dicom Dicom
+	err := s.db.TxQueryRow(ctx, &dicom, query, id)
+	return dicom, err
 }

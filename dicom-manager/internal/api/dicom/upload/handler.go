@@ -2,6 +2,7 @@ package upload
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"uuid"
 
@@ -46,6 +47,8 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 //	@Param			file	body		string		true	"DICOM файл для загрузки."
 //	@Success		201		{object}	UploadOut	"Файл успешно загружен."
 //	@Failure		400		string		"Некорректный запрос."
+//	@Failure		403		string		"Нет доступа к файлу."
+//	@Failure		409		string		"Обработка файла ещё не завершена."
 //	@Failure		500		string		"Внутренняя ошибка сервера."
 //	@Router			/dicom/upload [post]
 func (h *Handler) Upload(c fiber.Ctx) error {
@@ -83,6 +86,13 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 
 	dicomJobs, err := h.uc.UploadDicomFiles(c.Context(), req)
 	if err != nil {
+		if errors.Is(err, upload.ErrDicomForbidden) {
+			return fiber.NewError(fiber.StatusForbidden, "access denied")
+		}
+
+		if errors.Is(err, upload.ErrActiveJob) {
+			return fiber.NewError(fiber.StatusConflict, "DICOM already has an active job")
+		}
 		h.metrics.Counter("handler.dicom.upload.uc_upload_dicom_files.error").Inc()
 		h.log.Error().Err(err).Msg("failed to upload dicom files")
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to upload dicom files")

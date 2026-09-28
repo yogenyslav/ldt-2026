@@ -41,7 +41,7 @@ func (h *Subscriber) Handle(ctx context.Context, payload []byte) error {
 	if err == nil {
 		err = h.uc.ApplyEvent(ctx, event)
 	}
-	
+
 	if errors.Is(err, events.ErrInvalidEvent) {
 		h.metrics.Counter("subscriber.job.apply_event.invalid").Inc()
 		h.metrics.Counter("subscriber.job.apply_event.error").Inc()

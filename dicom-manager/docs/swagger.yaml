@@ -14,6 +14,14 @@ definitions:
         description: ID сгенерированного отчета по результатам обработки DICOM-файлов.
         type: integer
     type: object
+  get_by_dicom_id.GetByDicomIDOut:
+    properties:
+      jobs:
+        description: Список информации о задачах на обработку DICOM-файлов.
+        items:
+          $ref: '#/definitions/model.JobInfo'
+        type: array
+    type: object
   get_image.GetImageOut:
     properties:
       image_data:
@@ -321,6 +329,42 @@ paths:
       summary: Получить изображение DICOM
       tags:
       - dicom
+  /dicom/{dicom_id}/jobs:
+    get:
+      description: Возвращает все попытки обработки от новых к старым. Доступ разрешён
+        владельцу файла и администратору.
+      parameters:
+      - description: ID DICOM-файла
+        in: path
+        name: dicom_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: Список задач
+          schema:
+            $ref: '#/definitions/get_by_dicom_id.GetByDicomIDOut'
+        "401":
+          description: Требуется авторизация.
+          schema:
+            type: string
+        "403":
+          description: Доступ запрещён.
+          schema:
+            type: string
+        "404":
+          description: DICOM-файл не найден.
+          schema:
+            type: string
+        "500":
+          description: Внутренняя ошибка сервера.
+          schema:
+            type: string
+      summary: Получить все задачи DICOM-файла
+      tags:
+      - job
   /dicom/upload:
     post:
       consumes:
@@ -344,6 +388,14 @@ paths:
           description: Некорректный запрос.
           schema:
             type: string
+        "403":
+          description: Нет доступа к файлу.
+          schema:
+            type: string
+        "409":
+          description: Обработка файла ещё не завершена.
+          schema:
+            type: string
         "500":
           description: Внутренняя ошибка сервера.
           schema:
@@ -355,7 +407,8 @@ paths:
     post:
       consumes:
       - multipart/form-data
-      description: Загрузить несколько DICOM файлов на сервер в одном запросе.
+      description: Загрузить несколько DICOM файлов. Файлы с активными задачами пропускаются;
+        ответ содержит только новые задачи.
       parameters:
       - description: .zip архив с DICOM файлами для загрузки.
         in: formData
@@ -371,6 +424,14 @@ paths:
             $ref: '#/definitions/upload_batch.UploadBatchOut'
         "400":
           description: Некорректный запрос.
+          schema:
+            type: string
+        "403":
+          description: Нет доступа к файлу.
+          schema:
+            type: string
+        "409":
+          description: У всех файлов батча уже есть активные задачи.
           schema:
             type: string
         "500":

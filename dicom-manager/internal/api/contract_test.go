@@ -51,11 +51,14 @@ func (loginStub) Login(_ context.Context, in auth.LoginRequest) (auth.UserAuthDa
 	return auth.UserAuthData{Token: "token", UserID: 42, OrganizationID: 218, Role: auth.RoleUser}, nil
 }
 
-type uploadStub struct{ last uploaduc.DicomUploadRequest }
+type uploadStub struct {
+	last uploaduc.DicomUploadRequest
+	err  error
+}
 
 func (s *uploadStub) UploadDicomFiles(_ context.Context, in uploaduc.DicomUploadRequest) (map[string]uuid.UUID, error) {
 	s.last = in
-	return map[string]uuid.UUID{"dicom": uuid.New()}, nil
+	return map[string]uuid.UUID{"dicom": uuid.New()}, s.err
 }
 
 type imageStub struct{}
@@ -235,4 +238,74 @@ func TestBrowserAPIContract(t *testing.T) {
 			t.Fatalf("wrong ZIP upload: %+v", uploads.last)
 		}
 	})
+}
+
+func TestUploadRetryErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{"forbidden", fmt.Errorf("transaction failed: %w", uploaduc.ErrDicomForbidden), 403},
+		{"active job", fmt.Errorf("transaction failed: %w", uploaduc.ErrActiveJob), 409},
+	} {
+		for _, batch := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/batch=%v", tc.name, batch), func(t *testing.T) {
+				logger := zerolog.Nop()
+				m, err := metrics.New("retry_contract")
+				if err != nil {
+					t.Fatal(err)
+				}
+				app := fiber.New()
+				app.Use(func(c fiber.Ctx) error {
+					c.Locals("tokenClaims", jwt.TokenClaims{UserID: 42, OrganizationID: 218})
+					return c.Next()
+				})
+				stub := &uploadStub{err: tc.err}
+				path, contentType := "/dicom/upload", "application/dicom"
+				var body io.Reader = strings.NewReader("dicom")
+				if batch {
+					path = "/dicom/upload/batch"
+					var zipData bytes.Buffer
+					zw := zip.NewWriter(&zipData)
+					f, err := zw.Create("test.dcm")
+					if err != nil {
+						t.Fatal(err)
+					}
+					if _, err = f.Write([]byte("dicom")); err != nil {
+						t.Fatal(err)
+					}
+					if err = zw.Close(); err != nil {
+						t.Fatal(err)
+					}
+					var multipartData bytes.Buffer
+					mw := multipart.NewWriter(&multipartData)
+					part, err := mw.CreateFormFile("file", "test.zip")
+					if err != nil {
+						t.Fatal(err)
+					}
+					if _, err = part.Write(zipData.Bytes()); err != nil {
+						t.Fatal(err)
+					}
+					if err = mw.Close(); err != nil {
+						t.Fatal(err)
+					}
+					contentType, body = mw.FormDataContentType(), &multipartData
+					app.Post(path, batchapi.New(&logger, m, stub).UploadBatch)
+				} else {
+					app.Post(path, uploadapi.New(&logger, m, stub).Upload)
+				}
+				req := httptest.NewRequest("POST", path, body)
+				req.Header.Set("Content-Type", contentType)
+				resp, err := app.Test(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer resp.Body.Close()
+				if resp.StatusCode != tc.status {
+					t.Fatalf("status=%d want=%d", resp.StatusCode, tc.status)
+				}
+			})
+		}
+	}
 }

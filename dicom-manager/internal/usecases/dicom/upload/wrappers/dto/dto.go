@@ -2,6 +2,8 @@ package dto
 
 // OrthancDicomProperties структура для представления свойств DICOM в Orthanc.
 type OrthancDicomProperties struct {
+	// Created равен true только для экземпляров, созданных текущей загрузкой.
+	Created        bool
 	ID             string
 	ParentStudy    string
 	ParentSeries   string
