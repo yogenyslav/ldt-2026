@@ -202,8 +202,6 @@ export interface IAnnotCase {
   rows: number
   cols: number
   png: string
-  /* how many screen pixels one frame pixel gets on the desk */
-  scale: number
   items?: IAnnotPoint[]
   polygons?: IAnnotPolygon[]
   verdict?: string

@@ -199,8 +199,6 @@ export function caseOf(job: IJobInfo, task: AnnotTask, png: string): IAnnotCase 
     rows,
     cols,
     png,
-    /* the desk draws the frame at its own size */
-    scale: 1,
     items: task === 'foreign_seg' ? undefined : items,
     polygons,
     verdict: task === 'foreign_seg' ? text(criterion ?? ({} as ICriterion), 'verdict') : undefined,

@@ -147,8 +147,24 @@ const AnnotCanvas = ({
       </div>
 
       <div className="flex justify-center bg-scan-bg p-4.5">
-        <div className="relative max-w-full leading-[0]" style={{ width: item.cols * item.scale }}>
-          <img className="block h-auto w-full select-none" src={item.png} alt="" draggable={false} />
+        {/* The frame takes the width it is given and keeps its own proportions,
+            capped so that a tall scan still fits on the screen without
+            scrolling. A DXA raster is small — 280 px across — so it is always
+            enlarged; what must never happen is the reverse, a frame drawn one
+            pixel to one pixel and impossible to aim at. */}
+        <div
+          className="relative leading-[0]"
+          style={{
+            aspectRatio: `${item.cols} / ${item.rows}`,
+            width: `min(100%, calc(72vh * ${item.cols} / ${item.rows}))`,
+          }}
+        >
+          <img
+            className="block h-full w-full object-fill select-none"
+            src={item.png}
+            alt=""
+            draggable={false}
+          />
           <svg
             ref={svg}
             className={cn(
