@@ -1,9 +1,9 @@
-# версии, на которых проверено: numpy 2.4.6, opencv 5.0.0.93, scipy 1.17.1, pandas 3.0.3, pydicom 3.0.2, torch 2.14.0 (cpu), timm 1.0.29, albumentations 2.0.8
-numpy
-opencv-python
-scipy
-pandas
-pydicom
-torch
-timm
-albumentations
+numpy==numpy 2.4.6
+opencv-python==5.0.0.93
+scipy==1.17.1
+pandas==3.0.3
+pydicom==3.0.2
+torch==2.14.0
+timm==1.0.29
+albumentations==2.0.8
+nats-py==2.14.0
