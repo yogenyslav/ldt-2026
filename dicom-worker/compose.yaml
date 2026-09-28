@@ -81,6 +81,30 @@ services:
     networks:
       - dicom-network
 
+  dicom-worker-expiration-checker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: prod
+    container_name: dicom-worker-expiration-checker
+    restart: unless-stopped
+    command: ["./expiration_checker"]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    env_file:
+      - ../.env
+    environment:
+      - METRICS_ADDR=:9100
+      - APP_NAME=dicom-worker-expiration-checker
+      - DB_USER=${DICOM_WORKER_DB_USER}
+      - DB_PASSWORD=${DICOM_WORKER_DB_PASSWORD}
+      - DB_NAME=${DICOM_WORKER_DB_NAME}
+      - DB_HOST=dicom-worker-postgres
+      - DB_PORT=5432
+    networks:
+      - dicom-network
+
   postgres:
     image: postgres:17-alpine
     container_name: dicom-worker-postgres
