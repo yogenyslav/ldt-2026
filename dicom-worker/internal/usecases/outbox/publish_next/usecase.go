@@ -95,6 +95,11 @@ func (uc *Usecase) PublishNext(ctx context.Context) (bool, error) {
 			if err != nil {
 				return err
 			}
+
+			// Завершенная по таймауту задача уже не должна отправляться в анализатор.
+			if job.Status == events.StatusFailed || job.Status == events.StatusCompleted {
+				return uc.outboxRepo.MarkPublished(ctx, event.ID)
+			}
 		}
 
 		publishCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
@@ -138,7 +143,7 @@ func (uc *Usecase) PublishNext(ctx context.Context) (bool, error) {
 		uc.metrics.Counter("usecases.outbox.publish_next.empty").Inc()
 		return false, nil
 	}
-	
+
 	uc.metrics.Counter("usecases.outbox.publish_next.ok").Inc()
 	uc.log.Info().Str("event_id", eventID).Str("job_id", jobID).Msg("outbox event published")
 	return true, nil

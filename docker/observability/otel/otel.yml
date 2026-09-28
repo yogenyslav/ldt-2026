@@ -76,6 +76,10 @@ receivers:
               labels:
                 service: 'dicom-worker-result-listener'
                 group: 'dicom'
+            - targets: ['dicom-worker-expiration-checker:9100']
+              labels:
+                service: 'dicom-worker-expiration-checker'
+                group: 'dicom'
 
 # Define processors to process received data.
 # See https://opentelemetry.io/docs/collector/configuration/#processors
