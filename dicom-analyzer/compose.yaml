@@ -13,6 +13,10 @@ services:
     environment:
       NATS_URL: nats://nats-1:4222,nats://nats-2:4222,nats://nats-3:4222
       NATS_REPLICAS: 3
+      APP_NAME: dicom-analyzer
+      METRICS_ADDR: :9100
+      TRACING_HOST: otlp-collector
+      TRACING_PORT: 4318
       ORTHANC_HOST: orthanc
       ORTHANC_PORT: 8042
     volumes:

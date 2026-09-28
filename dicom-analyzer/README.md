@@ -29,10 +29,15 @@ Compose использует общую внешнюю сеть `dicom-network`.
 | `ORTHANC_NAME`, `ORTHANC_PASSWORD` | Пользователь и пароль Orthanc |
 | `ORTHANC_TOKEN` | Если задан, заменяет base64 пары логин:пароль в Basic Authorization, как у manager |
 | `MODELS_DIR` | По умолчанию `models/` рядом с кодом |
+| `APP_NAME` | `dicom-analyzer`, имя сервиса в логах и трассах |
+| `LOG_LEVEL` | `INFO` |
+| `METRICS_ADDR` | `:9100`, HTTP endpoint `/metrics` |
+| `TRACING_HOST`, `TRACING_PORT` | `localhost`, `4318`; в Compose — `otlp-collector:4318` |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Необязательный полный URL OTLP HTTP, включая `/v1/traces`; заменяет `TRACING_HOST`/`TRACING_PORT` |
 
 **Важно:** `ORTHANC_TOKEN` должен содержать действительный Basic-токен. Для
 аутентификации через `ORTHANC_NAME`/`ORTHANC_PASSWORD` оставьте его пустым;
-значение-заглушка `orthanc-token` из `.env.example` не является рабочим токеном.
+значение-заглушка `orthanc-token` не является рабочим токеном.
 
 Analyzer читает `dicom.analysis.requested` из `DICOM_EVENTS` durable-подписчиком
 `analyzer-requests`. Контракт v1 совпадает с `dicom-worker/pkg/events`:
@@ -70,6 +75,7 @@ ACK отправляется только после подтверждения 
 
 ```bash
 cd dicom-analyzer
+pip install prometheus-client opentelemetry-sdk opentelemetry-exporter-otlp-proto-http nats-py
 python -m unittest discover -s tests -v
 ```
 

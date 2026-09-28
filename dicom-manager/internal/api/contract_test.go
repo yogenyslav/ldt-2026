@@ -208,6 +208,32 @@ func TestBrowserAPIContract(t *testing.T) {
 			t.Fatalf("wrong upload: %+v", uploads.last)
 		}
 	})
+	t.Run("authenticated Orthanc callback does not upload again", func(t *testing.T) {
+		for _, token := range []string{"", "token"} {
+			req := httptest.NewRequest("POST", "/dicom/upload", strings.NewReader("dicom data"))
+			req.Header.Set("Content-Type", "application/dicom")
+			req.Header.Set("X-Instance-ID", "orthanc-instance")
+			if token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+			if token == "" {
+				if resp.StatusCode != 401 {
+					t.Fatalf("instance header bypassed authentication: %d", resp.StatusCode)
+				}
+				continue
+			}
+			if resp.StatusCode != 201 || uploads.last.SyncOrthanc ||
+				len(uploads.last.RawDicoms) != 1 || uploads.last.RawDicoms[0].InstanceID != "orthanc-instance" ||
+				uploads.last.CreatorID != 42 || uploads.last.OrganizationID != 218 {
+				t.Fatalf("wrong Orthanc callback: status=%d request=%+v", resp.StatusCode, uploads.last)
+			}
+		}
+	})
 	t.Run("browser multipart ZIP", func(t *testing.T) {
 		var archive bytes.Buffer
 		zw := zip.NewWriter(&archive)

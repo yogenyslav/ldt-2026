@@ -56,6 +56,10 @@ receivers:
         - job_name: 'dicom-services'
           scrape_interval: 2s
           static_configs:
+            - targets: ['dicom-analyzer:9100']
+              labels:
+                service: 'dicom-analyzer'
+                group: 'dicom'
             - targets: ['dicom-manager:9100']
               labels:
                 service: 'dicom-manager'

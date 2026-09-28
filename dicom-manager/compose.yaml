@@ -21,6 +21,7 @@ services:
       - APP_NAME=dicom-manager
       - ORTHANC_HOST=orthanc
       - ORTHANC_PORT=8042
+      - ORTHANC_NAME=dicom-manager
       - DICOM_MANAGER_S3_HOST=reports
       - DICOM_MANAGER_S3_PORT=9000
       - DICOM_MANAGER_S3_BUCKET=${DICOM_MANAGER_S3_BUCKET:-reports}
