@@ -122,7 +122,7 @@ func (uc *Usecase) buildReport(ctx context.Context, jobIDs []string) ([]byte, er
 			QualityClass:     qualityClass,
 			Violations:       result.Violations,
 			JobStatus:        result.JobStatus,
-			DurationSec:      result.DurationMs / 1000,
+			DurationSec:      float64(result.DurationMs) / 1000.0,
 		}
 	}
 

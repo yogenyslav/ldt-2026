@@ -130,7 +130,7 @@ func TestNewRetriesRelatedEntities(t *testing.T) {
 			http.Error(w, "unexpected path", http.StatusBadRequest)
 			return
 		}
-		if user, password, ok := r.BasicAuth(); !ok || user != "user" || password != "password" {
+		if user, password, ok := r.BasicAuth(); !ok || user != "dicom-manager" || password != "password" {
 			t.Error("missing authorization")
 		}
 		calls[r.URL.Path]++

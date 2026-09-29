@@ -2,7 +2,6 @@ package orthanc
 
 import (
 	"context"
-	"encoding/base64"
 	"fmt"
 	"net"
 	"net/http"
@@ -13,11 +12,9 @@ import (
 
 // Config конфигурация подключения к Orthanc.
 type Config struct {
-	User     string `env:"ORTHANC_NAME"`
 	Password string `env:"ORTHANC_PASSWORD"`
 	Host     string `env:"ORTHANC_HOST"`
 	Port     string `env:"ORTHANC_PORT"`
-	Token    string `env:"ORTHANC_TOKEN"`
 }
 
 // Orthanc структура для взаимодействия с Orthanc API.
@@ -34,7 +31,7 @@ func New() (*Orthanc, error) {
 
 	addr := "http://" + net.JoinHostPort(cfg.Host, cfg.Port)
 	client, err := orthanc.NewClientWithResponses(
-		addr, orthanc.WithRequestEditorFn(authorizationHeader(cfg.User, cfg.Password, cfg.Token)),
+		addr, orthanc.WithRequestEditorFn(authorizationHeader(cfg.Password)),
 		orthanc.WithHTTPClient(&retryClient{client: http.DefaultClient}),
 	)
 	if err != nil {
@@ -49,16 +46,11 @@ func (o *Orthanc) Client() orthanc.ClientInterface {
 	return o.client
 }
 
-func authorizationHeader(user, password, token string) orthanc.RequestEditorFn {
-	toEncode := fmt.Sprintf("%s:%s", user, password)
-	encoded := base64.StdEncoding.EncodeToString([]byte(toEncode))
-
-	if token != "" {
-		encoded = token
-	}
-
+func authorizationHeader(password string) orthanc.RequestEditorFn {
 	return func(ctx context.Context, req *http.Request) error {
-		req.Header.Set("Authorization", "Basic "+encoded)
+		// autoroute.lua распознаёт синхронизацию manager по имени пользователя.
+		// Общие ORTHANC_NAME/ORTHANC_TOKEN могут принадлежать внешнему загрузчику.
+		req.SetBasicAuth("dicom-manager", password)
 		return nil
 	}
 }

@@ -9,5 +9,5 @@ type JobResult struct {
 	QualityClass     int      `csv:"quality_class"` // 0 - качественное, 1 - есть нарушения
 	Violations       []string `csv:"violation_type"`
 	JobStatus        string   `csv:"processing_status"`
-	DurationSec      int64    `csv:"time_of_processing"` // в секундах
+	DurationSec      float64  `csv:"time_of_processing"` // в секундах
 }

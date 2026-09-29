@@ -27,7 +27,7 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, orgRepo organ
 // GetAll возвращает все организации.
 func (uc *Usecase) GetAll(ctx context.Context) ([]Organization, error) {
 	uc.metrics.Counter("usecase.get_all_organizations.total").Inc()
-	
+
 	organizations, err := uc.orgRepo.GetAll(ctx)
 	if err != nil {
 		uc.metrics.Counter("usecase.get_all_organizations.error").Inc()
