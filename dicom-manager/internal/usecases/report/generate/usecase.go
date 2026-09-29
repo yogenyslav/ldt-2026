@@ -115,7 +115,7 @@ func (uc *Usecase) buildReport(ctx context.Context, jobIDs []string) ([]byte, er
 			qualityClass = 1
 		}
 
-		region, violations := result.AnatomicalRegion, result.Violations
+		region, violations := reportRegion(result.AnatomicalRegion), result.Violations
 		var metadata struct {
 			AnatomicalRegion *string  `json:"anatomical_region"`
 			ViolationType    []string `json:"violation_type"`
@@ -149,4 +149,17 @@ func (uc *Usecase) buildReport(ctx context.Context, jobIDs []string) ([]byte, er
 	}
 
 	return reportContent, nil
+}
+
+// reportRegion повторяет ANATOMICAL_REGION_MAP analyzer для старых результатов
+// без remapping в metadata. Исходный регион в БД и API остается неизменным.
+func reportRegion(region string) string {
+	switch region {
+	case "spine":
+		return "Поясничный отдел позвоночника"
+	case "hip_left", "hip_right":
+		return "Проксимальный отдел бедра"
+	default:
+		return region
+	}
 }

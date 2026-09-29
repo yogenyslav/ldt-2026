@@ -30,12 +30,15 @@ func (s *usecaseStub) GetByDicomID(_ context.Context, in uc.GetJobsRequest) ([]u
 }
 func TestGetByDicomID(t *testing.T) {
 	for _, tc := range []struct {
-		name          string
-		err           error
-		status        int
-		noAuth, empty bool
+		name                 string
+		region, mappedRegion string
+		err                  error
+		status               int
+		noAuth, empty        bool
 	}{
 		{name: "all attempts", status: 200},
+		{name: "right hip original label", status: 200, region: "hip_right", mappedRegion: "Проксимальный отдел бедра"},
+		{name: "left hip original label", status: 200, region: "hip_left", mappedRegion: "Проксимальный отдел бедра"},
 		{name: "empty list", status: 200, empty: true},
 		{name: "unauthorized", status: 401, noAuth: true},
 		{name: "forbidden", status: 403, err: uc.ErrDicomForbidden},
@@ -49,12 +52,22 @@ func TestGetByDicomID(t *testing.T) {
 				t.Fatal(err)
 			}
 			stub := &usecaseStub{err: tc.err}
-			region := "spine"
+			region, mappedRegion := tc.region, tc.mappedRegion
+			if region == "" {
+				region, mappedRegion = "spine", "Поясничный отдел позвоночника"
+			}
+			metadata, err := json.Marshal(map[string]any{
+				"anatomical_region": mappedRegion,
+				"violation_type":    []string{"Не выравнена ось позвоночника"},
+			})
+			if err != nil {
+				t.Fatal(err)
+			}
 			violations := []string{"Ось позвоночника отклонена более чем на 5°"}
 			if !tc.empty {
 				stub.jobs = []uc.Job{
 					{ID: "new", DicomFileID: "instance", Status: "running", AnatomicalRegion: &region, Violations: violations,
-						Metadata: []byte(`{"anatomical_region":"Поясничный отдел позвоночника","violation_type":["Не выравнена ось позвоночника"]}`)},
+						Metadata: metadata},
 					{ID: "old", DicomFileID: "instance", Status: "failed", Metadata: []byte(`{"error":"analysis failed"}`)},
 				}
 			}
@@ -97,7 +110,7 @@ func TestGetByDicomID(t *testing.T) {
 					if job.AnatomicalRegion == nil || *job.AnatomicalRegion != region || !reflect.DeepEqual(job.Violations, violations) {
 						t.Fatalf("API must preserve original labels: %+v", job)
 					}
-					if job.Metadata["anatomical_region"] != "Поясничный отдел позвоночника" ||
+					if job.Metadata["anatomical_region"] != mappedRegion ||
 						!reflect.DeepEqual(job.Metadata["violation_type"], []any{"Не выравнена ось позвоночника"}) {
 						t.Fatalf("API must preserve mapped metadata: %+v", job.Metadata)
 					}
