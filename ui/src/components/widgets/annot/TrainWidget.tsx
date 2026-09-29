@@ -8,9 +8,8 @@ import Bar from '@/components/shared/Bar'
 import Empty from '@/components/shared/Empty'
 import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
-import { useStartTraining, useSwitchVersions, useTraining } from '@/hooks/useAnnotation'
+import { useStartTraining, useTraining } from '@/hooks/useAnnotation'
 import { useJobs } from '@/hooks/useJobs'
-import Modal from '@/components/ui/modal'
 import { TRAINING_LOCKED } from '@/config'
 import { MODEL_NAME } from '@/constants'
 import { modelsOf } from '@/lib/settings'
@@ -38,41 +37,27 @@ const TrainWidget = () => {
   const { data, isError } = useTraining()
   const { data: jobs } = useJobs()
   const start = useStartTraining()
-  const change = useSwitchVersions()
   const { toast } = useToast()
-  const [locked, setLocked] = useState(false)
   const navigate = useNavigate()
 
   const models = modelsOf(jobs)
 
-  const [trainPick, setTrainPick] = useState<Record<string, boolean>>({ crest: true })
-  const [versionPick, setVersionPick] = useState<Record<string, boolean>>({ crest: true })
+  const [trainPick, setTrainPick] = useState<Record<string, boolean>>({})
+  const [versionPick, setVersionPick] = useState<Record<string, boolean>>({})
 
   const targets = data?.targets ?? []
   const versions = data?.versions ?? []
 
   const toTrain = picked(trainPick).filter((id) =>
-    targets.some((target) => target.id === id && target.ready && !target.busy),
+    targets.some((target) => target.id === id),
   )
-  const toSwitch = picked(versionPick).filter((id) => versions.some((version) => version.id === id))
+  const trainingDisabled = TRAINING_LOCKED || start.isPending || !toTrain.length ||
+    targets.some((target) => toTrain.includes(target.id) && (!target.ready || target.busy))
 
   const busy = targets.filter((target) => target.busy)
 
   return (
     <>
-      <Modal open={locked} title="Действие недоступно" onClose={() => setLocked(false)}>
-        <div className="flex flex-col gap-4 p-5">
-          <p className="m-0 base-regular">
-            На тестовом стенде отключена возможность дообучать и заменять модели, чтобы не сбивать
-            калибровку моделей.
-          </p>
-          <div>
-            <Button variant="primary" onClick={() => setLocked(false)}>
-              Понятно
-            </Button>
-          </div>
-        </div>
-      </Modal>
       <WorkHead
         title="Дообучение модели"
         sub="каждая модель обучается и обновляется отдельно"
@@ -117,22 +102,21 @@ const TrainWidget = () => {
                   ? Math.min(100, Math.round((target.have / target.need) * 100))
                   : null
                 const remaining = Math.max(0, target.need - target.have)
-                const pickable = target.ready && !target.busy
 
                 return (
                   <tr
                     key={target.id}
                     onClick={() =>
-                      pickable &&
                       setTrainPick((map) => ({ ...map, [target.id]: !map[target.id] }))
                     }
-                    className={[
-                      '[&>td]:border-b [&>td]:border-line [&>td]:px-3 [&>td]:py-2.5 last:[&>td]:border-b-0',
-                      pickable ? 'cursor-pointer hover:bg-hover' : '',
-                    ].join(' ')}
+                    className="cursor-pointer hover:bg-hover [&>td]:border-b [&>td]:border-line [&>td]:px-3 [&>td]:py-2.5 last:[&>td]:border-b-0"
                   >
                     <td className="w-11.5">
-                      {pickable ? <Check bare on={!!trainPick[target.id]} tabIndex={-1} /> : null}
+                      <Check
+                        bare
+                        on={!!trainPick[target.id]}
+                        aria-label={`Выбрать модель ${target.name ?? MODEL_NAME[target.id] ?? target.id}`}
+                      />
                     </td>
                     <td>
                       <b>{target.name ?? MODEL_NAME[target.id] ?? target.id}</b>
@@ -169,9 +153,9 @@ const TrainWidget = () => {
         <CardFoot>
           <Button
             variant="primary"
-            disabled={!toTrain.length || start.isPending}
+            disabled={trainingDisabled}
             onClick={async () => {
-              if (TRAINING_LOCKED) return setLocked(true)
+              if (trainingDisabled) return
               await start.mutateAsync(toTrain)
               setTrainPick({})
               toast({ title: 'Дообучение запущено' })
@@ -267,18 +251,6 @@ const TrainWidget = () => {
             </div>
 
             <CardFoot>
-              <Button
-                variant="primary"
-                disabled={!toSwitch.length || change.isPending}
-                onClick={async () => {
-                  if (TRAINING_LOCKED) return setLocked(true)
-                  await change.mutateAsync(toSwitch)
-                  setVersionPick({})
-                  toast({ title: 'Модель переведена на новую версию' })
-                }}
-              >
-                Перевести выбранные{toSwitch.length ? ` (${toSwitch.length})` : ''}
-              </Button>
               {/* The frames the two versions disagree on are the ones worth
                   looking at by hand — they are in the annotation queue. */}
               <Button onClick={() => navigate('/markup')}>Посмотреть спорные снимки</Button>

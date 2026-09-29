@@ -11,8 +11,7 @@ export const POLL_INTERVAL = 3000
    refreshes at a much calmer pace. */
 export const QUEUE_POLL_INTERVAL = 15_000
 
-/* The test stand must not retrain or replace models: it would knock the
-   calibration off. Only the demo mode (no backend) may pretend to do it. */
+/* Запуск дообучения пока доступен только в деморежиме; остальной интерфейс работает. */
 export const TRAINING_LOCKED = !USE_MOCKS
 
 /* How the markup queue tells the clinics' frames from the uploaded ones.
