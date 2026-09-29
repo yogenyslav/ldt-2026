@@ -29,15 +29,15 @@ const SOURCES: Array<AnnotSource | 'all'> = ['all', 'clinic', 'upload']
    ============================================================ */
 
 const AnnotQueueWidget = () => {
-  const { pending, done, isLoading } = useAnnotQueue()
   const { source, setSource, tab, setTab, open } = useAnnot()
+  /* the source is asked of the server, so the chips carry no counts of their own */
+  const { pending, done, processing, isLoading } = useAnnotQueue(source, true)
   const [sheet, setSheet] = useState(false)
   const navigate = useNavigate()
 
   if (isLoading) return <Loader />
 
-  const bySource = (list: typeof pending) =>
-    source === 'all' ? list : list.filter((item) => item.source === source)
+  const bySource = (list: typeof pending) => list
 
   const queue = bySource(tab === 'pending' ? pending : done)
 
@@ -76,17 +76,30 @@ const AnnotQueueWidget = () => {
             <Chip
               key={id}
               on={source === id}
-              count={
-                id === 'all'
-                  ? (tab === 'pending' ? pending : done).length
-                  : (tab === 'pending' ? pending : done).filter((item) => item.source === id).length
-              }
               onClick={() => setSource(id)}
             >
               {ANNOT_SOURCE[id]}
             </Chip>
           ))}
         </CardHead>
+
+        {processing.length ? (
+          <div className="border-b border-line bg-surface-2 px-5.5 py-3">
+            <div className="small-regular text-muted">
+              Обрабатываются, скоро появятся в очереди:{' '}
+              {processing.length} {plural(processing.length, 'снимок', 'снимка', 'снимков')}
+            </div>
+            <ul className="m-0 mt-1.5 list-none p-0 text-[14px]">
+              {processing.map((item) => (
+                <li key={item.id} className="flex items-center gap-3 py-0.5">
+                  <b>{item.file}</b>
+                  <span className="text-muted">обрабатывается</span>
+                  <span className="whitespace-nowrap text-muted">{whenOf(item.created_at)}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        ) : null}
 
         {queue.length ? (
           <div className="pb-1">

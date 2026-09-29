@@ -1,4 +1,5 @@
 import { REGION_SHORT } from '@/constants'
+import { SOURCE_VALUE } from '@/config'
 import type {
   AnnotSource,
   AnnotTask,
@@ -133,6 +134,11 @@ export interface IAnnotTask {
   created_at: string
 }
 
+/* upload_source of /job/info: manual — uploaded by the technician or admin,
+   orthanc — sent by the clinic's device */
+export const sourceOf = (job: IJobInfo): AnnotSource =>
+  job.upload_source ? (job.upload_source === SOURCE_VALUE.upload ? 'upload' : 'clinic') : job.source === 'upload' ? 'upload' : 'clinic'
+
 export function annotTasks(jobs?: IJobInfo[]): IAnnotTask[] {
   const tasks: IAnnotTask[] = []
 
@@ -140,13 +146,15 @@ export function annotTasks(jobs?: IJobInfo[]): IAnnotTask[] {
     const meta = job.metadata
     if (job.status !== 'completed') continue
     if (!meta?.criteria || !meta.shape || !job.anatomical_region) continue
+    const upload = sourceOf(job) === 'upload'
 
     for (const key of Object.keys(meta.criteria)) {
       const task = TASK_OF[key]
       if (!task) continue
 
       const criterion = meta.criteria[key]
-      const why = reasonFor(key, criterion)
+      /* a frame uploaded by hand is there to be annotated, whatever the model thinks */
+      const why = reasonFor(key, criterion) || (upload ? 'загружен для разметки' : '')
       if (!why) continue
 
       tasks.push({
@@ -159,7 +167,7 @@ export function annotTasks(jobs?: IJobInfo[]): IAnnotTask[] {
         rows: meta.shape[0],
         cols: meta.shape[1],
         why,
-        source: job.source === 'upload' ? 'upload' : 'clinic',
+        source: sourceOf(job),
         pre: task === 'foreign_seg' ? !!criterion.regions?.length : pointsOf(criterion) > 0,
         created_at: job.created_at,
       })

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { Check, ChevronRight, FileText, Inbox, Search, X } from 'lucide-react'
 import Button from '@/components/ui/button'
 import Card from '@/components/ui/card'
+import MultiSelect from '@/components/ui/multiselect'
 import Select from '@/components/ui/select'
 import Empty from '@/components/shared/Empty'
 import Loader from '@/components/shared/Loader'
@@ -22,7 +23,8 @@ import type { Decision, IJobInfo, VerdictKind } from '@/types'
 const COLUMNS = 'grid grid-cols-[44px_128px_170px_146px_1fr_236px_116px_24px] items-center gap-3.5'
 
 interface IFilters {
-  org: string
+  /* null until the user touches it: then it is the current organisation */
+  org: string[] | null
   region: string
   verdict: string
   decision: string
@@ -31,16 +33,18 @@ interface IFilters {
 
 const QueueWidget = () => {
   const [filters, setFilters] = useState<IFilters>({
-    org: '',
+    org: null,
     region: '',
     verdict: '',
     decision: '',
     query: '',
   })
-  /* the organisation filter is a query parameter of /job/info: without it an
-     admin gets the jobs of their own organisation only */
+  /* the organisation filter is a query parameter of /job/info, and it starts as
+     the current organisation: that is what the endpoint answers with anyway */
+  const ownOrg = useOrgId()
+  const selectedOrgs = filters.org ?? (ownOrg ? [String(ownOrg)] : [])
   const { data: rawJobs, isLoading } = useJobs(50, 0, QUEUE_POLL_INTERVAL, {
-    organizationIds: filters.org ? [Number(filters.org)] : undefined,
+    organizationIds: selectedOrgs.length ? selectedOrgs.map(Number) : undefined,
   })
   const { jobs, dicoms } = useEnrichedJobs(rawJobs)
   const decide = useDecideJob()
@@ -54,14 +58,13 @@ const QueueWidget = () => {
   /* Every organisation of the centre comes from the list endpoint; until it
      answers (or where it does not exist) fall back to the ones seen so far. */
   const { data: orgList } = useOrganizations()
-  const ownOrg = useOrgId()
   const orgIds = useMemo(() => {
     if (orgList?.length) return orgList.map((org) => org.id)
     const ids = new Set<number>(ownOrg ? [ownOrg] : [])
     Object.values(dicoms).forEach((dicom) => dicom?.organization_id && ids.add(dicom.organization_id))
-    if (filters.org) ids.add(Number(filters.org))
+    selectedOrgs.forEach((id) => ids.add(Number(id)))
     return [...ids]
-  }, [orgList, dicoms, ownOrg, filters.org])
+  }, [orgList, dicoms, ownOrg, selectedOrgs])
   const fetchedNames = useOrgNames(orgList?.length ? [] : orgIds)
   const orgNames: Record<number, string> = {
     ...fetchedNames,
@@ -117,7 +120,7 @@ const QueueWidget = () => {
 
   /* A fresh installation: nothing has been sent by the clinics and nothing has
      been uploaded yet. Not the same thing as filters that match nothing. */
-  if (!jobs?.length) {
+  if (!jobs?.length && filters.org === null) {
     return (
       <>
         <div className="mb-5.5 flex items-center gap-3.5">
@@ -146,10 +149,17 @@ const QueueWidget = () => {
       </div>
 
       <div className="mb-4.5 flex flex-wrap items-center gap-2.5">
-        <Select
-          value={filters.org}
+        <MultiSelect
+          value={selectedOrgs}
           onChange={(org) => setFilters({ ...filters, org })}
-          options={[['', 'Все организации'], ...orgIds.map((id): [string, string] => [String(id), orgLabel(id)])]}
+          options={orgIds.map((id): [string, string] => [String(id), orgLabel(id)])}
+          summary={(labels) =>
+            labels.length === 0
+              ? 'Организации'
+              : labels.length === 1
+                ? labels[0]
+                : `Организаций: ${labels.length}`
+          }
         />
         <Select
           value={filters.region}

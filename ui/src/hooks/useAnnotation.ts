@@ -5,7 +5,9 @@ import ApiAnnotation, {
   type ISubmissionRecord,
 } from '@/services/apiAnnotation'
 import { useJob, useJobs } from '@/hooks/useJobs'
-import { annotTasks } from '@/lib/annotQueue'
+import { annotTasks, sourceOf } from '@/lib/annotQueue'
+import { POLL_INTERVAL, QUEUE_POLL_INTERVAL, SOURCE_VALUE } from '@/config'
+import type { AnnotSource, UploadSource } from '@/types'
 
 /* ============================================================
    The annotation queue is not a list somebody keeps: it is the
@@ -21,16 +23,23 @@ import { annotTasks } from '@/lib/annotQueue'
    none yet: those calls fail and the screen says so.
    ============================================================ */
 
-export const useSubmissions = () =>
+export const useSubmissions = (enabled = true) =>
   useQuery({
     queryKey: ['annot', 'submissions'],
     queryFn: () => ApiAnnotation.listSubmissions().then((response) => response.data.submissions),
     retry: false,
+    enabled,
   })
 
-export const useAnnotQueue = () => {
-  const jobs = useJobs(50)
-  const submissions = useSubmissions()
+/* The source is a server-side filter (upload_source of /job/info): the clinics'
+   stream is `orthanc`, what was uploaded by hand is `manual`.
+   Only the markup screen itself (`live`) reads the list of submissions and
+   watches the frames being processed; the nav badge asks for neither. */
+export const useAnnotQueue = (source: AnnotSource | 'all' = 'all', live = false) => {
+  const uploadSource: UploadSource[] | undefined =
+    source === 'all' ? undefined : [SOURCE_VALUE[source]]
+  const jobs = useJobs(50, 0, live ? POLL_INTERVAL : QUEUE_POLL_INTERVAL, { uploadSource })
+  const submissions = useSubmissions(live)
 
   const all = useMemo(() => annotTasks(jobs.data), [jobs.data])
 
@@ -44,6 +53,16 @@ export const useAnnotQueue = () => {
 
   return {
     isLoading: jobs.isLoading,
+    /* sent for analysis but not analysed yet: they were uploaded a moment ago and
+       are on their way to the queue, so they stay on the screen until they arrive */
+    processing: (jobs.data ?? [])
+      .filter((job) => job.status === 'pending' || job.status === 'processing')
+      .map((job) => ({
+        id: job.id,
+        file: job.file_name ?? job.id,
+        source: sourceOf(job),
+        created_at: job.created_at,
+      })),
     /* the list of submissions is optional: without it everything is unannotated,
        which is the truth before the endpoint exists */
     pending: all.filter((task) => !byKey.has(task.key)),

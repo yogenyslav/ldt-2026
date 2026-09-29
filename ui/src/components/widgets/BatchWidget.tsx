@@ -11,6 +11,7 @@ import { REGION_SHORT, STATUS } from '@/constants'
 import { useJobs } from '@/hooks/useJobs'
 import { useGenerateReport } from '@/hooks/useReports'
 import { useUploadArchive } from '@/hooks/useUpload'
+import { uploadErrorText } from '@/lib/errors'
 import { cn, plural } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
 
@@ -46,8 +47,8 @@ const BatchWidget = () => {
       const uploaded = await upload.mutateAsync(file)
       setBatch({ name: file.name, ids: uploaded.map((item) => item.job_id) })
       toast({ title: `Принято файлов: ${uploaded.length}` })
-    } catch {
-      toast({ title: 'Не удалось загрузить архив', variant: 'destructive' })
+    } catch (error) {
+      toast({ title: uploadErrorText(error, 'Не удалось загрузить архив'), variant: 'destructive' })
     }
   }
 

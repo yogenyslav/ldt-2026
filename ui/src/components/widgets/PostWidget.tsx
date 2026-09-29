@@ -18,6 +18,7 @@ import { REGION, STATUS, VERDICT_POST } from '@/constants'
 import { useCabinet } from '@/context/CabinetContext'
 import { useStation } from '@/context/StationContext'
 import { useUploadScan } from '@/hooks/useUpload'
+import { uploadErrorText } from '@/lib/errors'
 import { brokenNames } from '@/lib/criteria'
 import { cn, plural, timeOf } from '@/lib/utils'
 import { verdictOf } from '@/lib/verdict'
@@ -89,8 +90,8 @@ const PostWidget = () => {
       const uploaded = await upload.mutateAsync(file)
       station.attach(uploaded.job_id)
       toast({ title: 'Снимок принят, идёт обработка' })
-    } catch {
-      toast({ title: 'Не удалось загрузить снимок', variant: 'destructive' })
+    } catch (error) {
+      toast({ title: uploadErrorText(error, 'Не удалось загрузить снимок'), variant: 'destructive' })
     }
   }
 

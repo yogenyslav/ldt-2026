@@ -21,12 +21,30 @@ import { nm, whenOf } from '@/lib/utils'
 import { groupByStudy, verdictOf } from '@/lib/verdict'
 import type { Decision, IJobInfo } from '@/types'
 
-const Cell = ({ label, value }: { label: string; value: string }) => (
+const Cell = ({ label, value, note }: { label: string; value: string; note?: string }) => (
   <div className="bg-surface px-4.5 py-3.5">
     <div className="text-[13.5px] text-muted">{label}</div>
-    <div className="mt-0.5 base-semibold">{value}</div>
+    <div className="mt-0.5 base-semibold break-all">{value}</div>
+    {note ? <div className="small-regular font-normal text-muted">{note}</div> : null}
   </div>
 )
+
+/* The device comes as one DICOM string: "Modality=CR; Manufacturer=GE Healthcare;
+   ManufacturerModelName=Lunar Prodigy Advance; ...". The doctor wants the model,
+   and the maker under it in small print. A string that is not of that shape is
+   shown as it is. */
+const parseDevice = (raw?: string): { model: string; maker?: string } => {
+  if (!raw) return { model: '—' }
+  const fields = Object.fromEntries(
+    raw.split(';').map((part) => {
+      const at = part.indexOf('=')
+      return at < 0 ? ['', ''] : [part.slice(0, at).trim(), part.slice(at + 1).trim()]
+    }),
+  )
+  const model = fields.ManufacturerModelName
+  if (!model) return { model: raw }
+  return { model, maker: fields.Manufacturer || undefined }
+}
 
 /* Utility line. Confidence is shown only here, with wording that keeps it
    from being read as confidence in the verdict. */
@@ -135,6 +153,7 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
   const index = siblings.findIndex((item) => item.id === job.id)
 
   const level = verdictOf(job)
+  const device = parseDevice(dicom?.device_model ?? job.metadata?.device)
   const now = job.status !== 'completed' ? 1 : job.specialist_decision ? 3 : 2
   const steps = [
     { title: 'Загружено', note: whenOf(job.created_at) },
@@ -161,9 +180,9 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
         <span className="flex-1" />
         <span className="text-right small-regular text-muted">
           задача <span className="tabular">{job.id}</span>
-          {studyId ? (
+          {dicom?.dicom_study_uid || studyId ? (
             <span className="block">
-              исследование <span className="tabular">{studyId}</span>
+              исследование <span className="tabular">{dicom?.dicom_study_uid ?? studyId}</span>
             </span>
           ) : null}
         </span>
@@ -194,8 +213,12 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
             <Cell label="Состояние" value={STATUS[job.status]} />
             {/* The referring organisation is in the dicom_file table but not in
                 the DTO — context/backend_requests.md. The file name is. */}
-            <Cell label="Файл" value={dicom?.file_name ?? job.file_name ?? '—'} />
-            <Cell label="Аппарат" value={dicom?.device_model ?? job.metadata?.device ?? '—'} />
+            <Cell label="Снимок" value={dicom?.dicom_image_uid ?? '—'} />
+            <Cell
+              label="Аппарат"
+              value={device.model}
+              note={device.maker}
+            />
           </div>
 
           {job.status === 'failed' ? (

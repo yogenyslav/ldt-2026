@@ -6,6 +6,15 @@ import { AxiosError } from 'axios'
    people. What is never shown is the machinery behind it — a status code, a
    route, whether the handler exists yet. That lives in the code and in
    context/backend_requests.md, not in front of a doctor. */
+/* An upload the server turned down. The same scan cannot be sent twice: the
+   answer is 403 (or 409 by the contract), and the doctor should hear why. */
+export function uploadErrorText(error: unknown, fallback: string): string {
+  if (error instanceof AxiosError && (error.response?.status === 403 || error.response?.status === 409)) {
+    return 'Извините, повторно загружать такой же снимок нельзя.'
+  }
+  return errorText(error, fallback)
+}
+
 export function errorText(error: unknown, fallback: string): string {
   if (error instanceof AxiosError) {
     const message = (error.response?.data as { message?: string } | undefined)?.message
