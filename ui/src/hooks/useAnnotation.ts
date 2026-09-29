@@ -32,7 +32,7 @@ export const useSubmissions = (enabled = true) =>
   })
 
 /* The source is a server-side filter (upload_source of /job/info): the clinics'
-   stream is `orthanc`, what was uploaded by hand is `manual`.
+   stream is `clinic`, admin uploads are `manual`.
    Only the markup screen itself (`live`) reads the list of submissions and
    watches the frames being processed; the nav badge asks for neither. */
 export const useAnnotQueue = (source: AnnotSource | 'all' = 'all', live = false) => {

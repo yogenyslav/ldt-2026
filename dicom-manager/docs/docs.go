@@ -17,7 +17,7 @@ const docTemplate = `{
     "paths": {
         "/dicom/upload": {
             "post": {
-                "description": "Загрузить DICOM файл на сервер.",
+                "description": "Загрузить DICOM файл на сервер. Источник определяется ролью: admin — manual, specialist — clinic.",
                 "consumes": [
                     "application/dicom"
                 ],
@@ -29,6 +29,12 @@ const docTemplate = `{
                 ],
                 "summary": "Загрузить DICOM файл",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Исходное имя файла: attachment; filename*=UTF-8''scan.dcm",
+                        "name": "Content-Disposition",
+                        "in": "header"
+                    },
                     {
                         "description": "DICOM файл для загрузки.",
                         "name": "file",
@@ -378,7 +384,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "manual",
-                                "orthanc"
+                                "clinic"
                             ],
                             "type": "string"
                         },
@@ -430,7 +436,7 @@ const docTemplate = `{
         },
         "/job/info": {
             "get": {
-                "description": "Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка через UI, orthanc — поступление из Orthanc.",
+                "description": "Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка администратором через UI, clinic — загрузка специалистом через UI или поступление из Orthanc.",
                 "consumes": [
                     "application/json"
                 ],
@@ -470,7 +476,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "manual",
-                                "orthanc"
+                                "clinic"
                             ],
                             "type": "string"
                         },
@@ -539,7 +545,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "manual",
-                                "orthanc"
+                                "clinic"
                             ],
                             "type": "string"
                         },
@@ -1220,7 +1226,7 @@ const docTemplate = `{
                     "enum": [
                         "unknown",
                         "manual",
-                        "orthanc"
+                        "clinic"
                     ]
                 }
             }
@@ -1426,7 +1432,7 @@ const docTemplate = `{
                     "enum": [
                         "unknown",
                         "manual",
-                        "orthanc"
+                        "clinic"
                     ]
                 },
                 "violations": {

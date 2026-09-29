@@ -134,8 +134,8 @@ export interface IAnnotTask {
   created_at: string
 }
 
-/* upload_source of /job/info: manual — uploaded by the technician or admin,
-   orthanc — sent by the clinic's device */
+/* upload_source of /job/info: manual — uploaded by an admin,
+   clinic — uploaded by a specialist or sent by Orthanc */
 export const sourceOf = (job: IJobInfo): AnnotSource =>
   job.upload_source ? (job.upload_source === SOURCE_VALUE.upload ? 'upload' : 'clinic') : job.source === 'upload' ? 'upload' : 'clinic'
 

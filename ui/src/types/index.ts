@@ -38,8 +38,8 @@ export interface IClassification {
   cnn_confidence?: number | null
 }
 
-/* manual — uploaded through the UI, orthanc — arrived from the device. */
-export type UploadSource = 'manual' | 'orthanc'
+/* manual — uploaded by an admin; clinic — uploaded by a specialist or Orthanc. */
+export type UploadSource = 'manual' | 'clinic'
 
 /* GET /dicom/{dicom_id} */
 export interface IDicomInfo {

@@ -106,8 +106,8 @@ func (uc *Usecase) UploadDicomFiles(
 		return nil, fmt.Errorf("failed to get DICOM properties: %w", err)
 	}
 
-	source := storage.UploadSourceOrthanc
-	if in.SyncOrthanc {
+	source := storage.UploadSourceClinic
+	if in.SyncOrthanc && in.CreatorRole == "admin" {
 		source = storage.UploadSourceManual
 	}
 
@@ -186,7 +186,7 @@ func (uc *Usecase) getDicomProperties(ctx context.Context, dicoms []RawDicomData
 			for i := range uploaded {
 				uploaded[i].FileName = dicom.FileName
 			}
-			
+
 			dicomProperties = append(dicomProperties, uploaded...)
 			if err != nil {
 				uc.metrics.Counter("usecases.dicom.upload.orthanc.error").Inc()

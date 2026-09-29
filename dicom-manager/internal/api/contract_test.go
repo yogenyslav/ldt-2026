@@ -204,7 +204,7 @@ func TestBrowserAPIContract(t *testing.T) {
 	t.Run("binary DICOM", func(t *testing.T) {
 		payload := []byte{0, 1, 2, 255}
 		request("POST", "/dicom/upload", "application/dicom", bytes.NewReader(payload), "token", 201)
-		if len(uploads.last.RawDicoms) != 1 || !bytes.Equal(uploads.last.RawDicoms[0].Payload, payload) || !uploads.last.SyncOrthanc || uploads.last.CreatorID != 42 {
+		if len(uploads.last.RawDicoms) != 1 || !bytes.Equal(uploads.last.RawDicoms[0].Payload, payload) || !uploads.last.SyncOrthanc || uploads.last.CreatorID != 42 || uploads.last.CreatorRole != "specialist" {
 			t.Fatalf("wrong upload: %+v", uploads.last)
 		}
 	})
@@ -279,7 +279,7 @@ func TestBrowserAPIContract(t *testing.T) {
 			"other/study/series/scan.dcm":    "other dicom",
 			"patient/study/series/image.DcM": "mixed case dicom",
 		}
-		if len(uploads.last.RawDicoms) != len(want) || uploads.last.OrganizationID != 218 {
+		if len(uploads.last.RawDicoms) != len(want) || uploads.last.OrganizationID != 218 || uploads.last.CreatorRole != "specialist" {
 			t.Fatalf("wrong ZIP upload: %+v", uploads.last)
 		}
 		for _, file := range uploads.last.RawDicoms {

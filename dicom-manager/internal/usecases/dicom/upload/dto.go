@@ -11,6 +11,7 @@ type RawDicomData struct {
 type DicomUploadRequest struct {
 	RawDicoms      []RawDicomData
 	CreatorID      int64
+	CreatorRole    string
 	OrganizationID int64
 	SyncOrthanc    bool
 }

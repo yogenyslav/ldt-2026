@@ -20,4 +20,4 @@ export const TRAINING_LOCKED = !USE_MOCKS
    upload_source. When it arrives: put its name and values here, and (if the job
    DTO gets a matching field) the field name in sourceOf, lib/annotQueue.ts. */
 export const SOURCE_PARAM = 'upload_source'
-export const SOURCE_VALUE = { clinic: 'orthanc', upload: 'manual' } as const
+export const SOURCE_VALUE = { clinic: 'clinic', upload: 'manual' } as const

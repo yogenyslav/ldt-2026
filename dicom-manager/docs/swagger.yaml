@@ -105,7 +105,7 @@ definitions:
         enum:
         - unknown
         - manual
-        - orthanc
+        - clinic
         type: string
     type: object
   internal_api_job_get_by_id.GetByIDOut:
@@ -243,7 +243,7 @@ definitions:
         enum:
         - unknown
         - manual
-        - orthanc
+        - clinic
         type: string
       violations:
         description: Список нарушений, обнаруженных в DICOM-файле.
@@ -476,7 +476,7 @@ paths:
         items:
           enum:
           - manual
-          - orthanc
+          - clinic
           type: string
         name: upload_source
         type: array
@@ -514,8 +514,13 @@ paths:
     post:
       consumes:
       - application/dicom
-      description: Загрузить DICOM файл на сервер.
+      description: 'Загрузить DICOM файл на сервер. Источник определяется ролью: admin
+        — manual, specialist — clinic.'
       parameters:
+      - description: 'Исходное имя файла: attachment; filename*=UTF-8''''scan.dcm'
+        in: header
+        name: Content-Disposition
+        type: string
       - description: DICOM файл для загрузки.
         in: body
         name: file
@@ -656,7 +661,8 @@ paths:
       description: 'Список задач с пагинацией и фильтрами. Администратор может выбрать
         организации через organization_ids; без фильтра используется его организация.
         Остальные пользователи видят только собственные задачи. upload_source: manual
-        — загрузка через UI, orthanc — поступление из Orthanc.'
+        — загрузка администратором через UI, clinic — загрузка специалистом через
+        UI или поступление из Orthanc.'
       parameters:
       - description: Offset для пагинации (по умолчанию 0)
         in: query
@@ -680,7 +686,7 @@ paths:
         items:
           enum:
           - manual
-          - orthanc
+          - clinic
           type: string
         name: upload_source
         type: array
@@ -729,7 +735,7 @@ paths:
         items:
           enum:
           - manual
-          - orthanc
+          - clinic
           type: string
         name: upload_source
         type: array

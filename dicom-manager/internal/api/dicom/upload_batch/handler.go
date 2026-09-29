@@ -145,6 +145,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 	req := upload.DicomUploadRequest{
 		RawDicoms:      make([]upload.RawDicomData, 0),
 		CreatorID:      claims.UserID,
+		CreatorRole:    claims.Role,
 		OrganizationID: claims.OrganizationID,
 		SyncOrthanc:    true,
 	}

@@ -39,7 +39,7 @@ func TestUploadFileName(t *testing.T) {
 			stub := &uploadStub{}
 			app := fiber.New()
 			app.Use(func(c fiber.Ctx) error {
-				c.Locals("tokenClaims", jwt.TokenClaims{UserID: 1, OrganizationID: 2})
+				c.Locals("tokenClaims", jwt.TokenClaims{UserID: 1, OrganizationID: 2, Role: "specialist"})
 				return c.Next()
 			})
 			app.Post("/dicom/upload", New(&log, m, stub).Upload)
@@ -56,6 +56,7 @@ func TestUploadFileName(t *testing.T) {
 				require.Empty(t, stub.request.RawDicoms)
 				return
 			}
+			require.Equal(t, "specialist", stub.request.CreatorRole)
 			require.Len(t, stub.request.RawDicoms, 1)
 			file := stub.request.RawDicoms[0]
 			require.Equal(t, []byte("DICOM"), file.Payload)

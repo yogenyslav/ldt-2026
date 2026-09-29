@@ -39,7 +39,7 @@ func TestRegisterOrthancOnlyPersists(t *testing.T) {
 		{name: "commit failure", commitErr: failure}, {name: "foreign file", foreign: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			file := storage.Dicom{UploadSource: storage.UploadSourceOrthanc, ID: "id", CreatorID: 42, OrganizationID: 218, SeriesID: "series", StudyID: "study"}
+			file := storage.Dicom{UploadSource: storage.UploadSourceClinic, ID: "id", CreatorID: 42, OrganizationID: 218, SeriesID: "series", StudyID: "study"}
 			repo := &orthancRepo{repoStub: repoStub{err: tc.saveErr}, file: file}
 			if tc.foreign {
 				repo.file.CreatorID++
