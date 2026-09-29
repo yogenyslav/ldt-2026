@@ -143,7 +143,7 @@ const AnnotCanvas = ({
     <div className="overflow-hidden rounded-panel border border-line">
       <div className="flex items-center gap-3 border-b border-line bg-surface px-3.5 py-2.5 text-[13.5px] text-ink-2">
         <b>{REGION_SHORT[item.region]}</b>
-        <span>{item.file}</span>
+        <span className="break-all">{item.file}</span>
         <span className="flex-1" />
         {item.blank ? (
           <Tag>отметки ставите вы</Tag>

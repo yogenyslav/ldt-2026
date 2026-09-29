@@ -19,6 +19,7 @@ import { useDicomInfo, useEnrichedJobs } from '@/hooks/useDicomInfo'
 import { useUserName } from '@/hooks/useUser'
 import { nm, whenOf } from '@/lib/utils'
 import { groupByStudy, verdictOf } from '@/lib/verdict'
+import { enrichJob, studyKeyOf } from '@/lib/dicom'
 import type { Decision, IJobInfo } from '@/types'
 
 const Cell = ({ label, value, note }: { label: string; value: string; note?: string }) => (
@@ -147,7 +148,8 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
 
   if (isLoading || !job) return <Loader />
 
-  const studyId = dicom?.study_id ?? job.study_id ?? job.metadata?.study_id
+  const enrichedJob = enrichJob(job, dicom)
+  const studyId = studyKeyOf(enrichedJob)
   const siblings =
     groupByStudy(jobs ?? []).find((study) => study.study_id === studyId)?.jobs ?? [job]
   const index = siblings.findIndex((item) => item.id === job.id)
@@ -179,12 +181,7 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
         <VerdictBadge level={level} />
         <span className="flex-1" />
         <span className="text-right small-regular text-muted">
-          задача <span className="tabular">{job.id}</span>
-          {dicom?.dicom_study_uid || studyId ? (
-            <span className="block">
-              исследование <span className="tabular">{dicom?.dicom_study_uid ?? studyId}</span>
-            </span>
-          ) : null}
+          исследование <span className="tabular break-all">{enrichedJob.dicom_study_uid || '—'}</span>
         </span>
       </div>
 
@@ -207,7 +204,7 @@ const StudyWidget = ({ jobId }: { jobId?: string }) => {
 
         <div className="flex flex-col gap-3.5">
           <div className="grid grid-cols-2 gap-px overflow-hidden rounded-panel border border-line bg-line">
-            <Cell label="Пациент" value={dicom?.patient_id ?? job.patient_ref ?? '—'} />
+            <Cell label="Пациент" value={enrichedJob.patient_ref || '—'} />
             <Cell label="Поступило" value={whenOf(job.created_at)} />
             <Cell label="Область" value={job.anatomical_region ? REGION[job.anatomical_region] : '—'} />
             <Cell label="Состояние" value={STATUS[job.status]} />

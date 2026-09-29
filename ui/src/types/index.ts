@@ -89,6 +89,10 @@ export interface IJobInfo {
   error?: string
   /* duplicated in metadata; lifted to the top level for convenient lists */
   study_id?: string
+  /* StudyInstanceUID из тегов DICOM; study_id остается идентификатором Orthanc. */
+  dicom_study_uid?: string
+  /* SOPInstanceUID снимка из тегов DICOM. */
+  dicom_image_uid?: string
   patient_ref?: string
   /* the column exists in the dicom_file table but is missing from the DTO —
      requested in context/backend_requests.md, lists fall back to the job id */
@@ -102,6 +106,7 @@ export interface IJobInfo {
 /* A visit: the scans taken for one patient during a single appointment. */
 export interface IStudy {
   study_id: string
+  dicom_study_uid?: string
   patient_ref?: string
   created_at: string
   jobs: IJobInfo[]

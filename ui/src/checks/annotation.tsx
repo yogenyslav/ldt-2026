@@ -54,7 +54,8 @@ import {
   rotationFrames,
   settingsOf,
 } from '@/lib/settings'
-import type { IAnnotCase, IJobInfo, ITrainTarget, Point } from '@/types'
+import type { IAnnotCase, IDicomInfo, IJobInfo, ITrainTarget, Point } from '@/types'
+import { enrichJob } from '@/lib/dicom'
 
 let passed = 0
 const failures: string[] = []
@@ -140,6 +141,19 @@ const hipJob = DEMO_JOBS.find(
   (job) => job.anatomical_region?.startsWith('hip') && job.metadata?.criteria?.hip_keypoints,
 )!
 const hipCase = caseOf(hipJob, 'hip_keypoints', '/scan.png')!
+const imageJob = enrichJob({ ...hipJob, file_name: 'scan.dcm' }, {
+  id: hipJob.dicom_id,
+  dicom_image_uid: '1.2.840.10008.123',
+})
+const queuedImageJob = {
+  ...DEMO_JOBS.find((job) => job.id === tasks[0].jobId)!,
+  file_name: 'scan.dcm',
+  dicom_image_uid: imageJob.dicom_image_uid,
+}
+eq('очередь разметки подписывает снимок его DICOM UID', annotTasks([queuedImageJob])[0].file, '1.2.840.10008.123')
+eq('разметка подписывает снимок его DICOM UID', caseOf(imageJob, 'hip_keypoints', '/scan.png')!.file, '1.2.840.10008.123')
+eq('идентификатор задачи остается в ключе разметки', caseOf(imageJob, 'hip_keypoints', '/scan.png')!.key, `${hipJob.id}:hip_keypoints`)
+eq('отсутствующий UID не заменяется job_id', hipCase.file, '—')
 
 ok('снимок бедра собрался', !!hipCase)
 eq('три точки, как в контракте', hipCase.items!.length, 3)
@@ -366,9 +380,14 @@ eq('без изменений', delta({ name: '', unit: '%', goal: 'up', now: 5,
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
 client.setQueryData(['settings'], ROTATION_DEFAULTS)
 client.setQueryData(['jobs', 50, 0, {}], DEMO_JOBS)
-for (const job of DEMO_JOBS) {
+for (const [index, job] of DEMO_JOBS.entries()) {
   client.setQueryData(['job', job.id], job)
   client.setQueryData(['dicom', job.dicom_id], { image_data: '/scan.png' })
+  client.setQueryData(['dicom-info', job.dicom_id], {
+    id: job.dicom_id,
+    dicom_image_uid: `1.2.840.10008.123.${index}`,
+    file_name: 'scan.dcm',
+  })
 }
 
 const draw = (node: React.ReactNode) =>
@@ -388,6 +407,10 @@ const screens: Array<[string, string]> = [
   ['Дообучение модели', draw(<TrainWidget />)],
   ['Подбор параметров', draw(<TuneWidget />)],
 ]
+
+const firstImageUID = client.getQueryData<IDicomInfo>(['dicom-info', tasks[0].dicomId])!.dicom_image_uid!
+ok('UID снимка виден в очереди заданий', screens[0][1].includes(firstImageUID))
+ok('UID снимка виден на странице разметки', screens[1][1].includes(firstImageUID))
 
 const text = (html: string) =>
   html

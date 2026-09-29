@@ -162,7 +162,7 @@ export function annotTasks(jobs?: IJobInfo[]): IAnnotTask[] {
         jobId: job.id,
         dicomId: job.dicom_id,
         task,
-        file: job.file_name ?? job.id,
+        file: job.dicom_image_uid || '—',
         region: job.anatomical_region,
         rows: meta.shape[0],
         cols: meta.shape[1],
@@ -215,7 +215,7 @@ export function caseOf(job: IJobInfo, task: AnnotTask, png: string): IAnnotCase 
   return {
     key: `${job.id}:${task}`,
     task,
-    file: job.file_name ?? job.id,
+    file: job.dicom_image_uid || '—',
     region,
     rows,
     cols,

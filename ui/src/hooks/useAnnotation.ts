@@ -5,6 +5,8 @@ import ApiAnnotation, {
   type ISubmissionRecord,
 } from '@/services/apiAnnotation'
 import { useJob, useJobs } from '@/hooks/useJobs'
+import { useDicomInfo, useEnrichedJobs } from '@/hooks/useDicomInfo'
+import { enrichJob } from '@/lib/dicom'
 import { annotTasks, sourceOf } from '@/lib/annotQueue'
 import { POLL_INTERVAL, QUEUE_POLL_INTERVAL, SOURCE_VALUE } from '@/config'
 import type { AnnotSource, UploadSource } from '@/types'
@@ -39,9 +41,12 @@ export const useAnnotQueue = (source: AnnotSource | 'all' = 'all', live = false)
   const uploadSource: UploadSource[] | undefined =
     source === 'all' ? undefined : [SOURCE_VALUE[source]]
   const jobs = useJobs(50, 0, live ? POLL_INTERVAL : QUEUE_POLL_INTERVAL, { uploadSource })
+  /* Карточки DICOM нужны для подписей снимков на экране, но не для счетчика меню. */
+  const { jobs: enrichedJobs } = useEnrichedJobs(live ? jobs.data : undefined)
+  const queueJobs = enrichedJobs ?? jobs.data
   const submissions = useSubmissions(live)
 
-  const all = useMemo(() => annotTasks(jobs.data), [jobs.data])
+  const all = useMemo(() => annotTasks(queueJobs), [queueJobs])
 
   /* One frame is one task, and the latest submission for it is what decides
      which of the two lists it belongs to. */
@@ -55,11 +60,11 @@ export const useAnnotQueue = (source: AnnotSource | 'all' = 'all', live = false)
     isLoading: jobs.isLoading,
     /* sent for analysis but not analysed yet: they were uploaded a moment ago and
        are on their way to the queue, so they stay on the screen until they arrive */
-    processing: (jobs.data ?? [])
+    processing: (queueJobs ?? [])
       .filter((job) => job.status === 'pending' || job.status === 'processing')
       .map((job) => ({
         id: job.id,
-        file: job.file_name ?? job.id,
+        file: job.dicom_image_uid || '—',
         source: sourceOf(job),
         created_at: job.created_at,
       })),
@@ -76,7 +81,14 @@ export const useAnnotQueue = (source: AnnotSource | 'all' = 'all', live = false)
 /* One frame of the queue: the study behind it, with the analysis it carries. */
 export const useAnnotTask = (key?: string) => {
   const jobId = key?.split(':')[0]
-  return useJob(jobId)
+  const query = useJob(jobId)
+  const { data: dicom } = useDicomInfo(query.data?.dicom_id)
+  const data = useMemo(
+    () => query.data ? enrichJob(query.data, dicom) : undefined,
+    [query.data, dicom],
+  )
+
+  return { ...query, data }
 }
 
 export const useSubmitAnnot = () => {

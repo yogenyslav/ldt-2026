@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ApiJob from '@/services/apiJob'
 import { groupByStudy } from '@/lib/verdict'
+import { useEnrichedJobs } from '@/hooks/useDicomInfo'
 import { POLL_INTERVAL, QUEUE_POLL_INTERVAL, SOURCE_VALUE } from '@/config'
 import type { IJobFilter } from '@/services/apiJob'
 import type { Decision, UploadSource } from '@/types'
@@ -23,7 +24,9 @@ export const useJobs = (
 /* Centre queue: a list of visits instead of a flat list of scans. */
 export const useStudies = (limit = 50, offset = 0) => {
   const query = useJobs(limit, offset)
-  return { ...query, studies: query.data ? groupByStudy(query.data) : [] }
+  const { jobs } = useEnrichedJobs(query.data)
+
+  return { ...query, studies: groupByStudy(jobs ?? []) }
 }
 
 /* Technologist station. In the device mode the screen refreshes itself while it
