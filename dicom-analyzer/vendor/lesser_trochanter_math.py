@@ -556,9 +556,9 @@ def distance_status(d, center=DIST_CENTER_MM, tol=DIST_TOL_FRAC, yellow=DIST_YEL
     if d is None or d != d:
         return dict(status="нет данных", color="серый", reason=None)
     dev = abs(d - center) / center
-    reason = None if dev <= tol else ("мало" if d < center else "много")
-    if dev <= tol:
+    reason = None if dev < tol else ("мало" if d < center else "много")
+    if dev < tol:
         return dict(status="норма", color="зелёный", reason=None)
-    if dev <= tol + yellow:
+    if dev < tol + yellow:
         return dict(status="проверить", color="жёлтый", reason=reason)
     return dict(status="плохой", color="красный", reason=reason)
