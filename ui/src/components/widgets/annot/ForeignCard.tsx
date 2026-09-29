@@ -63,13 +63,8 @@ const ForeignCard = ({
             <div
               key={item.id}
               className={cn(
-                'border-t border-line pt-3 pb-0.5',
-                /* hugs the card head above it — but only at rest: active
-                   needs the full p-3 below, and first:pt-0.5 would otherwise
-                   beat it on specificity and pin the top edge at 2px */
-                index === 0 && !on && 'border-t-0 pt-0.5',
-                on &&
-                  '-mx-3 my-2 rounded-soft border-t-0 bg-brand-050 p-3 shadow-[inset_0_0_0_1.5px_var(--color-brand)]',
+                '-mx-3 rounded-soft px-3 py-2.5 shadow-[inset_0_0_0_1.5px_transparent] transition-[background-color,box-shadow] duration-200 ease-out',
+                on && 'bg-brand-050 shadow-[inset_0_0_0_1.5px_var(--color-brand)]',
               )}
             >
               <div className="flex items-center gap-2.5">
@@ -94,58 +89,74 @@ const ForeignCard = ({
                 </Button>
               </div>
 
-              {on ? (
-                <div className="mt-2.5 ml-[31px] flex flex-wrap items-center gap-2.5">
-                  <span className="text-[13px] text-ink-2">
-                    {drawingNow
-                      ? 'ведите вокруг предмета, отпустите — контур замкнётся'
-                      : 'обведите предмет на снимке, удерживая кнопку мыши'}
-                  </span>
+              {/* always in the tree: the hint unfolds and folds instead of jumping */}
+              <div
+                inert={!on}
+                className={cn(
+                  'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+                  on ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="mt-2.5 ml-[31px] flex flex-wrap items-center gap-2.5">
+                    <span className="text-[13px] text-ink-2">
+                      {drawingNow
+                        ? 'ведите вокруг предмета, отпустите — контур замкнётся'
+                        : 'обведите предмет на снимке, удерживая кнопку мыши'}
+                    </span>
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
           )
         })}
 
-        {polygons.length ? (
-          <div className="mt-3 border-t border-line pt-3">
-            <span className="mb-2 block text-[13.5px] text-ink-2">Обведено на снимке</span>
-            <div className="flex flex-col gap-1.5">
-              {polygons.map((polygon, index) => (
-                <div
-                  key={index}
-                  className="flex items-center gap-2.5 rounded-soft bg-surface-2 px-2.5 py-1.5"
-                >
-                  {/* Same number as on the frame — otherwise every wire reads
-                      the same and "убрать" is a coin flip. */}
-                  <span
-                    className={cn(
-                      'flex-center h-5.5 w-5.5 flex-none rounded-[6px] text-[12px] font-bold tabular',
-                      polygon.cls === 'wire' ? 'bg-bad-bg text-bad' : 'bg-ok-bg text-ok',
-                    )}
+        <div
+          className={cn(
+            'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+            polygons.length ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+          )}
+        >
+          <div className="min-h-0 overflow-hidden">
+            <div className="mt-3 border-t border-line pt-3">
+              <span className="mb-2 block text-[13.5px] text-ink-2">Обведено на снимке</span>
+              <div className="flex flex-col gap-1.5">
+                {polygons.map((polygon, index) => (
+                  <div
+                    key={index}
+                    className="flex items-center gap-2.5 rounded-soft bg-surface-2 px-2.5 py-1.5"
                   >
-                    {index + 1}
-                  </span>
-                  <span className="flex-1 text-[14px]">
-                    {FOREIGN_KIND.find((item) => item.id === polygon.cls)?.title ?? polygon.cls}
-                  </span>
-                  <span className="text-[12.5px] text-muted tabular">
-                    {polygon.points.length} точек
-                  </span>
-                  <button
-                    type="button"
-                    title="Убрать обводку"
-                    aria-label="Убрать обводку"
-                    onClick={() => onRemove(index)}
-                    className="flex-center h-7 w-7 flex-none cursor-pointer rounded-soft text-muted transition-colors hover:bg-bad-bg hover:text-bad"
-                  >
-                    <Trash2 size={15} />
-                  </button>
-                </div>
-              ))}
+                    {/* Same number as on the frame — otherwise every wire reads
+                        the same and "убрать" is a coin flip. */}
+                    <span
+                      className={cn(
+                        'flex-center h-5.5 w-5.5 flex-none rounded-[6px] text-[12px] font-bold tabular',
+                        polygon.cls === 'wire' ? 'bg-bad-bg text-bad' : 'bg-ok-bg text-ok',
+                      )}
+                    >
+                      {index + 1}
+                    </span>
+                    <span className="flex-1 text-[14px]">
+                      {FOREIGN_KIND.find((item) => item.id === polygon.cls)?.title ?? polygon.cls}
+                    </span>
+                    <span className="text-[12.5px] text-muted tabular">
+                      {polygon.points.length} точек
+                    </span>
+                    <button
+                      type="button"
+                      title="Убрать обводку"
+                      aria-label="Убрать обводку"
+                      onClick={() => onRemove(index)}
+                      className="flex-center h-7 w-7 flex-none cursor-pointer rounded-soft text-muted transition-colors hover:bg-bad-bg hover:text-bad"
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
-        ) : null}
+        </div>
 
         <div className="mt-3 border-t border-line pt-3">
           <span className="font-semibold">Что в итоге на снимке</span>
