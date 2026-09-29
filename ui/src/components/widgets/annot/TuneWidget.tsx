@@ -13,6 +13,7 @@ import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
 import { useJobs } from '@/hooks/useJobs'
 import { useSaveSettings, useSettings } from '@/hooks/useSettings'
+import { SETTINGS_SAVE_LOCKED } from '@/config'
 import {
   ROTATION_BANDS,
   ROTATION_MAX,
@@ -69,6 +70,7 @@ const TuneWidget = () => {
   const settings = draft ?? live
   const cuts = rotationCuts(settings)
   const moved = !sameSettings(settings, live)
+  const saveDisabled = SETTINGS_SAVE_LOCKED || !moved || save.isPending
 
   const count: Record<Band, number> = { norm: 0, warn: 0, viol: 0 }
   for (const frame of frames) count[rotationBand(settings, frame.value)] += 1
@@ -129,8 +131,10 @@ const TuneWidget = () => {
         <CardFoot>
           <Button
             variant="primary"
-            disabled={!moved || save.isPending}
+            disabled={saveDisabled}
             onClick={async () => {
+              if (saveDisabled) return
+
               try {
                 await save.mutateAsync(settings)
                 setDraft(null)
