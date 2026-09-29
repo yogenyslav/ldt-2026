@@ -1,4 +1,60 @@
 definitions:
+  annotation.TrainingMetric:
+    properties:
+      goal:
+        type: string
+      name:
+        type: string
+      next:
+        type: number
+      now:
+        type: number
+      unit:
+        type: string
+    type: object
+  annotation.TrainingResponse:
+    properties:
+      targets:
+        items:
+          $ref: '#/definitions/annotation.TrainingTarget'
+        type: array
+      versions:
+        items:
+          $ref: '#/definitions/annotation.TrainingVersion'
+        type: array
+    type: object
+  annotation.TrainingTarget:
+    properties:
+      busy:
+        type: boolean
+      done:
+        type: number
+      hard:
+        type: string
+      have:
+        type: integer
+      id:
+        type: string
+      left_minutes:
+        type: integer
+      need:
+        type: integer
+      ready:
+        type: boolean
+    type: object
+  annotation.TrainingVersion:
+    properties:
+      checked:
+        type: integer
+      id:
+        type: string
+      metrics:
+        items:
+          $ref: '#/definitions/annotation.TrainingMetric'
+        type: array
+      trained:
+        type: string
+    type: object
   generate.GenerateIn:
     properties:
       job_ids:
@@ -178,6 +234,13 @@ definitions:
         description: ID пользователя.
         type: integer
     type: object
+  model.Annotator:
+    properties:
+      id:
+        type: string
+      role:
+        type: string
+    type: object
   model.Decision:
     enum:
     - approved
@@ -197,6 +260,20 @@ definitions:
     - DecisionApprove
     - DecisionReject
     - DecisionForceApproved
+  model.ErrorResponse:
+    properties:
+      message:
+        type: string
+    type: object
+  model.Image:
+    properties:
+      cols:
+        type: integer
+      region:
+        type: string
+      rows:
+        type: integer
+    type: object
   model.JobInfo:
     properties:
       anatomical_region:
@@ -273,6 +350,55 @@ definitions:
     - JobStatusProcessing
     - JobStatusCompleted
     - JobStatusFailed
+  model.ListResponse:
+    properties:
+      submissions:
+        items:
+          $ref: '#/definitions/model.Record'
+        type: array
+      total:
+        type: integer
+    type: object
+  model.ModelsRequest:
+    properties:
+      models:
+        items:
+          type: string
+        type: array
+    type: object
+  model.Record:
+    properties:
+      annotations:
+        type: object
+      annotator:
+        $ref: '#/definitions/model.Annotator'
+      comment:
+        type: string
+      created_at:
+        type: string
+      duration_ms:
+        type: integer
+      image:
+        $ref: '#/definitions/model.Image'
+      image_flags:
+        items:
+          type: string
+        type: array
+      job_id:
+        type: string
+      schema_version:
+        type: string
+      status:
+        type: string
+      submission_id:
+        type: string
+      superseded_by:
+        type: string
+      supersedes:
+        type: string
+      task_id:
+        type: string
+    type: object
   model.Report:
     properties:
       created_at:
@@ -284,6 +410,44 @@ definitions:
       id:
         description: ID отчета по результатам обработки DICOM-файлов.
         type: integer
+    type: object
+  model.Submission:
+    properties:
+      annotations:
+        type: object
+      comment:
+        type: string
+      created_at:
+        type: string
+      duration_ms:
+        type: integer
+      image:
+        $ref: '#/definitions/model.Image'
+      image_flags:
+        items:
+          type: string
+        type: array
+      job_id:
+        type: string
+      schema_version:
+        type: string
+      status:
+        type: string
+      submission_id:
+        type: string
+      supersedes:
+        type: string
+      task_id:
+        type: string
+    type: object
+  model.SubmitResponse:
+    properties:
+      submission_id:
+        type: string
+      warnings:
+        items:
+          $ref: '#/definitions/model.Warning'
+        type: array
     type: object
   model.UserRole:
     enum:
@@ -300,6 +464,13 @@ definitions:
     x-enum-varnames:
     - UserRoleSpecialist
     - UserRoleAdmin
+  model.Warning:
+    properties:
+      code:
+        type: string
+      item:
+        type: string
+    type: object
   result_decision.ResultDecisionIn:
     properties:
       comment:
@@ -370,6 +541,215 @@ definitions:
 info:
   contact: {}
 paths:
+  /annotation/submission:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: Разметка снимка
+        in: body
+        name: submission
+        required: true
+        schema:
+          $ref: '#/definitions/model.Submission'
+      produces:
+      - application/json
+      responses:
+        "201":
+          description: Created
+          schema:
+            $ref: '#/definitions/model.SubmitResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "422":
+          description: Unprocessable Entity
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Сохранить разметку снимка
+      tags:
+      - annotation
+  /annotation/submissions:
+    get:
+      parameters:
+      - default: 50
+        description: Размер страницы
+        in: query
+        maximum: 200
+        minimum: 1
+        name: limit
+        type: integer
+      - default: 0
+        description: Смещение
+        in: query
+        minimum: 0
+        name: offset
+        type: integer
+      - description: Идентификатор задачи анализа
+        in: query
+        name: job_id
+        type: string
+      - description: Статус разметки
+        enum:
+        - done
+        - uncertain
+        - skipped
+        in: query
+        name: status
+        type: string
+      - default: true
+        description: Только актуальные отправки
+        in: query
+        name: only_latest
+        type: boolean
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.ListResponse'
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Получить сохранённую разметку
+      tags:
+      - annotation
+  /annotation/training:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/annotation.TrainingResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Получить состояние дообучения
+      tags:
+      - annotation
+  /annotation/training/start:
+    post:
+      consumes:
+      - application/json
+      description: Пока исполнитель не подключён, возвращает 409 без постановки в
+        очередь.
+      parameters:
+      - description: Выбранные модели
+        in: body
+        name: models
+        required: true
+        schema:
+          $ref: '#/definitions/model.ModelsRequest'
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Запросить дообучение моделей
+      tags:
+      - annotation
+  /annotation/training/switch:
+    post:
+      consumes:
+      - application/json
+      description: До появления новых обученных версий возвращает 404.
+      parameters:
+      - description: Выбранные модели
+        in: body
+        name: models
+        required: true
+        schema:
+          $ref: '#/definitions/model.ModelsRequest'
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "401":
+          description: Unauthorized
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "403":
+          description: Forbidden
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/model.ErrorResponse'
+      summary: Запросить переключение версии модели
+      tags:
+      - annotation
   /dicom/{dicom_id}:
     get:
       consumes:

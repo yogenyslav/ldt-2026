@@ -1,0 +1,22 @@
+{
+  "schema_version": "1.0",
+  "submission_id": "01J8ZQ7K3M4N5P6Q7R8S9T0V1W",
+  "task_id": "00000000-0000-0000-0000-000000000001:hip_keypoints",
+  "job_id": "00000000-0000-0000-0000-000000000001",
+  "image": {"rows": 263, "cols": 280, "region": "hip_left"},
+  "created_at": "2026-09-28T10:14:02Z",
+  "duration_ms": 18400,
+  "image_flags": [],
+  "status": "done",
+  "comment": "",
+  "annotations": {
+    "hip_keypoints": {
+      "points": [
+        {"name": "greater_trochanter_apex", "present": true, "x": 196.4, "y": 88.1, "origin": "human"},
+        {"name": "femoral_neck", "present": true, "x": 150.2, "y": 97.6, "origin": "model_confirmed"},
+        {"name": "ischium", "present": false, "x": null, "y": null, "origin": "human"}
+      ]
+    }
+  },
+  "supersedes": null
+}
