@@ -48,7 +48,7 @@ func (b *ReportBuilder) BuildReport(data []dto.JobResult) ([]byte, error) {
 				fmt.Sprintf("%d", record.QualityClass),
 				fmt.Sprintf("%v", record.Violations),
 				record.JobStatus,
-				fmt.Sprintf("%d", record.DurationSec),
+				fmt.Sprintf("%f", record.DurationSec),
 			},
 		); err != nil {
 			return nil, fmt.Errorf("failed to write CSV record: %w", err)
