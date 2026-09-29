@@ -65,9 +65,8 @@ const PointsCard = ({
             <div
               key={point.name}
               className={cn(
-                'border-t border-line pt-3 pb-0.5 first:border-t-0 first:pt-0.5',
-                isActive &&
-                  '-mx-3 my-2 rounded-soft border-t-0 bg-brand-050 p-3 shadow-[inset_0_0_0_1.5px_var(--color-brand)]',
+                '-mx-3 rounded-soft px-3 py-2.5 shadow-[inset_0_0_0_1.5px_transparent] transition-[background-color,box-shadow] duration-200 ease-out',
+                isActive && 'bg-brand-050 shadow-[inset_0_0_0_1.5px_var(--color-brand)]',
               )}
             >
               <button
@@ -84,35 +83,44 @@ const PointsCard = ({
                 <Tag tone={badge.tone}>{badge.title}</Tag>
               </button>
 
-              {isActive ? (
-                <div className="mt-2.5 ml-[31px] flex flex-wrap items-center gap-2.5">
-                  <Check on={state === 'absent'} tone="bad" onClick={() => onAbsent(index)}>
-                    нет на снимке <Kbd>пробел</Kbd>
-                  </Check>
+              {/* always in the tree: the row unfolds and folds instead of jumping */}
+              <div
+                inert={!isActive}
+                className={cn(
+                  'grid transition-[grid-template-rows,opacity] duration-200 ease-out',
+                  isActive ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+                )}
+              >
+                <div className="min-h-0 overflow-hidden">
+                  <div className="mt-2.5 ml-[31px] flex flex-wrap items-center gap-2.5">
+                    <Check on={state === 'absent'} tone="bad" onClick={() => onAbsent(index)}>
+                      нет на снимке <Kbd>пробел</Kbd>
+                    </Check>
 
-                  {state === 'suggested' ? (
-                    <Button className="h-8 px-3 text-[14px]" onClick={() => onConfirm(index)}>
-                      всё верно
-                    </Button>
-                  ) : null}
+                    {state === 'suggested' ? (
+                      <Button className="h-8 px-3 text-[14px]" onClick={() => onConfirm(index)}>
+                        всё верно
+                      </Button>
+                    ) : null}
 
-                  {mine || edited[index] ? (
-                    <Button
-                      variant="quiet"
-                      className="h-8 px-3 text-[14px]"
-                      onClick={() => onReset(index)}
-                    >
-                      вернуть как было
-                    </Button>
-                  ) : null}
+                    {mine || edited[index] ? (
+                      <Button
+                        variant="quiet"
+                        className="h-8 px-3 text-[14px]"
+                        onClick={() => onReset(index)}
+                      >
+                        вернуть как было
+                      </Button>
+                    ) : null}
 
-                  {mine && at ? (
-                    <span className="text-[12.5px] text-muted tabular">
-                      {nm(at.x)} × {nm(at.y)}
-                    </span>
-                  ) : null}
+                    {mine && at ? (
+                      <span className="text-[12.5px] text-muted tabular">
+                        {nm(at.x)} × {nm(at.y)}
+                      </span>
+                    ) : null}
+                  </div>
                 </div>
-              ) : null}
+              </div>
             </div>
           )
         })}
