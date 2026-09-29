@@ -247,6 +247,11 @@ func TestBrowserAPIContract(t *testing.T) {
 			{"patient/readme.txt", "ignore"},
 			{"patient/study/series/image.png", "ignore"},
 			{"empty/", ""},
+			{"__MACOSX/patient/study/series/._CR000000.dcm", "macOS metadata"},
+			{"__MACOSX/scan.dcm", "macOS metadata"},
+			{"export/__MACOSX/scan.dcm", "macOS metadata"},
+			{"._scan.DCM", "macOS metadata"},
+			{"patient/study/series/._scan.dcm", "macOS metadata"},
 		}
 		for _, entry := range entries {
 			f, err := zw.Create(entry.name)
