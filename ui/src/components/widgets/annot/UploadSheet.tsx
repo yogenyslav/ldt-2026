@@ -4,7 +4,7 @@ import Modal from '@/components/ui/modal'
 import DropZone from '@/components/shared/DropZone'
 import { useToast } from '@/components/ui/toast'
 import { useUpload } from '@/hooks/useUpload'
-import { errorText } from '@/lib/errors'
+import { uploadErrorText } from '@/lib/errors'
 import { plural } from '@/lib/utils'
 
 /* ============================================================
@@ -44,7 +44,7 @@ const UploadSheet = ({ open, onClose }: { open: boolean; onClose: () => void }) 
       })
       close()
     } catch (error) {
-      toast({ variant: 'destructive', title: errorText(error, 'Не удалось загрузить снимки') })
+      toast({ variant: 'destructive', title: uploadErrorText(error, 'Не удалось загрузить снимки') })
     }
   }
 

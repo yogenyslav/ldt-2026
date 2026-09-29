@@ -45,6 +45,9 @@ export type UploadSource = 'manual' | 'orthanc'
 export interface IDicomInfo {
   id: string
   study_id?: string
+  /* the DICOM identifiers of the visit and of the frame itself */
+  dicom_study_uid?: string
+  dicom_image_uid?: string
   patient_id?: string
   device_model?: string
   file_name?: string

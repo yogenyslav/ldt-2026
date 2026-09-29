@@ -63,7 +63,7 @@ const newId = () =>
 
 const AnnotDeskWidget = () => {
   const { source, setSource, tab, setTab, current, open } = useAnnot()
-  const { pending, done, submissionOf, isLoading } = useAnnotQueue()
+  const { pending, done, submissionOf, isLoading } = useAnnotQueue('all', true)
   const submit = useSubmitAnnot()
   const { toast } = useToast()
   const navigate = useNavigate()

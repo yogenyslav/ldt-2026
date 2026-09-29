@@ -1,4 +1,5 @@
 import { api } from '@/lib/api'
+import { SOURCE_PARAM } from '@/config'
 import type { Decision, IJobInfo, UploadSource } from '@/types'
 
 /* Server-side filters of GET /job/info. Without organizationIds an admin gets
@@ -23,7 +24,7 @@ const ApiJob = {
   async getJobs(data: GetJobsData) {
     const params = new URLSearchParams({ offset: String(data.offset), limit: String(data.limit) })
     if (data.organizationIds?.length) params.set('organization_ids', data.organizationIds.join(','))
-    if (data.uploadSource?.length) params.set('upload_source', data.uploadSource.join(','))
+    if (data.uploadSource?.length) params.set(SOURCE_PARAM, data.uploadSource.join(','))
     return await api.get<{ jobs: IJobInfo[] }>(`/job/info?${params.toString().replace(/%2C/g, ',')}`)
   },
 
