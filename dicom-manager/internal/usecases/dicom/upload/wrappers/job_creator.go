@@ -7,6 +7,7 @@ import (
 
 // JobRepo интерфейс для работы с репозиторием задач обработки DICOM-файлов.
 type JobRepo interface {
+	GetActiveDicomIDs(ctx context.Context, dicomIDs []string) ([]string, error)
 	SaveJobs(ctx context.Context, jobToDicom map[string]string) error
 }
 
@@ -30,4 +31,9 @@ func (jc *JobCreator) CreateJobs(ctx context.Context, dicomJobs map[string]uuid.
 	}
 
 	return jc.jobRepo.SaveJobs(ctx, jobToDicom)
+}
+
+// GetActiveDicomIDs возвращает ID файлов с незавершёнными задачами.
+func (jc *JobCreator) GetActiveDicomIDs(ctx context.Context, dicomIDs []string) ([]string, error) {
+	return jc.jobRepo.GetActiveDicomIDs(ctx, dicomIDs)
 }

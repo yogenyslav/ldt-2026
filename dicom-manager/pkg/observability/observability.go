@@ -61,7 +61,7 @@ func New() (*Observability, error) {
 	return &Observability{
 		metrics: m,
 		tracing: t,
-		logger:  zerolog.New(os.Stdout).With().Str("app", appName).Logger(),
+		logger:  zerolog.New(os.Stdout).With().Timestamp().Str("app", appName).Logger(),
 	}, nil
 }
 

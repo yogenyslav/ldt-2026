@@ -35,7 +35,7 @@ func (o *Observability) StartMetricsServer() error {
 			o.logger.Error().Err(err).Msg("metrics server stopped unexpectedly")
 		}
 	}()
-	
+
 	o.logger.Info().Str("address", listener.Addr().String()).Msg("metrics server started")
 	return nil
 }

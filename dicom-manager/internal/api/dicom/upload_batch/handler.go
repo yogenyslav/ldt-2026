@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"mime"
 	"strings"
@@ -43,13 +44,15 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, us usecase) *
 // UploadBatch обработчик для загрузки DICOM файлов батчами.
 //
 //	@Summary		Загрузить DICOM файлы батчами
-//	@Description	Загрузить несколько DICOM файлов на сервер в одном запросе.
+//	@Description	Загрузить несколько DICOM файлов. Файлы с активными задачами пропускаются; ответ содержит только новые задачи.
 //	@Tags			dicom
 //	@Accept			multipart/form-data
 //	@Produce		json
 //	@Param			file	formData	file			true	".zip архив с DICOM файлами для загрузки."
 //	@Success		201		{object}	UploadBatchOut	"Файлы успешно загружены."
 //	@Failure		400		string		"Некорректный запрос."
+//	@Failure		403		string		"Нет доступа к файлу."
+//	@Failure		409		string		"У всех файлов батча уже есть активные задачи."
 //	@Failure		500		string		"Внутренняя ошибка сервера."
 //	@Router			/dicom/upload/batch [post]
 func (h *Handler) UploadBatch(c fiber.Ctx) error {
@@ -106,6 +109,13 @@ func (h *Handler) UploadBatch(c fiber.Ctx) error {
 
 	dicomJobs, err := h.uc.UploadDicomFiles(c.Context(), req)
 	if err != nil {
+		if errors.Is(err, upload.ErrDicomForbidden) {
+			return fiber.NewError(fiber.StatusForbidden, "access denied")
+		}
+
+		if errors.Is(err, upload.ErrActiveJob) {
+			return fiber.NewError(fiber.StatusConflict, "DICOM already has an active job")
+		}
 		h.metrics.Counter("handler.dicom.upload.uc_upload_dicom_files.error").Inc()
 		h.log.Error().Err(err).Msg("failed to upload dicom files")
 		return fiber.NewError(fiber.StatusInternalServerError, "failed to upload dicom files")
@@ -149,7 +159,12 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 		)
 	}
 
+	// ZIP содержит плоский список записей всех уровней вложенности.
+	// Пропускаем только саму запись каталога: его файлы идут отдельными записями.
 	for _, file := range zipReader.File {
+		if file.FileInfo().IsDir() {
+			continue
+		}
 		if !strings.HasSuffix(strings.ToLower(file.Name), ".dcm") {
 			h.log.Warn().Str("file_name", file.Name).Msg("skipping non-DICOM file in zip")
 			continue
@@ -165,6 +180,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 		}
 
 		rawDicom, errReadDicom := io.ReadAll(fileData)
+		fileData.Close()
 		if errReadDicom != nil {
 			h.metrics.Counter("handler.dicom.upload.zip_file_read.error").Inc()
 			h.log.Error().Err(errReadDicom).Str("file_name", file.Name).Msg("failed to read file in zip")
@@ -176,7 +192,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 		req.RawDicoms = append(
 			req.RawDicoms, upload.RawDicomData{
 				Payload:  rawDicom,
-				FileName: file.Name,
+				FileName: file.Name, // Полный путь сохраняет вложенность при упаковке для Orthanc.
 			},
 		)
 	}

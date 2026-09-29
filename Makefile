@@ -111,10 +111,25 @@ run-ui:
 	@echo "running ui service"
 	@docker compose -f docker/ui-compose.yaml --env-file .env up -d
 
+.PHONY: run-ui-build
+run-ui:
+	@echo "running ui service"
+	@docker compose -f docker/ui-compose.yaml --env-file .env up -d --build
+
 .PHONY: stop-ui
 stop-ui:
 	@echo "stopping ui service"
 	@docker compose -f docker/ui-compose.yaml --env-file .env down
+
+.PHONY: run-analyzer run-analyzer-build stop-analyzer
+run-analyzer:
+	@docker compose -f dicom-analyzer/compose.yaml --env-file .env up -d
+
+run-analyzer-build:
+	@docker compose -f dicom-analyzer/compose.yaml --env-file .env up -d --build
+
+stop-analyzer:
+	@docker compose -f dicom-analyzer/compose.yaml --env-file .env down
 
 .PHONY: test-integration
 test-integration:

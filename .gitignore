@@ -41,7 +41,7 @@ venv/
 .venv/
 
 # Datasets and medical images: never in the repository
-/data/
+data/
 dicom-analyzer/examples/
 dicom-analyzer/out/
 
@@ -53,5 +53,6 @@ node_modules/
 dist/
 .vite/
 
-context/
+./context/
 qc_prototype
+**/models/*.pt

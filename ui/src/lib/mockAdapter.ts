@@ -3,11 +3,21 @@ import { DEMO_SCANS } from '@/services/mock/demoJobs'
 import { csvDataUrl, reportCsv } from '@/services/mock/csv'
 import store from '@/services/mock/store'
 import { zipEntries } from '@/services/mock/zip'
+import { MODEL_NAME } from '@/constants'
+import type { IRotationSettings } from '@/lib/settings'
 import type { Decision } from '@/types'
 
 /* Demo mode. The adapter replaces the axios transport, so the services in
    services/apiXxx.ts stay real: with VITE_USE_MOCKS=false the very same methods
    hit dicom-manager without a single edit.
+
+   It answers the routes dicom-manager is contracted to have, plus the two
+   annotation-contour routes proposed in context/back_annotations.md that this
+   mode can plausibly stand in for on its own — training and the settings
+   write. The rest of the contour (submitting a marked-up frame, listing what
+   is already marked) has no server on either side of USE_MOCKS yet, so those
+   calls still fall through to the 404 below and the screen says so — inventing
+   an answer there would only hide that the work is not done.
 
    This file handles routing and request parsing; the state lives in services/mock/store.ts. */
 
@@ -175,6 +185,42 @@ export const mockAdapter: AxiosAdapter = async (config) => {
     const jobs = jobIds.map((id) => store.job(id)).filter((job) => !!job)
     if (!jobs.length) return fail(config, 400, 'Не выбрано ни одной задачи')
     return reply(config, { report_id: store.addReport(csvDataUrl(reportCsv(jobs))) })
+  }
+
+  /* --- rotation thresholds --- */
+  if (method === 'put' && url === '/settings') {
+    store.setSettings(body(config) as unknown as IRotationSettings)
+    return reply(config, '', 204)
+  }
+
+  /* --- дообучение --- */
+  if (method === 'get' && url === '/annotation/training') {
+    return reply(config, { targets: store.trainingTargets(), versions: store.trainingVersions() })
+  }
+
+  if (method === 'post' && url === '/annotation/training/start') {
+    const { models } = body(config) as { models?: string[] }
+    const targets = store.trainingTargets()
+    for (const id of models ?? []) {
+      const target = targets.find((item) => item.id === id)
+      if (!target || !target.ready || target.busy) {
+        return fail(config, 409, `Модель «${MODEL_NAME[id] ?? id}» сейчас не готова к дообучению`)
+      }
+    }
+    store.startTraining(models ?? [])
+    return reply(config, '', 204)
+  }
+
+  if (method === 'post' && url === '/annotation/training/switch') {
+    const { models } = body(config) as { models?: string[] }
+    const versions = store.trainingVersions()
+    for (const id of models ?? []) {
+      if (!versions.some((version) => version.id === id)) {
+        return fail(config, 404, `Для «${MODEL_NAME[id] ?? id}» нет новой версии`)
+      }
+    }
+    store.switchVersions(models ?? [])
+    return reply(config, '', 204)
   }
 
   return fail(config, 404, `Демо-режим: ручка ${method.toUpperCase()} ${url} не описана`)

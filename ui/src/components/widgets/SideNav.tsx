@@ -1,5 +1,14 @@
 import { NavLink } from 'react-router-dom'
-import { BarChart3, FileText, FolderClosed, HardDrive, Layers, List, PenLine } from 'lucide-react'
+import {
+  BrainCircuit,
+  FileText,
+  HardDrive,
+  Inbox,
+  Layers,
+  List,
+  PenLine,
+  SlidersHorizontal,
+} from 'lucide-react'
 import { sidebarLinks } from '@/constants'
 import { cn } from '@/lib/utils'
 
@@ -8,17 +17,23 @@ const ICONS: Record<string, React.ComponentType<{ size?: number }>> = {
   layers: Layers,
   file: FileText,
   pen: PenLine,
-  chart: BarChart3,
-  folder: FolderClosed,
+  inbox: Inbox,
+  brain: BrainCircuit,
+  sliders: SlidersHorizontal,
   drive: HardDrive,
 }
 
 interface SideNavProps {
-  queueCount?: number
+  markupCount?: number
   todayCount?: number
 }
 
-const SideNav = ({ queueCount, todayCount }: SideNavProps) => {
+/* Which links carry a count, and where it comes from. */
+const COUNTED: Record<string, 'markup'> = {
+  '/markup': 'markup',
+}
+
+const SideNav = ({ markupCount, todayCount }: SideNavProps) => {
   return (
     <aside className="flex flex-col border-r border-line bg-surface">
       <nav className="flex flex-col gap-0.5 p-3">
@@ -31,30 +46,37 @@ const SideNav = ({ queueCount, todayCount }: SideNavProps) => {
                 <NavLink
                   key={item.route}
                   to={item.route}
-                  end={item.route === '/'}
+                  /* every link is matched whole: «Очередь заданий» is /markup
+                     and «Разметка снимка» is /markup/frame, so a prefix match
+                     would light both at once */
+                  end
                   className={({ isActive }) =>
                     cn(
-                      'flex h-11 items-center gap-2.5 rounded-control px-3.5 text-[15px] font-medium whitespace-nowrap transition-colors',
+                      'flex h-11 items-center gap-2.5 rounded-control px-3.5 text-[15px] font-medium whitespace-nowrap transition duration-150 ease-out active:scale-[0.97]',
                       isActive ? 'bg-brand text-white' : 'text-ink hover:bg-hover',
                     )
                   }
                 >
-                  {({ isActive }) => (
+                  {({ isActive }) => {
+                    const count = COUNTED[item.route] === 'markup' ? markupCount : undefined
+
+                    return (
                     <>
                       <Icon size={18} />
                       {item.label}
-                      {item.route === '/' && queueCount !== undefined ? (
+                      {count !== undefined ? (
                         <span
                           className={cn(
                             'ml-auto flex-center h-6 min-w-6 rounded-full px-1.5 small-regular font-semibold',
                             isActive ? 'bg-white/20 text-white' : 'bg-surface-3 text-ink-2',
                           )}
                         >
-                          {queueCount}
+                          {count}
                         </span>
                       ) : null}
                     </>
-                  )}
+                    )
+                  }}
                 </NavLink>
               )
             })}

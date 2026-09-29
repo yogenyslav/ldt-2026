@@ -27,6 +27,7 @@ export TEST_BIN_DIR="$task_bin_dir"
   cd dicom-worker
   go build -o "$task_bin_dir/outbox" ./cmd/outbox
   go build -o "$task_bin_dir/result_listener" ./cmd/result_listener
+  go build -o "$task_bin_dir/expiration_checker" ./cmd/expiration_checker
   # Проверки ACL и полного потока используют одних постоянных подписчиков NATS.
   go test -p 1 -race -count=1 ./...
   go vet ./...

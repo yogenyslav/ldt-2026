@@ -1,7 +1,12 @@
 import { api } from '@/lib/api'
-import type { IDicomImage, IUploadedDicom } from '@/types'
+import type { IDicomImage, IDicomInfo, IUploadedDicom } from '@/types'
 
 const ApiDicom = {
+  /* File card: patient, device, file name, study and the organisation. */
+  async getInfo(dicomId: string) {
+    return await api.get<IDicomInfo>(`/dicom/${dicomId}`)
+  },
+
   async getImage(dicomId: string) {
     return await api.get<IDicomImage>(`/dicom/${dicomId}/image`)
   },

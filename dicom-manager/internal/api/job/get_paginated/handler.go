@@ -8,6 +8,8 @@ import (
 	"github.com/gofiber/fiber/v3"
 	"github.com/rs/zerolog"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/model"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/query"
+	user_model "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/job/get_paginated"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/jwt"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
@@ -36,15 +38,17 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 // GetPaginated обработчик для получения информации о задачах на обработку DICOM-файлов по их ID с пагинацией.
 //
 //	@Summary		Получить информацию о задачах на обработку DICOM-файлов по их ID с пагинацией
-//	@Description	Получить информацию о задачах на обработку DICOM-файлов по их ID с пагинацией
+//	@Description	Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка через UI, orthanc — поступление из Orthanc.
 //	@Tags			job
 //	@Accept			json
 //	@Produce		json
-//	@Param			offset	query		int					false	"Offset для пагинации (по умолчанию 0)"
-//	@Param			limit	query		int					false	"Limit для пагинации (по умолчанию 10)"
-//	@Success		200		{object}	GetInfoPaginatedOut	"Информация о задачах успешно получена."
-//	@Failure		400		string		"Некорректный запрос."
-//	@Failure		500		string		"Внутренняя ошибка сервера."
+//	@Param			offset				query		int					false	"Offset для пагинации (по умолчанию 0)"
+//	@Param			limit				query		int					false	"Limit для пагинации (по умолчанию 10)"
+//	@Param			organization_ids	query		[]int64				false	"ID организаций через запятую"				collectionFormat(csv)
+//	@Param			upload_source		query		[]string			false	"Источники загрузки DICOM через запятую"	Enums(manual,orthanc)	collectionFormat(csv)
+//	@Success		200					{object}	GetInfoPaginatedOut	"Информация о задачах успешно получена."
+//	@Failure		400					string		"Некорректный запрос."
+//	@Failure		500					string		"Внутренняя ошибка сервера."
 //	@Router			/job/info [get]
 func (h *Handler) GetPaginated(c fiber.Ctx) error {
 	offset := fiber.Query[uint64](c, "offset", 0)
@@ -55,11 +59,19 @@ func (h *Handler) GetPaginated(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusUnauthorized, "invalid token claims")
 	}
 
+	organizationIDs, sources, err := query.ParseFilters(c)
+	if err != nil {
+		return err
+	}
+
 	jobs, err := h.uc.GetPaginated(
 		c.Context(), get_paginated.GetJobsRequest{
-			CreatorID: claims.UserID,
-			Offset:    offset,
-			Limit:     limit,
+			OrganizationIDs: organizationIDs, UploadSources: sources,
+			CreatorID:      claims.UserID,
+			OrganizationID: claims.OrganizationID,
+			RequesterRole:  user_model.UserRole(claims.Role),
+			Offset:         offset,
+			Limit:          limit,
 		},
 	)
 	if err != nil {
@@ -96,6 +108,7 @@ func convertToOut(jobs []get_paginated.Job) (GetInfoPaginatedOut, error) {
 				Error:              errorMessage,
 				ID:                 job.ID,
 				DicomID:            job.DicomFileID,
+				UploadSource:       job.UploadSource,
 				Status:             model.ToJobStatus(job.Status),
 				AnatomicalRegion:   job.AnatomicalRegion,
 				Confidence:         job.Confidence,

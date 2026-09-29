@@ -1,6 +1,95 @@
 # Контроль качества DXA-снимков: сервис (прототип)
 
-Один DICOM-файл на вход, словарь с результатами на выход. API нет: сервис подключается как библиотека (`QCService`) или запускается из консоли. Для отрисовки результата на снимке есть отдельный `render.py`.
+Один DICOM-файл на вход, словарь с результатами на выход. Сервис работает через NATS JetStream (`service.py`), как библиотека (`QCService`) или из консоли (`main.py`). Для отрисовки результата на снимке есть отдельный `render.py`.
+
+## Docker и NATS
+
+Из корня репозитория, после заполнения `.env` по `.env.example` и запуска NATS/Orthanc:
+
+```bash
+make run-analyzer-build
+docker compose -f dicom-analyzer/compose.yaml logs -f
+make stop-analyzer
+```
+
+Compose использует общую внешнюю сеть `dicom-network`. Веса и файлы порогов
+монтируются из `dicom-analyzer/models/` только для чтения. Образ рассчитан на CPU,
+запускается непривилегированным пользователем; веса не включаются в образ.
+Без весов сохраняется описанный ниже запасной режим анализа.
+
+Для локального запуска: установить `requirements.txt`, экспортировать переменные
+окружения и выполнить `python service.py` (`.env` автоматически читает только Compose).
+
+| Переменная | Значение по умолчанию / назначение |
+|---|---|
+| `NATS_URL` | `nats://localhost:4222`, несколько адресов через запятую |
+| `NATS_REPLICAS` | `1`, в Compose — `3`; для создания потока |
+| `DICOM_ANALYZER_PASSWORD` | Пароль пользователя `dicom-analyzer`; пустой — без аутентификации |
+| `ORTHANC_HOST`, `ORTHANC_PORT` | `localhost`, `8042`; в Compose хост `orthanc` |
+| `ORTHANC_NAME`, `ORTHANC_PASSWORD` | Пользователь и пароль Orthanc |
+| `ORTHANC_TOKEN` | Если задан, заменяет base64 пары логин:пароль в Basic Authorization, как у manager |
+| `MODELS_DIR` | По умолчанию `models/` рядом с кодом |
+| `APP_NAME` | `dicom-analyzer`, имя сервиса в логах и трассах |
+| `LOG_LEVEL` | `INFO` |
+| `METRICS_ADDR` | `:9100`, HTTP endpoint `/metrics` |
+| `TRACING_HOST`, `TRACING_PORT` | `localhost`, `4318`; в Compose — `otlp-collector:4318` |
+| `OTEL_EXPORTER_OTLP_TRACES_ENDPOINT` | Необязательный полный URL OTLP HTTP, включая `/v1/traces`; заменяет `TRACING_HOST`/`TRACING_PORT` |
+
+**Важно:** `ORTHANC_TOKEN` должен содержать действительный Basic-токен. Для
+аутентификации через `ORTHANC_NAME`/`ORTHANC_PASSWORD` оставьте его пустым;
+значение-заглушка `orthanc-token` не является рабочим токеном.
+
+Analyzer читает `dicom.analysis.requested` из `DICOM_EVENTS` durable-подписчиком
+`analyzer-requests`. Контракт v1 совпадает с `dicom-worker/pkg/events`:
+
+```json
+{
+  "version": 1,
+  "event_id": "cecfbb04-596a-43fd-9174-e4a6f7683600",
+  "job_id": "22d969f6-3936-4e4b-ac76-35d441296f48",
+  "dicom_id": "orthanc-instance-id",
+  "status": "pending",
+  "occurred_at": "2026-09-28T10:00:00Z"
+}
+```
+
+`dicom_id` — идентификатор instance в Orthanc. Файл скачивается по
+`/instances/{dicom_id}/file`, обрабатывается `QCService` и удаляется.
+Настройки критериев используются по умолчанию: контракт v1 не содержит `settings`.
+Ответ сохраняет `job_id` и `dicom_id`, получает собственные `event_id`/`occurred_at`:
+
+- `dicom.analysis.completed`: `status: completed`, `result` с полями
+  `anatomical_region`, `confidence`, `violations`, `duration_ms`, `metadata`.
+- `dicom.analysis.failed`: `status: failed`, непустое `error`, без `result`.
+
+ACK отправляется только после подтверждения публикации JetStream. При сбое связи
+или временной ошибке Orthanc запрос повторяется через 5 секунд. Некорректный
+конверт завершается TERM; ошибка анализа или отсутствие DICOM публикует `failed`.
+Во время обработки каждые 20 секунд продлевается ACK deadline. Стабильный
+`Nats-Msg-Id` результата обеспечивает дедупликацию в пределах окна потока (10 минут
+при создании analyzer); повторный анализ после сбоя возможен. Один процесс
+обрабатывает один снимок одновременно. SIGTERM/SIGINT прекращает получение новых
+заданий после завершения текущего; Compose ждёт до 5 минут.
+
+Тесты транспорта без ML-зависимостей:
+
+```bash
+cd dicom-analyzer
+pip install prometheus-client opentelemetry-sdk opentelemetry-exporter-otlp-proto-http nats-py
+python -m unittest discover -s tests -v
+```
+
+Интеграционный тест с настоящим JetStream и правами ролей из `docker/nats.conf`
+(ML и HTTP заменены тестовыми ответами; нужен `nats-py`):
+
+```bash
+docker compose -p analyzer-test -f ../docker/test-compose.yaml up -d nats-auth nats-auth-2 nats-auth-3
+TEST_NATS_URL=nats://localhost:14223 python -m unittest discover -s tests -v
+docker compose -p analyzer-test -f ../docker/test-compose.yaml down -v
+```
+
+Используйте отдельный тестовый NATS: тест создаёт рабочие stream/consumer с их
+стандартными именами и публикует тестовые задания.
 
 ## Быстрый старт
 

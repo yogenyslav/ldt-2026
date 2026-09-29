@@ -4,12 +4,13 @@ import (
 	"context"
 
 	"github.com/rs/zerolog"
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/model"
 	storage "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/job"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/pkg/observability"
 )
 
 type jobRepo interface {
-	GetJobsByCreator(ctx context.Context, creatorID int64, offset, limit uint64) ([]storage.DicomJobResult, error)
+	GetJobs(ctx context.Context, filter storage.JobFilter) ([]storage.DicomJobResult, error)
 }
 
 // Usecase структура для реализации бизнес-логики получения пагинированного списка задач.
@@ -32,10 +33,18 @@ func New(l *zerolog.Logger, m observability.MetricsClient, jobRepo jobRepo) *Use
 func (uc *Usecase) GetPaginated(ctx context.Context, in GetJobsRequest) ([]Job, error) {
 	uc.metrics.Counter("usecases.job.get_paginated.total").Inc()
 
-	jobs, err := uc.jobRepo.GetJobsByCreator(ctx, in.CreatorID, in.Offset, in.Limit)
+	filter := storage.JobFilter{OrganizationIDs: in.OrganizationIDs, UploadSources: in.UploadSources, Offset: in.Offset, Limit: in.Limit}
+	if in.RequesterRole == model.UserRoleAdmin {
+		if len(filter.OrganizationIDs) == 0 {
+			filter.OrganizationIDs = []int64{in.OrganizationID}
+		}
+	} else {
+		filter.CreatorID = &in.CreatorID
+	}
+	jobs, err := uc.jobRepo.GetJobs(ctx, filter)
 	if err != nil {
 		uc.metrics.Counter("usecases.job.get_paginated.error").Inc()
-		uc.log.Error().Err(err).Msg("failed to get jobs by IDs")
+		uc.log.Error().Err(err).Msg("failed to get paginated jobs")
 		return nil, err
 	}
 
@@ -43,6 +52,7 @@ func (uc *Usecase) GetPaginated(ctx context.Context, in GetJobsRequest) ([]Job, 
 	for _, j := range jobs {
 		res = append(
 			res, Job{
+				UploadSource:       j.UploadSource,
 				ID:                 j.ID,
 				DicomFileID:        j.DicomFileID,
 				Status:             j.Status,

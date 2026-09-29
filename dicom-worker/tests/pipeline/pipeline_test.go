@@ -109,7 +109,7 @@ func TestPipeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	for _, process := range []struct{ name, dsn string }{
-		{"outbox", workerDSN}, {"result_listener", workerDSN}, {"job_listener", managerDSN},
+		{"outbox", workerDSN}, {"result_listener", workerDSN}, {"expiration_checker", workerDSN}, {"job_listener", managerDSN},
 	} {
 		processCtx, stop := context.WithCancel(ctx)
 		cmd := exec.CommandContext(processCtx, filepath.Join(binDir, process.name))

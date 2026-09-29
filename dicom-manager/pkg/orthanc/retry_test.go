@@ -118,9 +118,10 @@ func TestRetryClientCancellation(t *testing.T) {
 func TestNewRetriesRelatedEntities(t *testing.T) {
 	calls := make(map[string]int)
 	responses := map[string]string{
-		"/instances/instance": `{"ID":"instance","ParentSeries":"series","MainDicomTags":{"SOPInstanceUID":"image-uid"}}`,
-		"/series/series":      `{"ID":"series","ParentStudy":"study","MainDicomTags":{"SeriesInstanceUID":"series-uid"}}`,
-		"/studies/study":      `{"MainDicomTags":{"StudyInstanceUID":"study-uid"}}`,
+		"/instances/instance/simplified-tags": `{"PatientID":"patient", "Manufacturer":"manufacturer"}`,
+		"/instances/instance":                 `{"ID":"instance","ParentSeries":"series","MainDicomTags":{"SOPInstanceUID":"image-uid"}}`,
+		"/series/series":                      `{"ID":"series","ParentStudy":"study","MainDicomTags":{"SeriesInstanceUID":"series-uid"}}`,
+		"/studies/study":                      `{"MainDicomTags":{"StudyInstanceUID":"study-uid"}}`,
 	}
 	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		body, ok := responses[r.URL.Path]
@@ -153,6 +154,8 @@ func TestNewRetriesRelatedEntities(t *testing.T) {
 	defer cancel()
 	props, err := wrappers.NewOrthanc(client.Client()).GetDicomProperties(ctx, "instance")
 	require.NoError(t, err)
+	require.Equal(t, "patient", props.PatientID)
+	require.Equal(t, "Manufacturer=manufacturer", props.DeviceModel)
 	require.Equal(t, "series", props.ParentSeries)
 	require.Equal(t, "study", props.ParentStudy)
 	require.Equal(t, "image-uid", props.DicomImageUid)

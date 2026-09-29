@@ -56,6 +56,20 @@ const Overlay = ({ job }: OverlayProps) => {
     const bottom = mid('bottom_left', 'bottom_right')
 
     groups.push(
+      /* The vertical the axis is measured against, from the lower point up to
+         the edge of the frame. Thin and dashed, in the neutral tone: it is not
+         something that was found on the scan, it is the reference the angle is
+         counted from — without it the number has nothing to lean on. */
+      <g key="axis-plumb" className="text-mark-plumb">
+        <line
+          className="mk-thin"
+          x1={bottom[0]}
+          y1={bottom[1]}
+          x2={bottom[0]}
+          y2={0}
+          strokeDasharray="4 4"
+        />
+      </g>,
       <g key="axis" className={tone(levelOfCriterion(axis))}>
         <line className="mk-line" x1={top[0]} y1={top[1]} x2={bottom[0]} y2={bottom[1]} />
         {Object.keys(points).map((name) => dot(points[name], 2.2, name))}
@@ -203,20 +217,31 @@ const Overlay = ({ job }: OverlayProps) => {
     )
   }
 
-  /* --- lesser trochanter region --- */
+  /* --- lesser trochanter: the area the analyser measured across, and — once
+     the analyser sends them — the two edge points that area was measured
+     between, drawn as a line rather than left to be read off the fill. */
   const trochanter = criteria.lesser_trochanter
-  if (trochanter?.regions?.length) {
-    const first = trochanter.regions[0][0]
+  if (trochanter?.regions?.length || (trochanter?.points?.near && trochanter?.points?.far)) {
+    const near = trochanter.points?.near
+    const far = trochanter.points?.far
+    const anchor = near ?? trochanter.regions?.[0]?.[0]
     groups.push(
       <g key="trochanter" className={tone(levelOfCriterion(trochanter))}>
-        {trochanter.regions.map((polygon, index) => (
+        {trochanter.regions?.map((polygon, index) => (
           <polygon
             key={index}
             className="mk-area"
             points={polygon.map((point) => `${point[0]},${point[1]}`).join(' ')}
           />
         ))}
-        {trochanter.value ? label(first[0] + 7, first[1] - 2, `${nm(trochanter.value)} мм`) : null}
+        {near && far ? (
+          <>
+            <line className="mk-line" x1={near[0]} y1={near[1]} x2={far[0]} y2={far[1]} />
+            {dot(near, 2.2, 'near')}
+            {dot(far, 2.2, 'far')}
+          </>
+        ) : null}
+        {trochanter.value && anchor ? label(anchor[0] + 7, anchor[1] - 2, `${nm(trochanter.value)} мм`) : null}
       </g>,
     )
   }

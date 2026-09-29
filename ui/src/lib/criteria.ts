@@ -115,13 +115,20 @@ function criterionDetail(key: string, criterion: ICriterion, level: VerdictKind 
       return 'Ротацию не измеряли: не найдены опорные точки бедра.'
     }
     const distance = nm(criterion.value)
+    /* A short distance means the lesser trochanter is hidden behind the
+       femur — the leg is turned inward; a long one — turned too far outward. */
+    const tooClose = criterion.value < 1
     if (status === 'проверить') {
-      return `Расстояние до малого вертела ${distance} мм — чуть за пределами нормы от 1,0 до 4,4 мм. Посмотрите на снимок сами: если бугор хорошо заметен, разверните стопу внутрь и переснимите.`
+      return tooClose
+        ? `Расстояние до малого вертела ${distance} мм — чуть за пределами нормы от 1,0 до 4,4 мм. Посмотрите на снимок сами: если бугор плохо виден, разверните стопу наружу и переснимите.`
+        : `Расстояние до малого вертела ${distance} мм — чуть за пределами нормы от 1,0 до 4,4 мм. Посмотрите на снимок сами: если бугор виден слишком сильно, разверните стопу внутрь и переснимите.`
     }
     if (level === 'ok') {
       return `Расстояние до малого вертела ${distance} мм при норме от 1,0 до 4,4 мм. Стопа развёрнута правильно.`
     }
-    return `Расстояние до малого вертела ${distance} мм при норме от 1,0 до 4,4 мм — бедро развёрнуто наружу. Разверните стопу внутрь до упора в фиксаторе и переснимите.`
+    return tooClose
+      ? `Расстояние до малого вертела ${distance} мм при норме от 1,0 до 4,4 мм — бедро развёрнуто внутрь, малый вертел скрыт. Разверните стопу наружу, пока он не станет виден, и переснимите.`
+      : `Расстояние до малого вертела ${distance} мм при норме от 1,0 до 4,4 мм — бедро развёрнуто наружу. Разверните стопу внутрь до упора в фиксаторе и переснимите.`
   }
 
   return ''
@@ -185,4 +192,19 @@ export function brokenNames(job: IJobInfo): string[] {
   return criteriaRows(job)
     .filter((row) => row.level === 'bad' || row.level === 'warn')
     .map((row) => row.name.toLowerCase())
+}
+
+/* One criterion per key, as the most recent job to report it saw it — the
+   same rule settingsOf/modelsOf use for models and settings. A criterion the
+   service has never returned in the loaded window gets no row: the "Служебное"
+   screen shows what is actually running, not the full catalogue from the ML
+   contract. */
+export function methodsOf(jobs?: IJobInfo[]): Record<string, ICriterion> {
+  const found: Record<string, ICriterion> = {}
+  for (const job of jobs ?? []) {
+    for (const [key, criterion] of Object.entries(job.metadata?.criteria ?? {})) {
+      if (!found[key]) found[key] = criterion
+    }
+  }
+  return found
 }

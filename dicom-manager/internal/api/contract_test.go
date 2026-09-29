@@ -51,11 +51,14 @@ func (loginStub) Login(_ context.Context, in auth.LoginRequest) (auth.UserAuthDa
 	return auth.UserAuthData{Token: "token", UserID: 42, OrganizationID: 218, Role: auth.RoleUser}, nil
 }
 
-type uploadStub struct{ last uploaduc.DicomUploadRequest }
+type uploadStub struct {
+	last uploaduc.DicomUploadRequest
+	err  error
+}
 
 func (s *uploadStub) UploadDicomFiles(_ context.Context, in uploaduc.DicomUploadRequest) (map[string]uuid.UUID, error) {
 	s.last = in
-	return map[string]uuid.UUID{"dicom": uuid.New()}, nil
+	return map[string]uuid.UUID{"dicom": uuid.New()}, s.err
 }
 
 type imageStub struct{}
@@ -79,7 +82,7 @@ func (jobStub) GetByID(_ context.Context, in jobuc.GetJobRequest) (jobuc.Job, er
 type jobsStub struct{}
 
 func (jobsStub) GetPaginated(_ context.Context, in jobsuc.GetJobsRequest) ([]jobsuc.Job, error) {
-	if in.CreatorID != 42 || in.Offset != 2 || in.Limit != 3 {
+	if in.CreatorID != 42 || in.OrganizationID != 218 || in.RequesterRole != "specialist" || in.Offset != 2 || in.Limit != 3 {
 		return nil, fmt.Errorf("wrong pagination or creator: %+v", in)
 	}
 	return []jobsuc.Job{{ID: "failed", Status: "failed", Metadata: []byte(`{"error":"analysis failed"}`)}}, nil
@@ -205,15 +208,54 @@ func TestBrowserAPIContract(t *testing.T) {
 			t.Fatalf("wrong upload: %+v", uploads.last)
 		}
 	})
+	t.Run("legacy Orthanc callback is rejected", func(t *testing.T) {
+		for _, token := range []string{"", "token"} {
+			req := httptest.NewRequest("POST", "/dicom/upload", strings.NewReader("dicom data"))
+			req.Header.Set("Content-Type", "application/dicom")
+			req.Header.Set("X-Instance-ID", "orthanc-instance")
+			if token != "" {
+				req.Header.Set("Authorization", "Bearer "+token)
+			}
+			resp, err := app.Test(req)
+			if err != nil {
+				t.Fatal(err)
+			}
+			resp.Body.Close()
+			if token == "" {
+				if resp.StatusCode != 401 {
+					t.Fatalf("instance header bypassed authentication: %d", resp.StatusCode)
+				}
+				continue
+			}
+			if resp.StatusCode != 400 {
+				t.Fatalf("legacy Orthanc callback accepted: %d", resp.StatusCode)
+			}
+		}
+	})
 	t.Run("browser multipart ZIP", func(t *testing.T) {
 		var archive bytes.Buffer
 		zw := zip.NewWriter(&archive)
-		f, err := zw.Create("scan.DCM")
-		if err != nil {
-			t.Fatal(err)
+		// Каталоги могут иметь отдельные записи или быть представлены только
+		// путями файлов. Оба варианта должны сохранять любую глубину вложенности.
+		entries := []struct{ name, payload string }{
+			{"scan.DCM", "root dicom"},
+			{"patient/", ""},
+			{"patient/study/", ""},
+			{"patient/study/series/scan.dcm", "nested dicom"},
+			{"other/study/series/scan.dcm", "other dicom"},
+			{"patient/study/series/image.DcM", "mixed case dicom"},
+			{"patient/readme.txt", "ignore"},
+			{"patient/study/series/image.png", "ignore"},
+			{"empty/", ""},
 		}
-		if _, err := f.Write([]byte("dicom data")); err != nil {
-			t.Fatal(err)
+		for _, entry := range entries {
+			f, err := zw.Create(entry.name)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if _, err := f.Write([]byte(entry.payload)); err != nil {
+				t.Fatal(err)
+			}
 		}
 		if err := zw.Close(); err != nil {
 			t.Fatal(err)
@@ -231,8 +273,94 @@ func TestBrowserAPIContract(t *testing.T) {
 			t.Fatal(err)
 		}
 		request("POST", "/dicom/upload/batch", mw.FormDataContentType(), &body, "token", 201)
-		if len(uploads.last.RawDicoms) != 1 || string(uploads.last.RawDicoms[0].Payload) != "dicom data" || uploads.last.OrganizationID != 218 {
+		want := map[string]string{
+			"scan.DCM":                       "root dicom",
+			"patient/study/series/scan.dcm":  "nested dicom",
+			"other/study/series/scan.dcm":    "other dicom",
+			"patient/study/series/image.DcM": "mixed case dicom",
+		}
+		if len(uploads.last.RawDicoms) != len(want) || uploads.last.OrganizationID != 218 {
 			t.Fatalf("wrong ZIP upload: %+v", uploads.last)
 		}
+		for _, file := range uploads.last.RawDicoms {
+			payload, ok := want[file.FileName]
+			if !ok || string(file.Payload) != payload {
+				t.Fatalf("unexpected DICOM: %+v", file)
+			}
+			delete(want, file.FileName)
+		}
+		if len(want) != 0 {
+			t.Fatalf("missing files: %v", want)
+		}
 	})
+}
+
+func TestUploadRetryErrors(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		err    error
+		status int
+	}{
+		{"forbidden", fmt.Errorf("transaction failed: %w", uploaduc.ErrDicomForbidden), 403},
+		{"active job", fmt.Errorf("transaction failed: %w", uploaduc.ErrActiveJob), 409},
+	} {
+		for _, batch := range []bool{false, true} {
+			t.Run(fmt.Sprintf("%s/batch=%v", tc.name, batch), func(t *testing.T) {
+				logger := zerolog.Nop()
+				m, err := metrics.New("retry_contract")
+				if err != nil {
+					t.Fatal(err)
+				}
+				app := fiber.New()
+				app.Use(func(c fiber.Ctx) error {
+					c.Locals("tokenClaims", jwt.TokenClaims{UserID: 42, OrganizationID: 218})
+					return c.Next()
+				})
+				stub := &uploadStub{err: tc.err}
+				path, contentType := "/dicom/upload", "application/dicom"
+				var body io.Reader = strings.NewReader("dicom")
+				if batch {
+					path = "/dicom/upload/batch"
+					var zipData bytes.Buffer
+					zw := zip.NewWriter(&zipData)
+					f, err := zw.Create("test.dcm")
+					if err != nil {
+						t.Fatal(err)
+					}
+					if _, err = f.Write([]byte("dicom")); err != nil {
+						t.Fatal(err)
+					}
+					if err = zw.Close(); err != nil {
+						t.Fatal(err)
+					}
+					var multipartData bytes.Buffer
+					mw := multipart.NewWriter(&multipartData)
+					part, err := mw.CreateFormFile("file", "test.zip")
+					if err != nil {
+						t.Fatal(err)
+					}
+					if _, err = part.Write(zipData.Bytes()); err != nil {
+						t.Fatal(err)
+					}
+					if err = mw.Close(); err != nil {
+						t.Fatal(err)
+					}
+					contentType, body = mw.FormDataContentType(), &multipartData
+					app.Post(path, batchapi.New(&logger, m, stub).UploadBatch)
+				} else {
+					app.Post(path, uploadapi.New(&logger, m, stub).Upload)
+				}
+				req := httptest.NewRequest("POST", path, body)
+				req.Header.Set("Content-Type", contentType)
+				resp, err := app.Test(req)
+				if err != nil {
+					t.Fatal(err)
+				}
+				defer resp.Body.Close()
+				if resp.StatusCode != tc.status {
+					t.Fatalf("status=%d want=%d", resp.StatusCode, tc.status)
+				}
+			})
+		}
+	}
 }

@@ -42,3 +42,13 @@ func (s *Storage) GetUsersByOrganizationID(
 	}
 	return users, nil
 }
+
+// GetAll возвращает все организации в порядке возрастания ID.
+func (s *Storage) GetAll(ctx context.Context) ([]Organization, error) {
+	const query = `select id, name from organization order by id;`
+	var organizations []Organization
+	if err := s.db.QuerySlice(ctx, &organizations, query); err != nil {
+		return nil, err
+	}
+	return organizations, nil
+}

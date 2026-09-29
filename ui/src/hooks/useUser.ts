@@ -13,6 +13,16 @@ export const useCurrentUser = () => {
   })
 }
 
+/* Name of any user by id — the job DTO carries only specialist_id. */
+export const useUserName = (userId?: number | null) =>
+  useQuery({
+    queryKey: ['user', userId],
+    queryFn: () => ApiUser.getUser(userId as number).then((r) => r.data),
+    enabled: !!userId,
+    staleTime: Infinity,
+    select: (user) => user.full_name,
+  })
+
 /* The organisation the specialist works in. Only the id arrives from the
    backend: the organisation table has a name, but no endpoint exposes it. */
 export const useOrgId = () => storage.getSession()?.organization_id

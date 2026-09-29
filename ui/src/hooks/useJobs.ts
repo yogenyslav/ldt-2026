@@ -2,15 +2,22 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ApiJob from '@/services/apiJob'
 import { groupByStudy } from '@/lib/verdict'
 import { POLL_INTERVAL, QUEUE_POLL_INTERVAL } from '@/config'
-import type { Decision } from '@/types'
+import type { IJobFilter } from '@/services/apiJob'
+import type { Intake } from '@/lib/cabinet'
+import type { Decision, UploadSource } from '@/types'
 
 /* refetchInterval is per observer, and react-query takes the shortest one of
    them: a screen that watches a batch being processed asks for a faster pace
    than the queue behind it. */
-export const useJobs = (limit = 50, offset = 0, refetchInterval = QUEUE_POLL_INTERVAL) =>
+export const useJobs = (
+  limit = 50,
+  offset = 0,
+  refetchInterval = QUEUE_POLL_INTERVAL,
+  filter: IJobFilter = {},
+) =>
   useQuery({
-    queryKey: ['jobs', limit, offset],
-    queryFn: () => ApiJob.getJobs({ limit, offset }).then((r) => r.data.jobs),
+    queryKey: ['jobs', limit, offset, filter],
+    queryFn: () => ApiJob.getJobs({ limit, offset, ...filter }).then((r) => r.data.jobs),
     refetchInterval,
   })
 
@@ -25,12 +32,15 @@ export const useStudies = (limit = 50, offset = 0) => {
    own", and it will be replaced by a subscription once the backend exposes a push
    channel. In the manual mode there is nothing to wait for, so the station asks
    once and then only while a scan of its own is being processed. */
-export const useLatestJobs = (poll = true) =>
-  useQuery({
-    queryKey: ['jobs', 'latest'],
-    queryFn: () => ApiJob.getJobs({ limit: 20, offset: 0 }).then((r) => r.data.jobs),
+export const useLatestJobs = (poll = true, intake: Intake = 'device') => {
+  /* the mode decides which source is worth asking about, on the server side */
+  const uploadSource: UploadSource[] = [intake === 'device' ? 'orthanc' : 'manual']
+  return useQuery({
+    queryKey: ['jobs', 'latest', uploadSource],
+    queryFn: () => ApiJob.getJobs({ limit: 20, offset: 0, uploadSource }).then((r) => r.data.jobs),
     refetchInterval: poll ? POLL_INTERVAL : false,
   })
+}
 
 export const useJob = (jobId?: string) =>
   useQuery({

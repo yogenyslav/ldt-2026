@@ -66,6 +66,10 @@
   --color-mark-warn: #ffc93d;
   --color-mark-bad: #ff6a5c;
   --color-mark-dead: #8fa6bc;
+  /* The vertical the spine axis is measured against: pink reads as a reference
+     line on the dark scan without being mistaken for a verdict — the grey one
+     sank into the background. */
+  --color-mark-plumb: #ff8fa3;
 
   --font-sans: 'Golos Text', 'Segoe UI', system-ui, sans-serif;
 
@@ -267,6 +271,40 @@
     box-shadow: inset 0 0 0 1.5px var(--color-brand);
   }
 
+  /* A dropdown panel opening: a small pop rather than an instant snap. */
+  @keyframes menu-pop {
+    from {
+      opacity: 0;
+      transform: scale(0.97) translateY(-4px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+
+  .menu-pop {
+    transform-origin: top;
+    animation: menu-pop 0.14s ease-out;
+  }
+
+  /* A route change under the side nav: the new screen settles in rather
+     than replacing the old one in a single frame. */
+  @keyframes page-enter {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .page-enter {
+    animation: page-enter 0.22s ease-out;
+  }
+
   /* ---- criteria table ----
      A row and its explanation are one block, coloured by the state of the
      criterion itself: hovering must not paint it blue first and then recolour
@@ -324,5 +362,172 @@
   .crit-item.is-open .crit-row:hover {
     background: transparent;
     box-shadow: none;
+  }
+}
+
+/* ============================================================
+   Annotation overlay and the boundary scale.
+
+   Everything on the canvas is drawn in ORIGINAL FRAME PIXELS: the
+   SVG viewBox is cols x rows, so a marker at (196.4, 88.1) sits
+   exactly where the contract says it does. Strokes are not scaled
+   with the image, so they keep their weight at any zoom.
+
+   These are SVG paint properties and an absolutely placed track —
+   utilities would only spell them out longer.
+   ============================================================ */
+
+@layer components {
+  /* Only the point in hand shows its region, and as a soft wash, so it reads
+     as a hint about where to look — not as a button to press. */
+  .zone {
+    display: none;
+    fill: none;
+  }
+
+  .zone.is-active {
+    display: block;
+    fill: rgba(92, 142, 230, 0.13);
+    stroke: rgba(92, 142, 230, 0.45);
+    stroke-width: 0.8;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .mark {
+    color: var(--color-mark-ok);
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.2;
+    opacity: 0.75;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* A guess nobody has confirmed yet. */
+  .mark.is-model {
+    color: var(--color-mark-warn);
+  }
+
+  .mark.is-active {
+    opacity: 1;
+    stroke-width: 1.6;
+  }
+
+  .mark-name {
+    fill: currentColor;
+    font: 600 7px var(--font-sans);
+  }
+
+  .poly-wire {
+    fill: rgba(255, 106, 92, 0.3);
+    stroke: var(--color-mark-bad);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .poly-object {
+    fill: rgba(79, 214, 156, 0.3);
+    stroke: var(--color-mark-ok);
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  /* The measured area on a tuning frame: area, not outline — that is what the
+     boundary changes, so it has to be the thing that changes colour. */
+  .fill-norm,
+  .fill-warn,
+  .fill-viol {
+    stroke-width: 1;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .fill-norm {
+    fill: rgba(79, 214, 156, 0.42);
+    stroke: var(--color-mark-ok);
+  }
+
+  .fill-warn {
+    fill: rgba(255, 201, 61, 0.42);
+    stroke: var(--color-mark-warn);
+  }
+
+  .fill-viol {
+    fill: rgba(255, 106, 92, 0.42);
+    stroke: var(--color-mark-bad);
+  }
+
+  /* One scale: the stripes are the verdict, the handles are the choice. */
+  .band-norm {
+    background: var(--color-ok-bg);
+    color: var(--color-ok);
+    box-shadow: inset 0 0 0 1px var(--color-ok-line);
+  }
+
+  .band-warn {
+    background: var(--color-warn-bg);
+    color: var(--color-warn);
+    box-shadow: inset 0 0 0 1px var(--color-warn-line);
+  }
+
+  .band-viol {
+    background: var(--color-bad-bg);
+    color: var(--color-bad);
+    box-shadow: inset 0 0 0 1px var(--color-bad-line);
+  }
+
+  .grip::before {
+    content: '';
+    position: absolute;
+    left: 12px;
+    top: 0;
+    width: 4px;
+    height: 60px;
+    border-radius: 2px;
+    background: var(--color-brand);
+  }
+
+  /* The centre of the norm: a setting like the others, but it is not a
+     boundary — it is drawn thinner and below the scale. */
+  .centre-grip::before {
+    content: '';
+    position: absolute;
+    left: 13px;
+    top: 0;
+    width: 2px;
+    height: 16px;
+    border-radius: 1px;
+    background: var(--color-ink-2);
+  }
+
+  /* The outline being laid down by hand, before it is closed. */
+  .draft-wire,
+  .draft-object {
+    fill: none;
+    stroke-width: 1.6;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    vector-effect: non-scaling-stroke;
+  }
+
+  .draft-wire {
+    stroke: var(--color-mark-bad);
+  }
+
+  .draft-object {
+    stroke: var(--color-mark-ok);
+  }
+
+  /* The stroke while the pencil is down: already filled, so it reads as the
+     shape it is about to become rather than as a loose line. */
+  .draft-fill-wire,
+  .draft-fill-object {
+    stroke: none;
+  }
+
+  .draft-fill-wire {
+    fill: rgba(255, 106, 92, 0.22);
+  }
+
+  .draft-fill-object {
+    fill: rgba(79, 214, 156, 0.22);
   }
 }

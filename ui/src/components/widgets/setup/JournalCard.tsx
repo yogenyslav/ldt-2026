@@ -4,6 +4,7 @@ import Button from '@/components/ui/button'
 import Card, { CardBody, CardFoot, CardHead } from '@/components/ui/card'
 import Label from '@/components/ui/label'
 import Modal from '@/components/ui/modal'
+import Select from '@/components/ui/select'
 import Textarea from '@/components/ui/textarea'
 import { useToast } from '@/components/ui/toast'
 import { REGION_SHORT } from '@/constants'
@@ -121,19 +122,18 @@ const JournalCard = () => {
 
           <div className="mt-3.5">
             <Label htmlFor="journal-job">Сослаться на исследование (необязательно)</Label>
-            <select
+            <Select
               id="journal-job"
               value={jobId}
-              onChange={(event) => setJobId(event.target.value)}
-              className="h-11 w-full cursor-pointer rounded-control border-[1.5px] border-line-2 bg-surface px-4 text-[14.5px] text-ink"
-            >
-              <option value="">без ссылки</option>
-              {recent.map((job) => (
-                <option key={job.id} value={job.id}>
-                  {job.file_name ?? job.id} — {labelOf(job.id)}
-                </option>
-              ))}
-            </select>
+              onChange={setJobId}
+              options={[
+                ['', 'без ссылки'],
+                ...recent.map<[string, string]>((job) => [
+                  job.id,
+                  `${job.file_name ?? job.id} — ${labelOf(job.id)}`,
+                ]),
+              ]}
+            />
           </div>
 
           <Button variant="primary" className="mt-3.5" onClick={submit} disabled={!text.trim()}>
