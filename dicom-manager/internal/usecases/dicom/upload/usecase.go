@@ -35,8 +35,12 @@ type dicomRepo interface {
 	SaveDicomFiles(ctx context.Context, dicoms []storage.Dicom) error
 }
 
+type settingsReader interface {
+	Get(context.Context, int64) (map[string]float64, error)
+}
+
 type worker interface {
-	ProcessDicomFiles(ctx context.Context, dicomIDs []string) (map[string]uuid.UUID, error)
+	ProcessDicomFiles(ctx context.Context, dicomIDs []string, settings map[string]float64) (map[string]uuid.UUID, error)
 }
 
 type jobCreator interface {
@@ -63,12 +67,13 @@ type Usecase struct {
 	worker     worker
 	jobCreator jobCreator
 	dicomer    dicomer
+	settings   settingsReader
 }
 
 // New создает новый экземпляр Usecase.
 func New(
 	l *zerolog.Logger, m observability.MetricsClient, uow database.UnitOfWork,
-	dr dicomRepo, jr wrappers.JobRepo, o orthancClient, workerClient dicom_worker.DicomWorkerServiceClient,
+	dr dicomRepo, jr wrappers.JobRepo, o orthancClient, workerClient dicom_worker.DicomWorkerServiceClient, settings settingsReader,
 ) *Usecase {
 	return &Usecase{
 		log:        l,
@@ -78,6 +83,7 @@ func New(
 		worker:     wrappers.NewWorker(workerClient),
 		jobCreator: wrappers.NewJobCreator(jr),
 		dicomer:    wrappers.NewOrthanc(o.Client()),
+		settings:   settings,
 	}
 }
 
@@ -106,8 +112,8 @@ func (uc *Usecase) UploadDicomFiles(
 		return nil, fmt.Errorf("failed to get DICOM properties: %w", err)
 	}
 
-	source := storage.UploadSourceOrthanc
-	if in.SyncOrthanc {
+	source := storage.UploadSourceClinic
+	if in.SyncOrthanc && in.CreatorRole == "admin" {
 		source = storage.UploadSourceManual
 	}
 
@@ -155,7 +161,7 @@ func (uc *Usecase) UploadDicomFiles(
 			}
 
 			var err error
-			dicomJobs, err = uc.processDicoms(ctx, dicomIDs)
+			dicomJobs, err = uc.processDicoms(ctx, dicomIDs, in.OrganizationID)
 			return err
 		},
 	)
@@ -172,22 +178,29 @@ func (uc *Usecase) UploadDicomFiles(
 func (uc *Usecase) getDicomProperties(ctx context.Context, dicoms []RawDicomData, syncOrthanc bool) (
 	[]dto.OrthancDicomProperties, error,
 ) {
-	var (
-		dicomProperties  []dto.OrthancDicomProperties
-		errGetProperties error
-	)
+	var dicomProperties []dto.OrthancDicomProperties
 
 	if syncOrthanc {
-		dicomsZip, errZipDicoms := dicomsToZip(dicoms)
-		if errZipDicoms != nil {
-			uc.metrics.Counter("usecases.dicom.upload.zip.error").Inc()
-			return nil, fmt.Errorf("failed to create zip from dicoms: %w", errZipDicoms)
-		}
+		for _, dicom := range dicoms {
+			dicomsZip, errZipDicoms := dicomsToZip([]RawDicomData{dicom})
+			if errZipDicoms != nil {
+				uc.metrics.Counter("usecases.dicom.upload.zip.error").Inc()
+				return dicomProperties, fmt.Errorf("failed to create zip from dicom: %w", errZipDicoms)
+			}
 
-		dicomProperties, errGetProperties = uc.dicomer.UploadInstances(ctx, dicomsZip)
-		if errGetProperties != nil {
-			uc.metrics.Counter("usecases.dicom.upload.orthanc.error").Inc()
-			return dicomProperties, fmt.Errorf("failed to upload dicoms to orthanc: %w", errGetProperties)
+			uploaded, err := uc.dicomer.UploadInstances(ctx, dicomsZip)
+			for i := range uploaded {
+				uploaded[i].FileName = dicom.FileName
+			}
+
+			dicomProperties = append(dicomProperties, uploaded...)
+			if err != nil {
+				uc.metrics.Counter("usecases.dicom.upload.orthanc.error").Inc()
+				return dicomProperties, fmt.Errorf("failed to upload dicom to orthanc: %w", err)
+			}
+			if len(uploaded) != 1 {
+				return dicomProperties, fmt.Errorf("expected one Orthanc instance for %q, got %d", dicom.FileName, len(uploaded))
+			}
 		}
 	} else {
 		singleDicomProp, err := uc.dicomer.GetDicomProperties(ctx, dicoms[0].InstanceID)
@@ -261,7 +274,7 @@ func (uc *Usecase) lockDicoms(ctx context.Context, dicomIDs []string, creatorID,
 }
 
 // processDicoms вызывается внутри транзакции после блокировки файлов.
-func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string) (map[string]uuid.UUID, error) {
+func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string, organizationID int64) (map[string]uuid.UUID, error) {
 	// Проверяем весь батч после блокировки всех файлов в текущей транзакции.
 	active, err := uc.jobCreator.GetActiveDicomIDs(ctx, dicomIDs)
 	if err != nil {
@@ -283,7 +296,15 @@ func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string) (map[st
 		return nil, ErrActiveJob
 	}
 
-	dicomToJobs, errProcessDicoms := uc.worker.ProcessDicomFiles(ctx, readyIDs)
+	var settings map[string]float64
+	if uc.settings != nil {
+		settings, err = uc.settings.Get(ctx, organizationID)
+		if err != nil {
+			return nil, fmt.Errorf("read analysis settings: %w", err)
+		}
+	}
+
+	dicomToJobs, errProcessDicoms := uc.worker.ProcessDicomFiles(ctx, readyIDs, settings)
 	if errProcessDicoms != nil {
 		uc.metrics.Counter("usecases.dicom.upload.process.error").Inc()
 		return nil, fmt.Errorf("failed to process DICOM files: %w", errProcessDicoms)

@@ -193,8 +193,9 @@ func TestPipeline(t *testing.T) {
 		t.Fatal(err)
 	}
 	defer sub.Unsubscribe()
+	settings := map[string]float64{"trochanter_center_mm": 3, "trochanter_tol_percent": 50, "trochanter_yellow_percent": 20}
 	response, err := client.ProcessDicomFiles(
-		ctx, &pb.ProcessDicomFilesIn{Dicoms: []*pb.DicomData{{Id: "pipeline-ok"}, {Id: "pipeline-fail"}}},
+		ctx, &pb.ProcessDicomFilesIn{Dicoms: []*pb.DicomData{{Id: "pipeline-ok"}, {Id: "pipeline-fail"}}, Settings: settings},
 	)
 	if err != nil {
 		t.Fatal(err)
@@ -225,6 +226,11 @@ func TestPipeline(t *testing.T) {
 		if response.JobIds[request.DicomID] != request.JobID {
 			_ = messages[0].Ack()
 			continue
+		}
+		for key, value := range settings {
+			if request.Settings[key] != value {
+				t.Fatalf("settings lost between gRPC and NATS: %v", request.Settings)
+			}
 		}
 		result := events.New(request.JobID, request.DicomID, "failed")
 		subject := events.AnalysisFailed

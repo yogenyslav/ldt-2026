@@ -15,8 +15,8 @@ func ParseFilters(c fiber.Ctx) ([]int64, []string, error) {
 	if raw := c.Query("upload_source"); raw != "" {
 		for _, part := range strings.Split(raw, ",") {
 			source := strings.TrimSpace(part)
-			if source != dicom.UploadSourceManual && source != dicom.UploadSourceOrthanc {
-				return nil, nil, fiber.NewError(fiber.StatusBadRequest, "upload_source must contain manual or orthanc values separated by commas")
+			if source != dicom.UploadSourceManual && source != dicom.UploadSourceClinic {
+				return nil, nil, fiber.NewError(fiber.StatusBadRequest, "upload_source must contain manual or clinic values separated by commas")
 			}
 			if !seenSources[source] {
 				sources = append(sources, source)

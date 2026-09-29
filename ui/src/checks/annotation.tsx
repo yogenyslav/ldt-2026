@@ -41,7 +41,8 @@ import {
 } from '@/lib/annotation'
 import { isStrokeWorthKeeping, outlineOf, simplifyOutline } from '@/lib/annotation'
 import { annotTasks, caseOf, clampToBox, hasZones } from '@/lib/annotQueue'
-import { delta } from '@/lib/tune'
+import { delta, variedRotationFrames } from '@/lib/tune'
+import { newSubmissionId } from '@/lib/submission'
 import {
   ROTATION_DEFAULTS,
   centreToSettings,
@@ -53,7 +54,8 @@ import {
   rotationFrames,
   settingsOf,
 } from '@/lib/settings'
-import type { IAnnotCase, IJobInfo, Point } from '@/types'
+import type { IAnnotCase, IDicomInfo, IJobInfo, ITrainTarget, Point } from '@/types'
+import { enrichJob } from '@/lib/dicom'
 
 let passed = 0
 const failures: string[] = []
@@ -139,6 +141,19 @@ const hipJob = DEMO_JOBS.find(
   (job) => job.anatomical_region?.startsWith('hip') && job.metadata?.criteria?.hip_keypoints,
 )!
 const hipCase = caseOf(hipJob, 'hip_keypoints', '/scan.png')!
+const imageJob = enrichJob({ ...hipJob, file_name: 'scan.dcm' }, {
+  id: hipJob.dicom_id,
+  dicom_image_uid: '1.2.840.10008.123',
+})
+const queuedImageJob = {
+  ...DEMO_JOBS.find((job) => job.id === tasks[0].jobId)!,
+  file_name: 'scan.dcm',
+  dicom_image_uid: imageJob.dicom_image_uid,
+}
+eq('очередь разметки подписывает снимок его DICOM UID', annotTasks([queuedImageJob])[0].file, '1.2.840.10008.123')
+eq('разметка подписывает снимок его DICOM UID', caseOf(imageJob, 'hip_keypoints', '/scan.png')!.file, '1.2.840.10008.123')
+eq('идентификатор задачи остается в ключе разметки', caseOf(imageJob, 'hip_keypoints', '/scan.png')!.key, `${hipJob.id}:hip_keypoints`)
+eq('отсутствующий UID не заменяется job_id', hipCase.file, '—')
 
 ok('снимок бедра собрался', !!hipCase)
 eq('три точки, как в контракте', hipCase.items!.length, 3)
@@ -298,8 +313,29 @@ ok('внешний бегунок расширяет сомнение', cutToSet
 eq('границы остаются по возрастанию', rotationCuts(cutToSettings(live, 3, 6)).every((cut, i, a) => i === 0 || cut >= a[i - 1]), true)
 eq('внешняя граница не заходит внутрь допуска', cutToSettings(live, 0, 2).trochanter_yellow_percent, 0)
 eq('середина нормы тоже настройка', centreToSettings(live, 3.4).trochanter_center_mm, 3.4)
+for (const value of [-100, 0, 2.7, 8, 100]) {
+  for (let index = 0; index < 4; index += 1) {
+    const next = cutToSettings(live, index, value)
+    ok('обе границы остаются на шкале', rotationCuts(next).every((cut) => cut >= 0 && cut <= 8))
+    ok('проценты не превышают 100', next.trochanter_tol_percent + next.trochanter_yellow_percent <= 100)
+  }
+  ok('сдвиг центра удерживает границы на шкале', rotationCuts(centreToSettings(live, value)).every((cut) => cut >= 0 && cut <= 8))
+}
+eq('левая граница не перескакивает через центр', cutToSettings(live, 1, 8).trochanter_tol_percent, 0)
+eq('правая граница не перескакивает через центр', cutToSettings(live, 2, 0).trochanter_tol_percent, 0)
 
 const frames = rotationFrames(DEMO_JOBS)
+const unevenFrames = Array.from({ length: 30 }, (_, index) => ({
+  ...frames[0],
+  jobId: `varied-${index}`,
+  value: index < 28 ? 1 : index === 28 ? 5 : 17,
+}))
+const mixedFrames = variedRotationFrames(unevenFrames)
+eq('первые восемь показывают весь диапазон размеров', [...new Set(mixedFrames.slice(0, 8).map((frame) => frame.value))].sort((a, b) => a - b), [1, 5, 17])
+eq('перемешивание сохраняет все снимки без повторов', mixedFrames.map((frame) => frame.jobId).sort(), unevenFrames.map((frame) => frame.jobId).sort())
+eq('исходный порядок не меняется', unevenFrames.map((frame) => frame.jobId), Array.from({ length: 30 }, (_, index) => `varied-${index}`))
+eq('пустой список перемешивается', variedRotationFrames([]), [])
+eq('один снимок сохраняется', variedRotationFrames(frames.slice(0, 1)), frames.slice(0, 1))
 ok('снимки бедра нашлись', frames.length > 0)
 ok('у каждого измерено расстояние', frames.every((frame) => typeof frame.value === 'number'))
 ok('у каждого есть контур измеренной области', frames.every((frame) => frame.regions.length > 0))
@@ -342,10 +378,16 @@ eq('без изменений', delta({ name: '', unit: '%', goal: 'up', now: 5,
 /* ---------- 6. экраны: что видит врач ---------- */
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-client.setQueryData(['jobs', 50, 0], DEMO_JOBS)
-for (const job of DEMO_JOBS) {
+client.setQueryData(['settings'], ROTATION_DEFAULTS)
+client.setQueryData(['jobs', 50, 0, {}], DEMO_JOBS)
+for (const [index, job] of DEMO_JOBS.entries()) {
   client.setQueryData(['job', job.id], job)
   client.setQueryData(['dicom', job.dicom_id], { image_data: '/scan.png' })
+  client.setQueryData(['dicom-info', job.dicom_id], {
+    id: job.dicom_id,
+    dicom_image_uid: `1.2.840.10008.123.${index}`,
+    file_name: 'scan.dcm',
+  })
 }
 
 const draw = (node: React.ReactNode) =>
@@ -365,6 +407,10 @@ const screens: Array<[string, string]> = [
   ['Дообучение модели', draw(<TrainWidget />)],
   ['Подбор параметров', draw(<TuneWidget />)],
 ]
+
+const firstImageUID = client.getQueryData<IDicomInfo>(['dicom-info', tasks[0].dicomId])!.dicom_image_uid!
+ok('UID снимка виден в очереди заданий', screens[0][1].includes(firstImageUID))
+ok('UID снимка виден на странице разметки', screens[1][1].includes(firstImageUID))
 
 const text = (html: string) =>
   html
@@ -428,8 +474,43 @@ for (const word of ['Модели в работе', 'Ключевые точки
   ok(`дообучение: «${word}» из разбора`, train.includes(word))
 }
 
+/* Идентификаторы отправок должны приниматься валидатором менеджера. */
+const beforeIds = Date.now()
+const submissionIds = Array.from({ length: 1000 }, () => newSubmissionId())
+const afterIds = Date.now()
+ok('отправка: ULID соответствует формату сервера', submissionIds.every((id) => /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(id)))
+eq('отправка: идентификаторы не повторяются', new Set(submissionIds).size, submissionIds.length)
+const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+const timestamp = [...submissionIds[0].slice(0, 10)].reduce((value, char) => value * 32 + alphabet.indexOf(char), 0)
+ok('отправка: ULID содержит время создания', timestamp >= beforeIds && timestamp <= afterIds)
+
+/* Нулевая цель означает отсутствие настроенных требований к выборке. */
+const trainingTarget: ITrainTarget = {
+  id: 'hip_keypoints', have: 0, need: 0, hard: '', ready: false, busy: false,
+  done: null, left_minutes: null,
+}
+const drawTraining = (target: ITrainTarget) => {
+  client.setQueryData(['annot', 'training'], { targets: [target], versions: [] })
+  return draw(<TrainWidget />)
+}
+for (const have of [0, 12]) {
+  const html = drawTraining({ ...trainingTarget, have })
+  const body = text(html)
+  ok(`дообучение без цели: собрано ${have}`, body.includes(`Собрано: ${have}`))
+  ok('дообучение без цели: нет фиктивного прогресса', !body.includes(' из 0') && !body.includes('нужно ещё') && !/NaN|Infinity/.test(html))
+  ok('дообучение без цели: причина недоступности', body.includes('Требования к выборке не заданы') && body.includes('дообучение пока недоступно'))
+  ok('дообучение без имени: название берётся по коду', body.includes('Ключевые точки бедра'))
+}
+const collecting = text(drawTraining({ ...trainingTarget, have: 96, need: 250 }))
+ok('дообучение с целью: сохраняется прогресс', collecting.includes('96 из 250') && collecting.includes('нужно ещё 154'))
+const unavailable = text(drawTraining({ ...trainingTarget, have: 260, need: 250 }))
+ok('дообучение с избытком: нет отрицательного остатка', unavailable.includes('дообучение пока недоступно') && !unavailable.includes('нужно ещё'))
+const running = text(drawTraining({ ...trainingTarget, busy: true }))
+ok('дообучение: null не превращается в нулевой прогноз', !running.includes('пройдено 0%') && !running.includes('осталось около null'))
+
 /* ---------- итог ---------- */
 
+client.clear()
 console.log(`\nпроверок пройдено: ${passed}`)
 if (failures.length) {
   console.log(`не прошло: ${failures.length}`)

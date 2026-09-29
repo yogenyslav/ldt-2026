@@ -7,6 +7,11 @@ import (
 
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/pressly/goose/v3"
+	api_annotation_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/annotation/get_paginated"
+	api_annotation_get_training "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/annotation/get_training"
+	api_annotation_start_training "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/annotation/start_training"
+	api_annotation_submit "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/annotation/submit"
+	api_annotation_switch_training "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/annotation/switch_training"
 	api_dicom_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/get_by_id"
 	api_dicom_get_image "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/get_image"
 	api_dicom_upload "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/dicom/upload"
@@ -22,13 +27,18 @@ import (
 	api_report_generate "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/report/generate"
 	api_report_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/report/get_by_id"
 	api_report_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/report/get_paginated"
+	api_settings_get "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/settings/get"
+	api_settings_save "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/settings/save"
 	api_user_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/get_by_id"
 	api_user_login "github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/user/login"
+	storage_annotation "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/annotation"
 	storage_dicom "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/dicom"
 	storage_job "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/job"
 	storage_organization "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/organization"
 	storage_report "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/report"
+	storage_settings "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/settings"
 	storage_user "github.com/yogenyslav/ldt-2026/dicom-manager/internal/storage/user"
+	uc_annotation "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/annotation"
 	uc_dicom_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/get_by_id"
 	uc_dicom_get_image "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/get_image"
 	uc_dicom_upload "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/dicom/upload"
@@ -42,6 +52,8 @@ import (
 	uc_report_generate "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/report/generate"
 	uc_report_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/report/get_by_id"
 	uc_report_get_paginated "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/report/get_paginated"
+	uc_settings_get "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/settings/get"
+	uc_settings_save "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/settings/save"
 	uc_user_auth "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/user/auth"
 	uc_user_get_by_id "github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/user/get_by_id"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/migrations"
@@ -139,6 +151,8 @@ func run() error {
 	jobStorage := storage_job.New(db)
 	dicomStorage := storage_dicom.New(db)
 	reportStorage := storage_report.New(db)
+	annotationStorage := storage_annotation.New(db)
+	settingsStorage := storage_settings.New(db)
 
 	// Бизнес-логика и маршруты пользователей.
 	userByID := uc_user_get_by_id.New(logger, metrics, userStorage)
@@ -148,6 +162,13 @@ func run() error {
 
 	srv.UseMiddleware(server.AuthMiddleware(userAuth.ParseToken))
 	userRouter.Get("/:user_id", api_user_get_by_id.New(logger, metrics, userByID).GetByID)
+
+	// Бизнес-логика и маршруты параметров анализа.
+	getSettings := uc_settings_get.New(logger, metrics, settingsStorage)
+	saveSettings := uc_settings_save.New(logger, metrics, settingsStorage)
+	settingsRouter := srv.Router("settings")
+	settingsRouter.Get("/", api_settings_get.New(logger, metrics, getSettings).Get)
+	settingsRouter.Put("/", api_settings_save.New(logger, metrics, saveSettings).Save)
 
 	// Бизнес-логика и маршруты организаций.
 	allOrganizations := uc_organization_get_all.New(logger, metrics, organizationStorage)
@@ -165,7 +186,7 @@ func run() error {
 	// Бизнес-логика и маршруты DICOM-файлов.
 	getDicomImage := uc_dicom_get_image.New(logger, metrics, orthancClient.Client(), dicomStorage)
 	uploadDicom := uc_dicom_upload.New(
-		logger, metrics, uow, dicomStorage, jobStorage, orthancClient, dicomWorkerClient.Client(),
+		logger, metrics, uow, dicomStorage, jobStorage, orthancClient, dicomWorkerClient.Client(), getSettings,
 	)
 	dicomRouter := srv.Router("dicom")
 	getDicomByID := uc_dicom_get_by_id.New(logger, metrics, dicomStorage)
@@ -191,6 +212,15 @@ func run() error {
 	jobRouter.Post(
 		"/result/decision", api_job_result_decision.New(logger, metrics, jobResultDecision).ResultDecision,
 	)
+
+	// Бизнес-логика и маршруты разметки.
+	annotationUsecase := uc_annotation.New(logger, metrics, uow, annotationStorage)
+	annotationRouter := srv.Router("annotation")
+	annotationRouter.Post("/submission", api_annotation_submit.New(logger, metrics, annotationUsecase).Submit)
+	annotationRouter.Get("/submissions", api_annotation_get_paginated.New(logger, metrics, annotationUsecase).GetPaginated)
+	annotationRouter.Get("/training", api_annotation_get_training.New(logger, metrics, annotationUsecase).GetTraining)
+	annotationRouter.Post("/training/start", api_annotation_start_training.New(logger, metrics, annotationUsecase).StartTraining)
+	annotationRouter.Post("/training/switch", api_annotation_switch_training.New(logger, metrics, annotationUsecase).SwitchTraining)
 
 	// Бизнес-логика и маршруты отчетов.
 	generateReport := uc_report_generate.New(logger, metrics, uow, reportStorage, s3Client)

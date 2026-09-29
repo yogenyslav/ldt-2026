@@ -2,6 +2,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, useRef, use
 import type { ReactNode } from 'react'
 import { useCabinet } from '@/context/CabinetContext'
 import { useDecideJob, useLatestJobs } from '@/hooks/useJobs'
+import { useEnrichedJobs } from '@/hooks/useDicomInfo'
 import {
   ARRIVAL_GRACE,
   arrival,
@@ -56,18 +57,21 @@ const StationProvider = ({ children }: { children: ReactNode }) => {
 
   /* Listening happens only while a scan is expected — see shouldListen. */
   const watching = shouldListen(session, cabinet.intake)
-  const { data: jobs } = useLatestJobs(watching, cabinet.intake)
+  const { data: jobs } = useLatestJobs(watching)
 
-  const attempts = useMemo(() => {
+  const rawAttempts = useMemo(() => {
     if (!session || !jobs) return []
     return session.attempts
       .map((id) => jobs.find((job) => job.id === id))
       .filter((job): job is IJobInfo => !!job)
   }, [session, jobs])
 
+  const { jobs: enrichedAttempts } = useEnrichedJobs(rawAttempts)
+  const attempts = enrichedAttempts ?? []
+
   /* A second observer of the same query: it adds no request of its own, it only
      keeps the polling on while an attempt of ours is still being processed. */
-  useLatestJobs(watching || attempts.some(isBusy), cabinet.intake)
+  useLatestJobs(watching || attempts.some(isBusy))
 
   /* A scan that arrives while the station is waiting joins the visit. */
   useEffect(() => {
@@ -122,7 +126,7 @@ const StationProvider = ({ children }: { children: ReactNode }) => {
       attempts,
       current: attempts[attempts.length - 1],
       awaiting: !!session?.awaiting,
-      patient: attempts[0]?.patient_ref ?? attempts[0]?.study_id ?? '',
+      patient: attempts.find((attempt) => attempt.patient_ref)?.patient_ref ?? '',
       open: attempts.some(isAnalysed),
       retake,
       attach,

@@ -11,7 +11,7 @@ import (
 
 // RegisterOrthanc сохраняет метаданные уже загруженного в Orthanc файла без внешних вызовов.
 func (uc *Usecase) RegisterOrthanc(ctx context.Context, file storage.Dicom) error {
-	file.UploadSource = storage.UploadSourceOrthanc
+	file.UploadSource = storage.UploadSourceClinic
 	return uc.uow.WithTx(ctx, database.TxLevelReadCommitted, func(ctx context.Context) error {
 		if err := uc.dicomRepo.SaveDicomFiles(ctx, []storage.Dicom{file}); err != nil {
 			return err
@@ -41,7 +41,7 @@ func (uc *Usecase) StartOrthanc(ctx context.Context, id string, creatorID, organ
 			if err := uc.lockDicoms(ctx, []string{id}, creatorID, organizationID); err != nil {
 				return err
 			}
-			_, err := uc.processDicoms(ctx, []string{id})
+			_, err := uc.processDicoms(ctx, []string{id}, organizationID)
 			return err
 		})
 		if err != nil && !errors.Is(err, ErrActiveJob) {

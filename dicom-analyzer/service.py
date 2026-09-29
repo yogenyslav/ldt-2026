@@ -15,6 +15,7 @@ from urllib.request import Request, urlopen
 from uuid import UUID, NAMESPACE_URL, uuid5
 
 from observability import DEFAULT, PROPAGATOR, Observability, SpanKind, StatusCode, configure_logging
+from qc.settings import resolve
 
 STREAM = "DICOM_EVENTS"
 DURABLE = "analyzer-requests"
@@ -40,6 +41,10 @@ def decode_request(payload):
         raise ValueError("invalid occurred_at")
     if event.get("status") != "pending" or event.get("result") is not None:
         raise ValueError("invalid request status/result")
+    if "settings" in event:
+        if not isinstance(event["settings"], dict):
+            raise ValueError("settings must be an object")
+        event["settings"] = resolve(event["settings"])
     return event
 
 
@@ -62,7 +67,7 @@ class Analyzer:
             path = os.path.join(directory, "image.dcm")
             with urlopen(request, timeout=30) as response, open(path, "wb") as output:
                 shutil.copyfileobj(response, output)
-            return self.qc.process(path)
+            return self.qc.process(path, event.get("settings"))
 
 
 def result_event(request, result):

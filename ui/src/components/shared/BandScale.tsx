@@ -3,16 +3,9 @@ import { BAND } from '@/constants'
 import { cn } from '@/lib/utils'
 import type { Band } from '@/types'
 
-/* ============================================================
-   One scale with the boundaries on it. The stripes are the verdict
-   and are named right on the scale; the handles are what is being
-   chosen.
-
-   The handles are not free numbers — each one stands for a setting
-   the analyser applies symmetrically around the centre of the norm,
-   so moving one moves its mirror image too. The centre itself has a
-   handle of its own, below the scale.
-   ============================================================ */
+/* Шкала с зонами решений и бегунками границ. Каждая граница симметрична
+   относительно центра нормы: перемещение бегунка меняет и парную границу.
+   Под шкалой расположен отдельный бегунок центра. */
 
 const BAND_CLASS: Record<Band, string> = {
   norm: 'band-norm',
@@ -30,7 +23,7 @@ interface BandScaleProps {
   unit: string
   cuts: number[]
   bands: Band[]
-  /* the centre of the norm, if the parameter has one */
+  /* Центр нормы, если он предусмотрен для этого параметра. */
   centre?: number
   onMoveCut: (index: number, value: number) => void
   onMoveCentre?: (value: number) => void
@@ -49,7 +42,8 @@ const BandScale = ({
 }: BandScaleProps) => {
   const track = useRef<HTMLDivElement>(null)
   const edges = [min, ...cuts, max]
-  const at = (value: number) => ((value - min) / (max - min)) * 100
+  const bounded = (value: number) => Math.min(Math.max(value, min), max)
+  const at = (value: number) => ((bounded(value) - min) / (max - min)) * 100
 
   const valueAt = (clientX: number) => {
     const box = track.current?.getBoundingClientRect()
@@ -87,7 +81,7 @@ const BandScale = ({
         const direction = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
         if (!direction) return
         event.preventDefault()
-        move(value + direction * step)
+        move(bounded(value + direction * step))
       }}
     >
       <b

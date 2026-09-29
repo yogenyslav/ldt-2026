@@ -7,7 +7,7 @@ import (
 // Источники поступления DICOM-файлов.
 const (
 	UploadSourceManual  = "manual"
-	UploadSourceOrthanc = "orthanc"
+	UploadSourceClinic  = "clinic"
 	UploadSourceUnknown = "unknown"
 )
 

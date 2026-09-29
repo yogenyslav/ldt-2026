@@ -15,5 +15,5 @@ values (12345, 12345, 'Тестовый администратор центра'
         '$2a$10$gTLPIjZlg7.gRSbazk5mEOzWvaOJAEg/w9cfV5pbLaNFI7B.lIX8q', 'specialist');
 
 -- +goose Down
-delete from "user" where id in (12345, 12345, 12346, 12347);
-delete from organization where id in (12345, 12345);
+delete from "user" where id in (12345, 12346, 12347, 12348);
+delete from organization where id in (12345, 12346);

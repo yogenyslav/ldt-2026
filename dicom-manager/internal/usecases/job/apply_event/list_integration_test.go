@@ -39,7 +39,7 @@ func TestIntegrationListJobs(t *testing.T) {
 		id, source   string
 		creator, org int64
 	}{
-		{"manual", "manual", 102, 101}, {"orthanc", "orthanc", 103, 101}, {"other-org", "manual", 104, 102},
+		{"manual", "manual", 102, 101}, {"orthanc", "clinic", 103, 101}, {"other-org", "manual", 104, 102},
 	} {
 		_, err = db.Exec(ctx, `insert into dicom_file(id,file_name,study_id,series_id,dicom_study_uid,dicom_series_uid,dicom_image_uid,creator_id,organization_id,upload_source)
 			values($1,'image.dcm','study','series','study','series','image',$2,$3,$4)`, fixture.id, fixture.creator, fixture.org, fixture.source)
@@ -68,16 +68,16 @@ func TestIntegrationListJobs(t *testing.T) {
 		{"admin multiple organizations", "admin", 101, 101, "?organization_ids=101,102", []string{"other-org", "orthanc", "manual"}},
 		{"combined filters", "admin", 101, 101, "?organization_ids=101,102&upload_source=manual", []string{"other-org", "manual"}},
 		{"filtered pagination", "admin", 101, 101, "?organization_ids=101,102&upload_source=manual&offset=1&limit=1", []string{"manual"}},
-		{"both sources", "admin", 101, 101, "?upload_source=manual,orthanc", []string{"orthanc", "manual"}},
-		{"both sources and organizations", "admin", 101, 101, "?organization_ids=101,102&upload_source=manual,orthanc", []string{"other-org", "orthanc", "manual"}},
-		{"both sources pagination", "admin", 101, 101, "?upload_source=manual,orthanc&offset=1&limit=1", []string{"manual"}},
+		{"both sources", "admin", 101, 101, "?upload_source=manual,clinic", []string{"orthanc", "manual"}},
+		{"both sources and organizations", "admin", 101, 101, "?organization_ids=101,102&upload_source=manual,clinic", []string{"other-org", "orthanc", "manual"}},
+		{"both sources pagination", "admin", 101, 101, "?upload_source=manual,clinic&offset=1&limit=1", []string{"manual"}},
 		{"duplicate sources", "admin", 101, 101, "?upload_source=manual,manual", []string{"manual"}},
-		{"both sources preserve access", "specialist", 102, 101, "?upload_source=manual,orthanc", []string{"manual"}},
-		{"automatic only", "admin", 101, 101, "?upload_source=orthanc", []string{"orthanc"}},
+		{"both sources preserve access", "specialist", 102, 101, "?upload_source=manual,clinic", []string{"manual"}},
+		{"automatic only", "admin", 101, 101, "?upload_source=clinic", []string{"orthanc"}},
 		{"duplicate organizations", "admin", 101, 101, "?organization_ids=101,101&upload_source=manual", []string{"manual"}},
 		{"specialist filters do not expand access", "specialist", 102, 101, "?organization_ids=101,102", []string{"manual"}},
 		{"specialist foreign organization", "specialist", 102, 101, "?organization_ids=102", []string{}},
-		{"specialist automatic not owned", "specialist", 102, 101, "?upload_source=orthanc", []string{}},
+		{"specialist automatic not owned", "specialist", 102, 101, "?upload_source=clinic", []string{}},
 		{"admin pagination", "admin", 101, 101, "?offset=1&limit=1", []string{"manual"}},
 		{"other organization", "admin", 104, 102, "", []string{"other-org"}},
 		{"specialist owns only manual", "specialist", 102, 101, "", []string{"manual"}},
@@ -115,7 +115,7 @@ func TestIntegrationListJobs(t *testing.T) {
 				ids = append(ids, job.DicomID)
 				expectedSource := "manual"
 				if job.DicomID == "orthanc" {
-					expectedSource = "orthanc"
+					expectedSource = "clinic"
 				}
 				if job.UploadSource != expectedSource {
 					t.Fatalf("source=%q for %s", job.UploadSource, job.DicomID)
@@ -133,16 +133,16 @@ func TestIntegrationListJobs(t *testing.T) {
 		role               string
 		status, count      int
 	}{
-		{"by ID both sources", "/job/info/00000000-0000-0000-0000-000000000001?upload_source=manual,orthanc", "manual", 102, "specialist", 200, 1},
-		{"by DICOM both sources", "/dicom/orthanc/jobs?upload_source=manual,orthanc", "orthanc", 101, "admin", 200, 1},
+		{"by ID both sources", "/job/info/00000000-0000-0000-0000-000000000001?upload_source=manual,clinic", "manual", 102, "specialist", 200, 1},
+		{"by DICOM both sources", "/dicom/orthanc/jobs?upload_source=manual,clinic", "clinic", 101, "admin", 200, 1},
 		{"invalid mixed sources", "/job/info?upload_source=manual,invalid", "", 101, "admin", 400, 0},
 		{"empty source item", "/job/info?upload_source=manual,", "", 101, "admin", 400, 0},
 		{"by ID manual", "/job/info/00000000-0000-0000-0000-000000000001", "manual", 102, "specialist", 200, 1},
-		{"by ID Orthanc", "/job/info/00000000-0000-0000-0000-000000000002?organization_ids=101&upload_source=orthanc", "orthanc", 101, "admin", 200, 1},
+		{"by ID Orthanc", "/job/info/00000000-0000-0000-0000-000000000002?organization_ids=101&upload_source=clinic", "clinic", 101, "admin", 200, 1},
 		{"by ID wrong organization", "/job/info/00000000-0000-0000-0000-000000000002?organization_ids=102", "", 101, "admin", 404, 0},
 		{"by ID wrong source", "/job/info/00000000-0000-0000-0000-000000000002?upload_source=manual", "", 101, "admin", 404, 0},
 		{"by ID forbidden", "/job/info/00000000-0000-0000-0000-000000000002?organization_ids=101", "", 102, "specialist", 403, 0},
-		{"by DICOM Orthanc", "/dicom/orthanc/jobs?organization_ids=101,102&upload_source=orthanc", "orthanc", 101, "admin", 200, 1},
+		{"by DICOM Orthanc", "/dicom/orthanc/jobs?organization_ids=101,102&upload_source=clinic", "clinic", 101, "admin", 200, 1},
 		{"by DICOM manual", "/dicom/manual/jobs", "manual", 102, "specialist", 200, 1},
 		{"by DICOM wrong source", "/dicom/orthanc/jobs?upload_source=manual", "", 101, "admin", 200, 0},
 		{"by DICOM wrong organization", "/dicom/orthanc/jobs?organization_ids=102", "", 101, "admin", 200, 0},

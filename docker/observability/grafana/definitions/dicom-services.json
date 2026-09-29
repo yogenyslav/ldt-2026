@@ -15,6 +15,126 @@
   },
   "panels": [
     {
+      "id": 10,
+      "title": "Worker: время создания задач",
+      "type": "timeseries",
+      "description": "Длительность последнего вызова ProcessDicomFiles: создание задач и запись запросов на анализ в outbox в транзакции БД. Один вызов может содержать несколько файлов. Загрузка в Orthanc, ожидание очереди и анализ не входят. Gauge хранит последний замер на экземпляр сервиса, а не среднее или p95; промежуточные вызовы между опросами метрик могут быть не видны. Это не полное время обработки файла.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 0
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{group=\"dicom\",service=~\"$service\",__name__=~\"dicom[-_]worker.*[_.]usecases[_.]job[_.]process[_.]duration_seconds\"}",
+          "legendFormat": "{{service}} / {{instance}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 11,
+      "title": "Worker: время сохранения результата",
+      "type": "timeseries",
+      "description": "Длительность последнего вызова ApplyResult: проверка события analyzer, сохранение результата и конечного статуса, запись уведомления для manager в outbox. Анализ и последующая публикация уведомления в NATS не входят. Учитываются также ошибки и проигнорированные дубликаты. Gauge хранит последний замер на экземпляр сервиса, а не среднее или p95; промежуточные вызовы между опросами метрик могут быть не видны. Это не полное время обработки файла.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 0,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{group=\"dicom\",service=~\"$service\",__name__=~\"dicom[-_]worker.*[_.]usecases[_.]job[_.]apply_result[_.]duration_seconds\"}",
+          "legendFormat": "{{service}} / {{instance}}",
+          "range": true
+        }
+      ]
+    },
+    {
+      "id": 12,
+      "title": "Worker: время отправки события из outbox",
+      "type": "timeseries",
+      "description": "Длительность последнего вызова PublishNext: чтение outbox, публикация события с ожиданием подтверждения NATS и завершение транзакции. Включает запросы к analyzer и уведомления manager всех статусов, а также ошибки и проверки пустого outbox. Время ожидания события в outbox и получение сообщения потребителем не входят. Gauge хранит последний замер на экземпляр сервиса, а не среднее или p95; промежуточные вызовы между опросами метрик могут быть не видны. Это не полное время обработки файла.",
+      "datasource": {
+        "type": "prometheus",
+        "uid": "mimir"
+      },
+      "gridPos": {
+        "h": 8,
+        "w": 12,
+        "x": 12,
+        "y": 8
+      },
+      "fieldConfig": {
+        "defaults": {
+          "unit": "s",
+          "min": 0
+        },
+        "overrides": []
+      },
+      "options": {
+        "legend": {
+          "displayMode": "table",
+          "placement": "bottom"
+        },
+        "tooltip": {
+          "mode": "multi"
+        }
+      },
+      "targets": [
+        {
+          "refId": "A",
+          "expr": "{group=\"dicom\",service=~\"$service\",__name__=~\"dicom[-_]worker.*[_.]usecases[_.]outbox[_.]publish_next[_.]duration_seconds\"}",
+          "legendFormat": "{{service}} / {{instance}}",
+          "range": true
+        }
+      ]
+    },
+    {
       "id": 1,
       "title": "Scrape availability",
       "type": "timeseries",
@@ -27,7 +147,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 0
+        "y": 16
       },
       "fieldConfig": {
         "defaults": {
@@ -67,7 +187,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 0
+        "y": 16
       },
       "fieldConfig": {
         "defaults": {
@@ -107,7 +227,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 8
+        "y": 24
       },
       "fieldConfig": {
         "defaults": {
@@ -147,7 +267,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 8
+        "y": 24
       },
       "fieldConfig": {
         "defaults": {
@@ -187,7 +307,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 16
+        "y": 32
       },
       "fieldConfig": {
         "defaults": {
@@ -227,7 +347,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 16
+        "y": 32
       },
       "fieldConfig": {
         "defaults": {
@@ -262,9 +382,9 @@
     },
     {
       "id": 7,
-      "title": "Last operation duration",
+      "title": "Все операции: последний замер длительности",
       "type": "timeseries",
-      "description": "Gauge последнего вызова, а не средняя длительность или перцентиль.",
+      "description": "Обзор Gauge длительности отдельных операций сервисов. Каждая серия хранит последний замер; это не среднее, не перцентиль и не полное время обработки файла. Гистограмма analyzer показана отдельно в верхней панели.",
       "datasource": {
         "type": "prometheus",
         "uid": "mimir"
@@ -273,7 +393,7 @@
         "h": 8,
         "w": 12,
         "x": 0,
-        "y": 24
+        "y": 40
       },
       "fieldConfig": {
         "defaults": {
@@ -313,7 +433,7 @@
         "h": 8,
         "w": 12,
         "x": 12,
-        "y": 24
+        "y": 40
       },
       "fieldConfig": {
         "defaults": {

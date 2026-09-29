@@ -4,7 +4,9 @@ import (
 	"bytes"
 	"encoding/csv"
 	"fmt"
+	"strings"
 
+	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/api/job/model"
 	"github.com/yogenyslav/ldt-2026/dicom-manager/internal/usecases/report/generate/wrappers/dto"
 )
 
@@ -46,8 +48,8 @@ func (b *ReportBuilder) BuildReport(data []dto.JobResult) ([]byte, error) {
 				record.DicomImageUid,
 				record.AnatomicalRegion,
 				fmt.Sprintf("%d", record.QualityClass),
-				fmt.Sprintf("%v", record.Violations),
-				record.JobStatus,
+				strings.Join(record.Violations, ";"),
+				convertStatus(record.JobStatus),
 				fmt.Sprintf("%f", record.DurationSec),
 			},
 		); err != nil {
@@ -61,4 +63,15 @@ func (b *ReportBuilder) BuildReport(data []dto.JobResult) ([]byte, error) {
 	}
 
 	return buf.Bytes(), nil
+}
+
+func convertStatus(status string) string {
+	const (
+		success string = "Success"
+		failure string = "Failure"
+	)
+	if model.JobStatus(status) == model.JobStatusCompleted {
+		return success
+	}
+	return failure
 }

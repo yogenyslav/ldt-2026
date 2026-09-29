@@ -15,9 +15,323 @@ const docTemplate = `{
     "host": "{{.Host}}",
     "basePath": "{{.BasePath}}",
     "paths": {
+        "/annotation/submission": {
+            "post": {
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "annotation"
+                ],
+                "summary": "Сохранить разметку снимка",
+                "parameters": [
+                    {
+                        "description": "Разметка снимка",
+                        "name": "submission",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.Submission"
+                        }
+                    }
+                ],
+                "responses": {
+                    "201": {
+                        "description": "Created",
+                        "schema": {
+                            "$ref": "#/definitions/model.SubmitResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "422": {
+                        "description": "Unprocessable Entity",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/annotation/submissions": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "annotation"
+                ],
+                "summary": "Получить сохранённую разметку",
+                "parameters": [
+                    {
+                        "maximum": 200,
+                        "minimum": 1,
+                        "type": "integer",
+                        "default": 50,
+                        "description": "Размер страницы",
+                        "name": "limit",
+                        "in": "query"
+                    },
+                    {
+                        "minimum": 0,
+                        "type": "integer",
+                        "default": 0,
+                        "description": "Смещение",
+                        "name": "offset",
+                        "in": "query"
+                    },
+                    {
+                        "type": "string",
+                        "description": "Идентификатор задачи анализа",
+                        "name": "job_id",
+                        "in": "query"
+                    },
+                    {
+                        "enum": [
+                            "done",
+                            "uncertain",
+                            "skipped"
+                        ],
+                        "type": "string",
+                        "description": "Статус разметки",
+                        "name": "status",
+                        "in": "query"
+                    },
+                    {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Только актуальные отправки",
+                        "name": "only_latest",
+                        "in": "query"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.ListResponse"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/annotation/training": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "annotation"
+                ],
+                "summary": "Получить состояние дообучения",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/annotation.TrainingResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/annotation/training/start": {
+            "post": {
+                "description": "Пока исполнитель не подключён, возвращает 409 без постановки в очередь.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "annotation"
+                ],
+                "summary": "Запросить дообучение моделей",
+                "parameters": [
+                    {
+                        "description": "Выбранные модели",
+                        "name": "models",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ModelsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "409": {
+                        "description": "Conflict",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
+        "/annotation/training/switch": {
+            "post": {
+                "description": "До появления новых обученных версий возвращает 404.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "annotation"
+                ],
+                "summary": "Запросить переключение версии модели",
+                "parameters": [
+                    {
+                        "description": "Выбранные модели",
+                        "name": "models",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.ModelsRequest"
+                        }
+                    }
+                ],
+                "responses": {
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "404": {
+                        "description": "Not Found",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "$ref": "#/definitions/model.ErrorResponse"
+                        }
+                    }
+                }
+            }
+        },
         "/dicom/upload": {
             "post": {
-                "description": "Загрузить DICOM файл на сервер.",
+                "description": "Загрузить DICOM файл на сервер. Источник определяется ролью: admin — manual, specialist — clinic.",
                 "consumes": [
                     "application/dicom"
                 ],
@@ -29,6 +343,12 @@ const docTemplate = `{
                 ],
                 "summary": "Загрузить DICOM файл",
                 "parameters": [
+                    {
+                        "type": "string",
+                        "description": "Исходное имя файла: attachment; filename*=UTF-8''scan.dcm",
+                        "name": "Content-Disposition",
+                        "in": "header"
+                    },
                     {
                         "description": "DICOM файл для загрузки.",
                         "name": "file",
@@ -378,7 +698,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "manual",
-                                "orthanc"
+                                "clinic"
                             ],
                             "type": "string"
                         },
@@ -430,7 +750,7 @@ const docTemplate = `{
         },
         "/job/info": {
             "get": {
-                "description": "Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка через UI, orthanc — поступление из Orthanc.",
+                "description": "Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка администратором через UI, clinic — загрузка специалистом через UI или поступление из Orthanc.",
                 "consumes": [
                     "application/json"
                 ],
@@ -470,7 +790,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "manual",
-                                "orthanc"
+                                "clinic"
                             ],
                             "type": "string"
                         },
@@ -539,7 +859,7 @@ const docTemplate = `{
                         "items": {
                             "enum": [
                                 "manual",
-                                "orthanc"
+                                "clinic"
                             ],
                             "type": "string"
                         },
@@ -956,6 +1276,120 @@ const docTemplate = `{
                 }
             }
         },
+        "/settings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Параметры ротации организации (администратор)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.RotationSettings"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Сумма процентов не больше 100; центр × (1 + сумма / 100) не больше 8 мм. Готовые результаты не пересчитываются.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Сохранить параметры ротации для новых задач (администратор)",
+                "parameters": [
+                    {
+                        "description": "Параметры ротации",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RotationSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.RotationSettings"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/login": {
             "post": {
                 "description": "Аутентификация пользователя по его логину и паролю.",
@@ -1066,6 +1500,92 @@ const docTemplate = `{
         }
     },
     "definitions": {
+        "annotation.TrainingMetric": {
+            "type": "object",
+            "properties": {
+                "goal": {
+                    "type": "string"
+                },
+                "name": {
+                    "type": "string"
+                },
+                "next": {
+                    "type": "number"
+                },
+                "now": {
+                    "type": "number"
+                },
+                "unit": {
+                    "type": "string"
+                }
+            }
+        },
+        "annotation.TrainingResponse": {
+            "type": "object",
+            "properties": {
+                "targets": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/annotation.TrainingTarget"
+                    }
+                },
+                "versions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/annotation.TrainingVersion"
+                    }
+                }
+            }
+        },
+        "annotation.TrainingTarget": {
+            "type": "object",
+            "properties": {
+                "busy": {
+                    "type": "boolean"
+                },
+                "done": {
+                    "type": "number"
+                },
+                "hard": {
+                    "type": "string"
+                },
+                "have": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "left_minutes": {
+                    "type": "integer"
+                },
+                "need": {
+                    "type": "integer"
+                },
+                "ready": {
+                    "type": "boolean"
+                }
+            }
+        },
+        "annotation.TrainingVersion": {
+            "type": "object",
+            "properties": {
+                "checked": {
+                    "type": "integer"
+                },
+                "id": {
+                    "type": "string"
+                },
+                "metrics": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/annotation.TrainingMetric"
+                    }
+                },
+                "trained": {
+                    "type": "string"
+                }
+            }
+        },
         "generate.GenerateIn": {
             "type": "object",
             "properties": {
@@ -1220,7 +1740,7 @@ const docTemplate = `{
                     "enum": [
                         "unknown",
                         "manual",
-                        "orthanc"
+                        "clinic"
                     ]
                 }
             }
@@ -1336,6 +1856,17 @@ const docTemplate = `{
                 }
             }
         },
+        "model.Annotator": {
+            "type": "object",
+            "properties": {
+                "id": {
+                    "type": "string"
+                },
+                "role": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Decision": {
             "type": "string",
             "enum": [
@@ -1358,6 +1889,28 @@ const docTemplate = `{
                 "DecisionReject",
                 "DecisionForceApproved"
             ]
+        },
+        "model.ErrorResponse": {
+            "type": "object",
+            "properties": {
+                "message": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.Image": {
+            "type": "object",
+            "properties": {
+                "cols": {
+                    "type": "integer"
+                },
+                "region": {
+                    "type": "string"
+                },
+                "rows": {
+                    "type": "integer"
+                }
+            }
         },
         "model.JobInfo": {
             "type": "object",
@@ -1426,7 +1979,7 @@ const docTemplate = `{
                     "enum": [
                         "unknown",
                         "manual",
-                        "orthanc"
+                        "clinic"
                     ]
                 },
                 "violations": {
@@ -1465,6 +2018,81 @@ const docTemplate = `{
                 "JobStatusFailed"
             ]
         },
+        "model.ListResponse": {
+            "type": "object",
+            "properties": {
+                "submissions": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Record"
+                    }
+                },
+                "total": {
+                    "type": "integer"
+                }
+            }
+        },
+        "model.ModelsRequest": {
+            "type": "object",
+            "properties": {
+                "models": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                }
+            }
+        },
+        "model.Record": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "annotator": {
+                    "$ref": "#/definitions/model.Annotator"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "duration_ms": {
+                    "type": "integer"
+                },
+                "image": {
+                    "$ref": "#/definitions/model.Image"
+                },
+                "image_flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "schema_version": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submission_id": {
+                    "type": "string"
+                },
+                "superseded_by": {
+                    "type": "string"
+                },
+                "supersedes": {
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                }
+            }
+        },
         "model.Report": {
             "type": "object",
             "properties": {
@@ -1479,6 +2107,87 @@ const docTemplate = `{
                 "id": {
                     "description": "ID отчета по результатам обработки DICOM-файлов.",
                     "type": "integer"
+                }
+            }
+        },
+        "model.RotationSettings": {
+            "type": "object",
+            "properties": {
+                "trochanter_center_mm": {
+                    "type": "number",
+                    "maximum": 8,
+                    "minimum": 0.1,
+                    "example": 2.7
+                },
+                "trochanter_tol_percent": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 63
+                },
+                "trochanter_yellow_percent": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 30
+                }
+            }
+        },
+        "model.Submission": {
+            "type": "object",
+            "properties": {
+                "annotations": {
+                    "type": "object"
+                },
+                "comment": {
+                    "type": "string"
+                },
+                "created_at": {
+                    "type": "string"
+                },
+                "duration_ms": {
+                    "type": "integer"
+                },
+                "image": {
+                    "$ref": "#/definitions/model.Image"
+                },
+                "image_flags": {
+                    "type": "array",
+                    "items": {
+                        "type": "string"
+                    }
+                },
+                "job_id": {
+                    "type": "string"
+                },
+                "schema_version": {
+                    "type": "string"
+                },
+                "status": {
+                    "type": "string"
+                },
+                "submission_id": {
+                    "type": "string"
+                },
+                "supersedes": {
+                    "type": "string"
+                },
+                "task_id": {
+                    "type": "string"
+                }
+            }
+        },
+        "model.SubmitResponse": {
+            "type": "object",
+            "properties": {
+                "submission_id": {
+                    "type": "string"
+                },
+                "warnings": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/model.Warning"
+                    }
                 }
             }
         },
@@ -1500,6 +2209,17 @@ const docTemplate = `{
                 "UserRoleSpecialist",
                 "UserRoleAdmin"
             ]
+        },
+        "model.Warning": {
+            "type": "object",
+            "properties": {
+                "code": {
+                    "type": "string"
+                },
+                "item": {
+                    "type": "string"
+                }
+            }
         },
         "result_decision.ResultDecisionIn": {
             "type": "object",

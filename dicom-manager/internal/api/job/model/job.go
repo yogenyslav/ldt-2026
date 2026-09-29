@@ -16,7 +16,7 @@ const (
 
 // JobInfo структура, содержащая информацию о задаче на обработку DICOM-файла.
 type JobInfo struct {
-	UploadSource       string         `json:"upload_source" enums:"unknown,manual,orthanc"`
+	UploadSource       string         `json:"upload_source" enums:"unknown,manual,clinic"`
 	Error              string         `json:"error,omitempty"`               // Описание ошибки обработки.
 	ID                 string         `json:"id"`                            // ID задачи на обработку.
 	DicomID            string         `json:"dicom_id"`                      // ID DICOM-файла.

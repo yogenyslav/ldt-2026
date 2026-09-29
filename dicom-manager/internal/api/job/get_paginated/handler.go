@@ -38,14 +38,14 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 // GetPaginated обработчик для получения информации о задачах на обработку DICOM-файлов по их ID с пагинацией.
 //
 //	@Summary		Получить информацию о задачах на обработку DICOM-файлов по их ID с пагинацией
-//	@Description	Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка через UI, orthanc — поступление из Orthanc.
+//	@Description	Список задач с пагинацией и фильтрами. Администратор может выбрать организации через organization_ids; без фильтра используется его организация. Остальные пользователи видят только собственные задачи. upload_source: manual — загрузка администратором через UI, clinic — загрузка специалистом через UI или поступление из Orthanc.
 //	@Tags			job
 //	@Accept			json
 //	@Produce		json
 //	@Param			offset				query		int					false	"Offset для пагинации (по умолчанию 0)"
 //	@Param			limit				query		int					false	"Limit для пагинации (по умолчанию 10)"
 //	@Param			organization_ids	query		[]int64				false	"ID организаций через запятую"				collectionFormat(csv)
-//	@Param			upload_source		query		[]string			false	"Источники загрузки DICOM через запятую"	Enums(manual,orthanc)	collectionFormat(csv)
+//	@Param			upload_source		query		[]string			false	"Источники загрузки DICOM через запятую"	Enums(manual,clinic)	collectionFormat(csv)
 //	@Success		200					{object}	GetInfoPaginatedOut	"Информация о задачах успешно получена."
 //	@Failure		400					string		"Некорректный запрос."
 //	@Failure		500					string		"Внутренняя ошибка сервера."

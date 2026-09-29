@@ -5,6 +5,7 @@ import (
 	"strings"
 
 	dicom_worker "github.com/yogenyslav/ldt-2026/dicom-worker/internal/generated/dicom-worker"
+	"github.com/yogenyslav/ldt-2026/dicom-worker/pkg/events"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
 )
@@ -33,7 +34,12 @@ func (h *Handler) ProcessDicomFiles(
 		dicomIDs = append(dicomIDs, dicom.GetId())
 	}
 
-	dicomJobs, err := h.processUC.ProcessDicomFiles(ctx, dicomIDs)
+	settings, err := events.ResolveSettings(in.GetSettings())
+	if err != nil {
+		return nil, status.Error(codes.InvalidArgument, err.Error())
+	}
+
+	dicomJobs, err := h.processUC.ProcessDicomFiles(ctx, dicomIDs, settings)
 	if err != nil {
 		h.metrics.Counter("handler.worker.process_dicom_files.error").Inc()
 		return nil, h.internalError(ctx, err)

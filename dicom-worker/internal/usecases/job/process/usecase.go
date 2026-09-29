@@ -40,7 +40,7 @@ func New(l *zerolog.Logger, m observability.MetricsClient, uow database.UnitOfWo
 }
 
 // ProcessDicomFiles сохраняет задачи и исходящие события в одной транзакции.
-func (uc *Usecase) ProcessDicomFiles(ctx context.Context, dicomIDs []string) (map[string]string, error) {
+func (uc *Usecase) ProcessDicomFiles(ctx context.Context, dicomIDs []string, settings map[string]float64) (map[string]string, error) {
 	uc.metrics.Counter("usecases.job.process.total").Inc()
 
 	startedAt := time.Now()
@@ -48,8 +48,13 @@ func (uc *Usecase) ProcessDicomFiles(ctx context.Context, dicomIDs []string) (ma
 		uc.metrics.Gauge("usecases.job.process.duration_seconds").Set(time.Since(startedAt).Seconds())
 	}()
 
+	resolved, err := events.ResolveSettings(settings)
+	if err != nil {
+		return nil, err
+	}
+
 	dicomJobs := make(map[string]string, len(dicomIDs))
-	err := uc.uow.WithTx(ctx, database.TxLevelReadCommitted, func(ctx context.Context) error {
+	err = uc.uow.WithTx(ctx, database.TxLevelReadCommitted, func(ctx context.Context) error {
 		for _, dicomID := range dicomIDs {
 			if _, exists := dicomJobs[dicomID]; exists {
 				continue
@@ -61,6 +66,7 @@ func (uc *Usecase) ProcessDicomFiles(ctx context.Context, dicomIDs []string) (ma
 			}
 
 			event := events.New(jobID, dicomID, events.StatusPending)
+			event.Settings = resolved
 			if err := uc.eventCreator.CreateEvent(ctx, events.AnalysisRequested, event); err != nil {
 				return err
 			}

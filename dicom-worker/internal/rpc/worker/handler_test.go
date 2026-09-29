@@ -19,6 +19,11 @@ func TestInvalidRequestsDoNotReachUsecases(t *testing.T) {
 	}
 
 	h := New(&logger, metricClient, nil, nil)
+	if _, err := h.ProcessDicomFiles(context.Background(), &pb.ProcessDicomFilesIn{
+		Dicoms: []*pb.DicomData{{Id: "dicom"}}, Settings: map[string]float64{"trochanter_tol_percent": 200},
+	}); status.Code(err) != codes.InvalidArgument {
+		t.Fatalf("invalid settings accepted: %v", err)
+	}
 	for _, in := range []*pb.ProcessDicomFilesIn{nil, {}, {Dicoms: []*pb.DicomData{nil}}, {Dicoms: []*pb.DicomData{{Id: " "}}}, {Dicoms: make([]*pb.DicomData, 1001)}} {
 		if _, err := h.ProcessDicomFiles(context.Background(), in); status.Code(err) != codes.InvalidArgument {
 			t.Fatalf("invalid request accepted: %v", err)

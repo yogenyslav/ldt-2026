@@ -45,7 +45,7 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 //	@Produce		json
 //	@Param			job_id				path		string		true	"ID задачи на обработку DICOM-файла"
 //	@Param			organization_ids	query		[]int64		false	"ID организаций через запятую"				collectionFormat(csv)
-//	@Param			upload_source		query		[]string	false	"Источники загрузки DICOM через запятую"	Enums(manual,orthanc)	collectionFormat(csv)
+//	@Param			upload_source		query		[]string	false	"Источники загрузки DICOM через запятую"	Enums(manual,clinic)	collectionFormat(csv)
 //	@Success		200					{object}	GetByIDOut	"Информация о задаче успешно получена."
 //	@Failure		400					string		"Некорректный запрос."
 //	@Failure		403					string		"Доступ запрещен."

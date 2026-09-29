@@ -26,6 +26,7 @@ message DicomData {
 
 message ProcessDicomFilesIn {
   repeated DicomData dicoms = 1;
+  map<string, double> settings = 2; // Снимок параметров ротации для этого пакета задач.
 }
 
 message ProcessDicomFilesOut {

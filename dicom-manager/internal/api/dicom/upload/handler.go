@@ -3,7 +3,7 @@ package upload
 import (
 	"context"
 	"errors"
-	"fmt"
+	"mime"
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
@@ -40,22 +40,22 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 // Upload обработчик для загрузки DICOM файлов.
 //
 //	@Summary		Загрузить DICOM файл
-//	@Description	Загрузить DICOM файл на сервер.
+//	@Description	Загрузить DICOM файл на сервер. Источник определяется ролью: admin — manual, specialist — clinic.
 //	@Tags			dicom
 //	@Accept			application/dicom
 //	@Produce		json
-//	@Param			file	body		string		true	"DICOM файл для загрузки."
-//	@Success		201		{object}	UploadOut	"Файл успешно загружен."
-//	@Failure		400		string		"Некорректный запрос."
-//	@Failure		403		string		"Нет доступа к файлу."
-//	@Failure		409		string		"Обработка файла ещё не завершена."
-//	@Failure		500		string		"Внутренняя ошибка сервера."
+//	@Param			Content-Disposition	header		string		false	"Исходное имя файла: attachment; filename*=UTF-8''scan.dcm"
+//	@Param			file				body		string		true	"DICOM файл для загрузки."
+//	@Success		201					{object}	UploadOut	"Файл успешно загружен."
+//	@Failure		400					string		"Некорректный запрос."
+//	@Failure		403					string		"Нет доступа к файлу."
+//	@Failure		409					string		"Обработка файла ещё не завершена."
+//	@Failure		500					string		"Внутренняя ошибка сервера."
 //	@Router			/dicom/upload [post]
 func (h *Handler) Upload(c fiber.Ctx) error {
 	var (
-		data        []byte
-		syncOrthanc bool
-		fileName    string
+		data     []byte
+		fileName string
 	)
 
 	contentType := c.Get("Content-Type")
@@ -64,8 +64,17 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 		if c.Get("X-Instance-ID") != "" {
 			return fiber.NewError(fiber.StatusBadRequest, "use /dicom/upload/orthanc for Orthanc callbacks")
 		}
-		syncOrthanc = true
-		fileName = uuid.New().String()
+
+		fileName = uuid.New().String() + ".dcm"
+		if disposition := c.Get("Content-Disposition"); disposition != "" {
+			_, params, err := mime.ParseMediaType(disposition)
+			if err != nil {
+				return fiber.NewError(fiber.StatusBadRequest, "invalid Content-Disposition")
+			}
+			if params["filename"] != "" {
+				fileName = params["filename"]
+			}
+		}
 
 		data = c.Body()
 		if len(data) == 0 {
@@ -77,7 +86,7 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid content type")
 	}
 
-	req, err := h.getDicomUploadRequest(c, data, fileName, syncOrthanc)
+	req, err := h.getDicomUploadRequest(c, data, fileName, true)
 	if err != nil {
 		h.metrics.Counter("handler.dicom.upload.get_upload_request.error").Inc()
 		h.log.Error().Err(err).Msg("failed to get dicom upload request")
@@ -122,15 +131,15 @@ func (h *Handler) getDicomUploadRequest(
 	req := upload.DicomUploadRequest{
 		RawDicoms:      make([]upload.RawDicomData, 0, 1),
 		CreatorID:      claims.UserID,
+		CreatorRole:    claims.Role,
 		OrganizationID: claims.OrganizationID,
 		SyncOrthanc:    syncOrthanc,
 	}
 
 	req.RawDicoms = append(
 		req.RawDicoms, upload.RawDicomData{
-			Payload:    data,
-			FileName:   fmt.Sprintf("%s.dcm", fileName),
-			InstanceID: fileName,
+			Payload:  data,
+			FileName: fileName,
 		},
 	)
 	return req, nil

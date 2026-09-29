@@ -21,7 +21,7 @@ func ReadConfig(user, passwordEnv string) (Config, error) {
 	if err := cleanenv.ReadEnv(&cfg); err != nil {
 		return Config{}, fmt.Errorf("read NATS config: %w", err)
 	}
-	
+
 	cfg.User = user
 	cfg.Password = os.Getenv(passwordEnv)
 	return cfg, nil

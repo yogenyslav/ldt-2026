@@ -11,13 +11,15 @@ export const POLL_INTERVAL = 3000
    refreshes at a much calmer pace. */
 export const QUEUE_POLL_INTERVAL = 15_000
 
-/* The test stand must not retrain or replace models: it would knock the
-   calibration off. Only the demo mode (no backend) may pretend to do it. */
+/* Запуск дообучения пока доступен только в деморежиме; остальной интерфейс работает. */
 export const TRAINING_LOCKED = !USE_MOCKS
+
+/* Сохранение параметров пока доступно только в деморежиме; предпросмотр работает. */
+export const SETTINGS_SAVE_LOCKED = !USE_MOCKS
 
 /* How the markup queue tells the clinics' frames from the uploaded ones.
    Until the backend adds a parameter by the uploader's role, this rides on
    upload_source. When it arrives: put its name and values here, and (if the job
    DTO gets a matching field) the field name in sourceOf, lib/annotQueue.ts. */
 export const SOURCE_PARAM = 'upload_source'
-export const SOURCE_VALUE = { clinic: 'orthanc', upload: 'manual' } as const
+export const SOURCE_VALUE = { clinic: 'clinic', upload: 'manual' } as const

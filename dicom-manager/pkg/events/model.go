@@ -16,12 +16,13 @@ type Result struct {
 
 // Event событие обработки DICOM-файла по контракту первой версии.
 type Event struct {
-	Version    int       `json:"version"`
-	EventID    string    `json:"event_id"`
-	JobID      string    `json:"job_id"`
-	DicomID    string    `json:"dicom_id"`
-	Status     string    `json:"status"`
-	OccurredAt time.Time `json:"occurred_at"`
-	Result     *Result   `json:"result,omitempty"`
-	Error      string    `json:"error,omitempty"`
+	Settings   map[string]float64 `json:"settings,omitempty"`
+	Version    int                `json:"version"`
+	EventID    string             `json:"event_id"`
+	JobID      string             `json:"job_id"`
+	DicomID    string             `json:"dicom_id"`
+	Status     string             `json:"status"`
+	OccurredAt time.Time          `json:"occurred_at"`
+	Result     *Result            `json:"result,omitempty"`
+	Error      string             `json:"error,omitempty"`
 }

@@ -31,6 +31,12 @@ func (event *Event) Validate(subject string) error {
 		return errors.New("subject/status mismatch")
 	}
 
+	if subject == AnalysisRequested {
+		if _, err := ResolveSettings(event.Settings); err != nil {
+			return err
+		}
+	}
+
 	if event.Status == StatusFailed && strings.TrimSpace(event.Error) == "" {
 		return errors.New("failure requires error")
 	}

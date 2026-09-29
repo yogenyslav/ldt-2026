@@ -92,7 +92,7 @@ const AnnotQueueWidget = () => {
             <ul className="m-0 mt-1.5 list-none p-0 text-[14px]">
               {processing.map((item) => (
                 <li key={item.id} className="flex items-center gap-3 py-0.5">
-                  <b>{item.file}</b>
+                  <b className="break-all">{item.file}</b>
                   <span className="text-muted">обрабатывается</span>
                   <span className="whitespace-nowrap text-muted">{whenOf(item.created_at)}</span>
                 </li>
@@ -123,7 +123,7 @@ const AnnotQueueWidget = () => {
                     className="[&>td]:border-b [&>td]:border-line [&>td]:px-3 [&>td]:py-2.5 [&>td]:align-middle last:[&>td]:border-b-0 hover:bg-hover"
                   >
                     <td>
-                      <b>{item.file}</b>
+                      <b className="break-all">{item.file}</b>
                       {item.cols ? (
                         <div className="text-[13.5px] text-muted tabular">
                           {item.cols}×{item.rows}

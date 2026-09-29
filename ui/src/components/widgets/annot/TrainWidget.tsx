@@ -8,9 +8,8 @@ import Bar from '@/components/shared/Bar'
 import Empty from '@/components/shared/Empty'
 import WorkHead from '@/components/shared/WorkHead'
 import { useToast } from '@/components/ui/toast'
-import { useStartTraining, useSwitchVersions, useTraining } from '@/hooks/useAnnotation'
+import { useStartTraining, useTraining } from '@/hooks/useAnnotation'
 import { useJobs } from '@/hooks/useJobs'
-import Modal from '@/components/ui/modal'
 import { TRAINING_LOCKED } from '@/config'
 import { MODEL_NAME } from '@/constants'
 import { modelsOf } from '@/lib/settings'
@@ -38,41 +37,27 @@ const TrainWidget = () => {
   const { data, isError } = useTraining()
   const { data: jobs } = useJobs()
   const start = useStartTraining()
-  const change = useSwitchVersions()
   const { toast } = useToast()
-  const [locked, setLocked] = useState(false)
   const navigate = useNavigate()
 
   const models = modelsOf(jobs)
 
-  const [trainPick, setTrainPick] = useState<Record<string, boolean>>({ crest: true })
-  const [versionPick, setVersionPick] = useState<Record<string, boolean>>({ crest: true })
+  const [trainPick, setTrainPick] = useState<Record<string, boolean>>({})
+  const [versionPick, setVersionPick] = useState<Record<string, boolean>>({})
 
   const targets = data?.targets ?? []
   const versions = data?.versions ?? []
 
   const toTrain = picked(trainPick).filter((id) =>
-    targets.some((target) => target.id === id && target.ready && !target.busy),
+    targets.some((target) => target.id === id),
   )
-  const toSwitch = picked(versionPick).filter((id) => versions.some((version) => version.id === id))
+  const trainingDisabled = TRAINING_LOCKED || start.isPending || !toTrain.length ||
+    targets.some((target) => toTrain.includes(target.id) && (!target.ready || target.busy))
 
   const busy = targets.filter((target) => target.busy)
 
   return (
     <>
-      <Modal open={locked} title="Действие недоступно" onClose={() => setLocked(false)}>
-        <div className="flex flex-col gap-4 p-5">
-          <p className="m-0 base-regular">
-            На тестовом стенде отключена возможность дообучать и заменять модели, чтобы не сбивать
-            калибровку моделей.
-          </p>
-          <div>
-            <Button variant="primary" onClick={() => setLocked(false)}>
-              Понятно
-            </Button>
-          </div>
-        </div>
-      </Modal>
       <WorkHead
         title="Дообучение модели"
         sub="каждая модель обучается и обновляется отдельно"
@@ -112,41 +97,50 @@ const TrainWidget = () => {
           <table className="w-full border-collapse text-[14px]">
             <tbody>
               {targets.map((target) => {
-                const percent = Math.min(100, Math.round((target.have / target.need) * 100))
-                const pickable = target.ready && !target.busy
+                const hasRequirement = target.need > 0
+                const percent = hasRequirement
+                  ? Math.min(100, Math.round((target.have / target.need) * 100))
+                  : null
+                const remaining = Math.max(0, target.need - target.have)
 
                 return (
                   <tr
                     key={target.id}
                     onClick={() =>
-                      pickable &&
                       setTrainPick((map) => ({ ...map, [target.id]: !map[target.id] }))
                     }
-                    className={[
-                      '[&>td]:border-b [&>td]:border-line [&>td]:px-3 [&>td]:py-2.5 last:[&>td]:border-b-0',
-                      pickable ? 'cursor-pointer hover:bg-hover' : '',
-                    ].join(' ')}
+                    className="cursor-pointer hover:bg-hover [&>td]:border-b [&>td]:border-line [&>td]:px-3 [&>td]:py-2.5 last:[&>td]:border-b-0"
                   >
                     <td className="w-11.5">
-                      {pickable ? <Check bare on={!!trainPick[target.id]} tabIndex={-1} /> : null}
+                      <Check
+                        bare
+                        on={!!trainPick[target.id]}
+                        aria-label={`Выбрать модель ${target.name ?? MODEL_NAME[target.id] ?? target.id}`}
+                      />
                     </td>
                     <td>
-                      <b>{target.name}</b>
+                      <b>{target.name ?? MODEL_NAME[target.id] ?? target.id}</b>
                       <div className="text-[13.5px] text-muted">{target.hard}</div>
                     </td>
                     <td className="tabular">
-                      {target.have} из {target.need}
+                      {hasRequirement ? `${target.have} из ${target.need}` : `Собрано: ${target.have}`}
                     </td>
                     <td className="w-50">
-                      <Bar percent={percent} />
+                      {percent !== null ? (
+                        <Bar percent={percent} />
+                      ) : (
+                        <span className="text-[13.5px] text-muted">Требования к выборке не заданы</span>
+                      )}
                     </td>
                     <td>
                       {target.busy ? (
                         <Tag tone="warn">обучается</Tag>
                       ) : target.ready ? (
                         <Tag tone="ok">можно дообучать</Tag>
+                      ) : hasRequirement && remaining > 0 ? (
+                        <Tag tone="dead">нужно ещё {remaining}</Tag>
                       ) : (
-                        <Tag tone="dead">нужно ещё {target.need - target.have}</Tag>
+                        <Tag tone="dead">дообучение пока недоступно</Tag>
                       )}
                     </td>
                   </tr>
@@ -159,9 +153,9 @@ const TrainWidget = () => {
         <CardFoot>
           <Button
             variant="primary"
-            disabled={!toTrain.length || start.isPending}
+            disabled={trainingDisabled}
             onClick={async () => {
-              if (TRAINING_LOCKED) return setLocked(true)
+              if (trainingDisabled) return
               await start.mutateAsync(toTrain)
               setTrainPick({})
               toast({ title: 'Дообучение запущено' })
@@ -172,9 +166,9 @@ const TrainWidget = () => {
           <span className="flex-1" />
           {busy.map((target) => (
             <span key={target.id} className="text-[13.5px] text-muted">
-              «{target.name}» сейчас обучаются
-              {target.done !== undefined ? `: пройдено ${Math.round(target.done * 100)}%` : ''}
-              {target.left_minutes !== undefined
+              «{target.name ?? MODEL_NAME[target.id] ?? target.id}» сейчас обучаются
+              {target.done != null ? `: пройдено ${Math.round(target.done * 100)}%` : ''}
+              {target.left_minutes != null
                 ? `, осталось около ${target.left_minutes} минут`
                 : ''}
             </span>
@@ -220,7 +214,7 @@ const TrainWidget = () => {
                         <Check bare on={!!versionPick[version.id]} tabIndex={-1} />
                       </td>
                       <td>
-                        <b>{version.name}</b>
+                        <b>{version.name ?? MODEL_NAME[version.id] ?? version.id}</b>
                       </td>
                       <td colSpan={3} className="text-[13.5px] text-muted">
                         обучена {version.trained} · проверена на {version.checked} контрольных
@@ -257,18 +251,6 @@ const TrainWidget = () => {
             </div>
 
             <CardFoot>
-              <Button
-                variant="primary"
-                disabled={!toSwitch.length || change.isPending}
-                onClick={async () => {
-                  if (TRAINING_LOCKED) return setLocked(true)
-                  await change.mutateAsync(toSwitch)
-                  setVersionPick({})
-                  toast({ title: 'Модель переведена на новую версию' })
-                }}
-              >
-                Перевести выбранные{toSwitch.length ? ` (${toSwitch.length})` : ''}
-              </Button>
               {/* The frames the two versions disagree on are the ones worth
                   looking at by hand — they are in the annotation queue. */}
               <Button onClick={() => navigate('/markup')}>Посмотреть спорные снимки</Button>

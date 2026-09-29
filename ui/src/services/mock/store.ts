@@ -1,6 +1,6 @@
 import { MODEL_NAME } from '@/constants'
 import { DEMO_JOBS } from '@/services/mock/demoJobs'
-import { rotationBand, type IRotationSettings } from '@/lib/settings'
+import { ROTATION_DEFAULTS, rotationBand, type IRotationSettings } from '@/lib/settings'
 import type {
   Decision,
   ICriterion,
@@ -27,6 +27,7 @@ const PENDING_MS = 1_200
 const PROCESSING_MS = 4_000
 
 interface MockJob {
+  settings?: IRotationSettings
   id: string
   /* id of the DEMO_JOBS entry that supplies the QC result */
   template: string
@@ -120,22 +121,21 @@ function templateFor(region: Region, index: number) {
   return pool[index % pool.length]
 }
 
-/* Limits picked on the tuning screen really apply: the distance was measured
-   once and does not change, but which of the three states it falls into is
-   decided by the numbers in force now. The analyser does exactly this — the
-   geometry is measured, the verdict is a comparison. */
+/* Оцениваем измерение шаблона с параметрами, сохраненными при создании
+   задачи, как в настоящем запросе на анализ. */
 function retuned(
   criteria?: Record<string, ICriterion>,
   settings?: Record<string, number>,
+  snapshot?: IRotationSettings,
 ): { criteria?: Record<string, ICriterion>; settings?: Record<string, number> } {
-  if (!state.settings) return {}
-  const next = { ...settings, ...state.settings }
+  if (!snapshot) return {}
+  const next = { ...settings, ...snapshot }
   const trochanter = criteria?.lesser_trochanter
   if (!criteria || !trochanter || typeof trochanter.value !== 'number') {
     return { settings: next }
   }
 
-  const band = rotationBand(state.settings, trochanter.value)
+  const band = rotationBand(snapshot, trochanter.value)
   return {
     settings: next,
     criteria: {
@@ -185,7 +185,7 @@ function project(job: MockJob): IJobInfo {
     updated_at: job.created_at,
     metadata: {
       ...template.metadata,
-      ...retuned(template.metadata?.criteria, template.metadata?.settings),
+      ...retuned(template.metadata?.criteria, template.metadata?.settings, job.settings),
       study_id: job.study_id,
       patient_ref: job.patient_ref,
       device: 'GE Lunar Prodigy Advance',
@@ -205,6 +205,7 @@ function createJob(fileName: string, source: 'device' | 'upload') {
   const key = keyOf(fileName)
 
   const job: MockJob = {
+    settings: { ...(state.settings ?? ROTATION_DEFAULTS) },
     id: hex(8),
     template: template.id,
     created_at: stamp(),
@@ -307,8 +308,11 @@ const store = {
     return createJob(fileName, source)
   },
 
-  /* New limits from the tuning screen. They are kept, not applied once: every
-     result read after this is judged by them. */
+  /* Новые задачи получают эти параметры; готовые результаты сохраняют прежние. */
+  settings() {
+    return state.settings ?? { ...ROTATION_DEFAULTS }
+  },
+
   setSettings(settings: IRotationSettings) {
     state.settings = settings
     save()

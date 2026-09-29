@@ -28,11 +28,11 @@ func TestIntegrationDicomMetadata(t *testing.T) {
 	}
 	props := dto.OrthancDicomProperties{ID: "manager", FileName: "file", ParentSeries: "series", ParentStudy: "study", DicomImageUid: "image-uid", DicomStudyUid: "study-uid", DicomSeriesUid: "series-uid", PatientID: "p1", DeviceModel: "Modality=DX; Manufacturer=Maker; ManufacturerModelName=Model; DeviceSerialNumber=serial; StationName=station"}
 	uc := &Usecase{log: &log, metrics: m, uow: database.NewUnitOfWork(db), dicomRepo: repo, dicomer: &orthancStub{props: []dto.OrthancDicomProperties{props}}, worker: workerStub{}, jobCreator: jobsStub{}}
-	_, err = uc.UploadDicomFiles(ctx, DicomUploadRequest{CreatorID: 905, OrganizationID: 905, SyncOrthanc: true, RawDicoms: []RawDicomData{{FileName: "test.dcm"}}})
+	_, err = uc.UploadDicomFiles(ctx, DicomUploadRequest{CreatorID: 905, CreatorRole: "admin", OrganizationID: 905, SyncOrthanc: true, RawDicoms: []RawDicomData{{FileName: "patient/study/test.dcm"}}})
 	if err != nil {
 		t.Fatal(err)
 	}
-	want := storage.Dicom{UploadSource: storage.UploadSourceManual, ID: "manager", FileName: "file", SeriesID: "series", StudyID: "study", DicomImageUid: "image-uid", DicomStudyUid: "study-uid", DicomSeriesUid: "series-uid", CreatorID: 905, OrganizationID: 905, PatientID: "p1", DeviceModel: "Modality=DX; Manufacturer=Maker; ManufacturerModelName=Model; DeviceSerialNumber=serial; StationName=station"}
+	want := storage.Dicom{UploadSource: storage.UploadSourceManual, ID: "manager", FileName: "patient/study/test.dcm", SeriesID: "series", StudyID: "study", DicomImageUid: "image-uid", DicomStudyUid: "study-uid", DicomSeriesUid: "series-uid", CreatorID: 905, OrganizationID: 905, PatientID: "p1", DeviceModel: "Modality=DX; Manufacturer=Maker; ManufacturerModelName=Model; DeviceSerialNumber=serial; StationName=station"}
 	check := func(want storage.Dicom) {
 		t.Helper()
 		got, err := repo.GetByID(ctx, want.ID)
@@ -54,13 +54,13 @@ func TestIntegrationDicomMetadata(t *testing.T) {
 	}
 	check(want)
 	want.ID = "callback"
-	want.UploadSource = storage.UploadSourceOrthanc
+	want.UploadSource = storage.UploadSourceClinic
 	if err := uc.RegisterOrthanc(ctx, want); err != nil {
 		t.Fatal(err)
 	}
 	check(want)
 	// Старые клиенты и файлы без необязательных тегов остаются допустимыми.
-	empty := storage.Dicom{UploadSource: storage.UploadSourceOrthanc, ID: "empty", CreatorID: 905, OrganizationID: 905}
+	empty := storage.Dicom{UploadSource: storage.UploadSourceClinic, ID: "empty", CreatorID: 905, OrganizationID: 905}
 	if err := uc.RegisterOrthanc(ctx, empty); err != nil {
 		t.Fatal(err)
 	}

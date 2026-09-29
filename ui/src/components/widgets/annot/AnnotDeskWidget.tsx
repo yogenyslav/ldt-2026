@@ -35,6 +35,7 @@ import {
 } from '@/lib/annotation'
 import { caseOf } from '@/lib/annotQueue'
 import { errorText } from '@/lib/errors'
+import { newSubmissionId } from '@/lib/submission'
 import type { ISubmission, SubmissionStatus } from '@/services/apiAnnotation'
 import { SCHEMA_VERSION } from '@/services/apiAnnotation'
 import type { AnnotSource, AnnotTask, IAnnotPolygon, Point } from '@/types'
@@ -55,11 +56,6 @@ const SOURCES: Array<AnnotSource | 'all'> = ['all', 'clinic', 'upload']
    original frame, how each one got there, the outlines drawn by hand
    and whatever was said about the frame.
    ============================================================ */
-
-/* ULID-shaped enough to be unique per submission; the server only needs it to
-   be stable and unrepeated. */
-const newId = () =>
-  `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 12)}`.toUpperCase()
 
 const AnnotDeskWidget = () => {
   const { source, setSource, tab, setTab, current, open } = useAnnot()
@@ -104,6 +100,8 @@ const AnnotDeskWidget = () => {
   const [flags, setFlags] = useState<string[]>([])
   const [comment, setComment] = useState('')
   const startedAt = useRef(Date.now())
+  const sending = useRef(false)
+  const pendingSubmission = useRef<{ signature: string; submission: ISubmission } | null>(null)
 
   const base = useMemo(() => (job && src ? caseOf(job, task, src) : null), [job, src, task])
 
@@ -234,7 +232,7 @@ const AnnotDeskWidget = () => {
 
   const finish = useCallback(
     async (status: SubmissionStatus) => {
-      if (!key || !work || !job) return
+      if (!key || !work || !job || sending.current) return
 
       if (status === 'uncertain' && !comment.trim()) {
         toast({
@@ -245,9 +243,8 @@ const AnnotDeskWidget = () => {
       }
 
       const states = pointStates(work)
-      const submission: ISubmission = {
+      const draft: Omit<ISubmission, 'submission_id' | 'created_at' | 'duration_ms'> = {
         schema_version: SCHEMA_VERSION,
-        submission_id: newId(),
         task_id: key,
         job_id: job.id,
         image: {
@@ -255,8 +252,6 @@ const AnnotDeskWidget = () => {
           cols: work.cols,
           region: work.region,
         },
-        created_at: new Date().toISOString(),
-        duration_ms: Date.now() - startedAt.current,
         image_flags: flags,
         status,
         comment,
@@ -280,8 +275,24 @@ const AnnotDeskWidget = () => {
         supersedes: previous?.submission_id ?? null,
       }
 
+      sending.current = true
       try {
+        // Повтор неизменённой разметки отправляет тот же документ, включая время и ULID.
+        const signature = JSON.stringify(draft)
+        if (pendingSubmission.current?.signature !== signature) {
+          pendingSubmission.current = {
+            signature,
+            submission: {
+              ...draft,
+              submission_id: newSubmissionId(),
+              created_at: new Date().toISOString(),
+              duration_ms: Date.now() - startedAt.current,
+            },
+          }
+        }
+        const submission = pendingSubmission.current.submission
         const answered = await submit.mutateAsync(submission)
+        pendingSubmission.current = null
         const warnings = answered.data?.warnings ?? []
 
         toast({
@@ -297,9 +308,11 @@ const AnnotDeskWidget = () => {
         else navigate('/markup')
       } catch (error) {
         toast({ variant: 'destructive', title: errorText(error, 'Не удалось отправить разметку') })
+      } finally {
+        sending.current = false
       }
     },
-    [key, work, job, task, polygons, answer, flags, comment, edits, previous, keys, correcting, submit, toast, open, navigate],
+    [key, work, job, task, polygons, answer, flags, comment, edits, previous, waiting, submit, toast, open, navigate],
   )
 
   /* The keyboard is the conveyor. It is listened to on the document, because

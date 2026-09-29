@@ -62,7 +62,7 @@ func TestIntegrationOutboxAndResults(t *testing.T) {
 	defer client.Close()
 	publishNext := publish_next.New(&logger, metricClient, uow, repo, outboxRepo, createEvent, client)
 	failedPublish := publish_next.New(&logger, metricClient, uow, repo, outboxRepo, createEvent, brokenPublisher{})
-	ids, err := processJobs.ProcessDicomFiles(ctx, []string{"orthanc-instance", "orthanc-instance"})
+	ids, err := processJobs.ProcessDicomFiles(ctx, []string{"orthanc-instance", "orthanc-instance"}, nil)
 	if err != nil || len(ids) != 1 {
 		t.Fatalf("create: %v %v", ids, err)
 	}
@@ -150,7 +150,7 @@ func TestIntegrationOutboxAndResults(t *testing.T) {
 	if err = applyResult.ApplyResult(ctx, result); !errors.Is(err, events.ErrInvalidEvent) {
 		t.Fatalf("wrong instance: %v", err)
 	}
-	failedIDs, err := processJobs.ProcessDicomFiles(ctx, []string{"failed-instance"})
+	failedIDs, err := processJobs.ProcessDicomFiles(ctx, []string{"failed-instance"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -178,7 +178,7 @@ func TestIntegrationRetryFailedJob(t *testing.T) {
 	createEvent := create.New(&logger, metricClient, outbox_storage.New(db))
 	uc := process.New(&logger, metricClient, database.NewUnitOfWork(db), repo, createEvent)
 	apply := apply_result.New(&logger, metricClient, database.NewUnitOfWork(db), repo, createEvent)
-	first, err := uc.ProcessDicomFiles(ctx, []string{"retry-instance"})
+	first, err := uc.ProcessDicomFiles(ctx, []string{"retry-instance"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -188,7 +188,7 @@ func TestIntegrationRetryFailedJob(t *testing.T) {
 	if err := apply.ApplyResult(ctx, failure); err != nil {
 		t.Fatal(err)
 	}
-	second, err := uc.ProcessDicomFiles(ctx, []string{"retry-instance"})
+	second, err := uc.ProcessDicomFiles(ctx, []string{"retry-instance"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}

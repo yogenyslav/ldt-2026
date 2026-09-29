@@ -52,7 +52,7 @@ func TestIntegrationJobTimeouts(t *testing.T) {
 		{"failed", "failed", "1 hour", ""},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			ids, err := processor.ProcessDicomFiles(ctx, []string{tc.name})
+			ids, err := processor.ProcessDicomFiles(ctx, []string{tc.name}, nil)
 			if err != nil {
 				t.Fatal(err)
 			}

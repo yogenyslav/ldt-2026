@@ -1,3 +1,4 @@
+import { studyKeyOf } from '@/lib/dicom'
 import type { ICriterion, IJobInfo, IStudy, VerdictKind } from '@/types'
 
 /* Verdict derivation — section 3 of context/system_flows.md.
@@ -51,18 +52,19 @@ export function studyVerdict(study: IStudy): VerdictKind {
   return worst
 }
 
-/* Group jobs into visits. study_id was requested from the backend developer;
-   the column already exists in his dicom_file table. */
+/* Группируем снимки по StudyInstanceUID, используя внутренние ключи только
+   при отсутствии данных из карточки DICOM. */
 export function groupByStudy(jobs: IJobInfo[]): IStudy[] {
   const order: IStudy[] = []
   const map = new Map<string, IStudy>()
 
   for (const job of jobs) {
-    const key = job.study_id ?? job.metadata?.study_id ?? job.id
+    const key = studyKeyOf(job)
     let study = map.get(key)
     if (!study) {
       study = {
         study_id: key,
+        dicom_study_uid: job.dicom_study_uid,
         patient_ref: job.patient_ref ?? job.metadata?.patient_ref,
         created_at: job.created_at,
         jobs: [],
@@ -71,6 +73,7 @@ export function groupByStudy(jobs: IJobInfo[]): IStudy[] {
       order.push(study)
     }
     study.jobs.push(job)
+    study.patient_ref ||= job.patient_ref || job.metadata?.patient_ref
     if (job.created_at < study.created_at) study.created_at = job.created_at
   }
 

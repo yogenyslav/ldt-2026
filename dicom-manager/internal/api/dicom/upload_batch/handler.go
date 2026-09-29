@@ -7,6 +7,8 @@ import (
 	"errors"
 	"io"
 	"mime"
+	"path"
+	"slices"
 	"strings"
 	"uuid"
 
@@ -145,6 +147,7 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 	req := upload.DicomUploadRequest{
 		RawDicoms:      make([]upload.RawDicomData, 0),
 		CreatorID:      claims.UserID,
+		CreatorRole:    claims.Role,
 		OrganizationID: claims.OrganizationID,
 		SyncOrthanc:    true,
 	}
@@ -163,6 +166,10 @@ func (h *Handler) getDicomUploadRequest(c fiber.Ctx, data []byte, size int64) (
 	// Пропускаем только саму запись каталога: его файлы идут отдельными записями.
 	for _, file := range zipReader.File {
 		if file.FileInfo().IsDir() {
+			continue
+		}
+		// Служебные записи macOS могут иметь расширение .dcm, но не содержат DICOM.
+		if slices.Contains(strings.Split(file.Name, "/"), "__MACOSX") || strings.HasPrefix(path.Base(file.Name), "._") {
 			continue
 		}
 		if !strings.HasSuffix(strings.ToLower(file.Name), ".dcm") {

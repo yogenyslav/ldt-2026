@@ -38,8 +38,8 @@ export interface IClassification {
   cnn_confidence?: number | null
 }
 
-/* manual — uploaded through the UI, orthanc — arrived from the device. */
-export type UploadSource = 'manual' | 'orthanc'
+/* manual — uploaded by an admin; clinic — uploaded by a specialist or Orthanc. */
+export type UploadSource = 'manual' | 'clinic'
 
 /* GET /dicom/{dicom_id} */
 export interface IDicomInfo {
@@ -89,6 +89,10 @@ export interface IJobInfo {
   error?: string
   /* duplicated in metadata; lifted to the top level for convenient lists */
   study_id?: string
+  /* StudyInstanceUID из тегов DICOM; study_id остается идентификатором Orthanc. */
+  dicom_study_uid?: string
+  /* SOPInstanceUID снимка из тегов DICOM. */
+  dicom_image_uid?: string
   patient_ref?: string
   /* the column exists in the dicom_file table but is missing from the DTO —
      requested in context/backend_requests.md, lists fall back to the job id */
@@ -102,6 +106,7 @@ export interface IJobInfo {
 /* A visit: the scans taken for one patient during a single appointment. */
 export interface IStudy {
   study_id: string
+  dicom_study_uid?: string
   patient_ref?: string
   created_at: string
   jobs: IJobInfo[]
@@ -255,7 +260,7 @@ export interface IQueueItem {
 /* How much has been collected for one of the four models. */
 export interface ITrainTarget {
   id: string
-  name: string
+  name?: string
   have: number
   need: number
   /* the cases that are scarce and therefore decide when training is worth it */
@@ -263,8 +268,8 @@ export interface ITrainTarget {
   ready: boolean
   busy: boolean
   /* while it is training: how far along, and how much longer */
-  done?: number
-  left_minutes?: number
+  done?: number | null
+  left_minutes?: number | null
 }
 
 /* A number a radiologist can argue with. `goal` is the direction it should
@@ -279,7 +284,7 @@ export interface IModelMetric {
 
 export interface IModelVersion {
   id: string
-  name: string
+  name?: string
   trained: string
   checked: number
   metrics: IModelMetric[]

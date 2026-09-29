@@ -1,24 +1,9 @@
 import type { Band, IJobInfo, Point } from '@/types'
 
-/* ============================================================
-   The boundaries the analyser actually applies.
-
-   Rotation is not judged against four loose numbers: the analyser
-   keeps three settings — the centre of the norm in millimetres, the
-   tolerance around it, and how far past the tolerance a frame is
-   merely doubtful. They arrive with every result in
-   `metadata.settings` (qc_prototype), and the five stripes on the
-   tuning screen are computed from them:
-
-     нарушение · сомнение · норма · сомнение · нарушение
-
-   With the settings as they ship — 2,7 мм, 63 %, 30 % — that comes
-   out as 0,2 · 1,0 · 4,4 · 5,2, which is the norm quoted to the
-   technologist on the station screen.
-
-   So a handle on that screen moves a real setting, and it moves
-   both sides at once, because that is how the analyser applies it.
-   ============================================================ */
+/* Параметры ротации: центр нормы, допуск и ширина полосы сомнения.
+   Из них вычисляются четыре симметричные границы пяти зон:
+   нарушение · сомнение · норма · сомнение · нарушение.
+   При значениях 2,7 мм, 63% и 30% границы равны 0,2 · 1,0 · 4,4 · 5,2 мм. */
 
 export interface IRotationSettings {
   trochanter_center_mm: number
@@ -32,8 +17,7 @@ export const ROTATION_DEFAULTS: IRotationSettings = {
   trochanter_yellow_percent: 30,
 }
 
-/* The scale the frames are shown on. The measurement is a distance in
-   millimetres and never runs far past a centimetre. */
+/* Диапазон шкалы настройки расстояния в миллиметрах. */
 export const ROTATION_MIN = 0
 export const ROTATION_MAX = 8
 export const ROTATION_STEP = 0.1
@@ -44,7 +28,7 @@ const round1 = (value: number) => Number(value.toFixed(1))
 
 const clamp = (value: number, low: number, high: number) => Math.min(Math.max(value, low), high)
 
-/* Are these the settings of the criterion this screen tunes? */
+/* Извлекаем параметры критерия ротации из метаданных результата. */
 export function rotationSettings(value?: Record<string, number>): IRotationSettings | null {
   if (!value) return null
   const centre = value.trochanter_center_mm
@@ -58,9 +42,7 @@ export function rotationSettings(value?: Record<string, number>): IRotationSetti
   }
 }
 
-/* The settings the service is running right now, as the last result reports
-   them. There is no endpoint for reading them on their own — see
-   context/back_annotations.md. */
+/* Параметры готовых результатов; текущие настройки читаются через GET /settings. */
 export function settingsOf(jobs?: IJobInfo[]): IRotationSettings | null {
   for (const job of jobs ?? []) {
     const found = rotationSettings(job.metadata?.settings)
@@ -69,7 +51,7 @@ export function settingsOf(jobs?: IJobInfo[]): IRotationSettings | null {
   return null
 }
 
-/* Four boundaries out of three settings. */
+/* Вычисляем четыре границы по трем параметрам. */
 export function rotationCuts(settings: IRotationSettings): number[] {
   const centre = settings.trochanter_center_mm
   const tolerance = settings.trochanter_tol_percent / 100
@@ -83,9 +65,8 @@ export function rotationCuts(settings: IRotationSettings): number[] {
   ]
 }
 
-/* Moving a handle back into the setting it came from. The two inner handles
-   are the tolerance and the two outer ones the doubt band, so either of a
-   pair moves both — the analyser has no one-sided limit. */
+/* Внутренние бегунки задают допуск, внешние — полосу сомнения.
+   Перемещение одного бегунка изменяет обе симметричные границы. */
 export function cutToSettings(
   settings: IRotationSettings,
   index: number,
@@ -94,25 +75,34 @@ export function cutToSettings(
   const centre = settings.trochanter_center_mm
   if (centre <= 0) return settings
 
-  /* how far the handle now sits from the centre, as a share of it */
-  const share = Math.abs(value / centre - 1) * 100
+  /* Расстояние от бегунка до центра как доля значения центра. */
+  const distance = index < 2 ? centre - value : value - centre
+  const share = Math.max(0, distance / centre * 100)
+
+  // Обе симметричные границы должны оставаться на шкале. Округляем вниз,
+  // чтобы сохраненный процент не вывел парную границу за край.
+  const maxShare = Math.floor(
+    Math.min(centre - ROTATION_MIN, ROTATION_MAX - centre) / centre * 1000,
+  ) / 10
 
   if (index === 1 || index === 2) {
-    const tolerance = clamp(round1(share), 0, 200)
-    /* the doubt band never ends up inside the tolerance */
+    const tolerance = clamp(round1(share), 0, Math.max(0, maxShare - settings.trochanter_yellow_percent))
+    /* Полоса сомнения не заходит внутрь допуска. */
     return { ...settings, trochanter_tol_percent: tolerance }
   }
 
-  const doubt = clamp(round1(share - settings.trochanter_tol_percent), 0, 200)
+  const doubt = clamp(round1(share - settings.trochanter_tol_percent), 0, Math.max(0, maxShare - settings.trochanter_tol_percent))
   return { ...settings, trochanter_yellow_percent: doubt }
 }
 
-/* The centre of the norm is a setting too, and the one that moves everything. */
+/* Перемещение центра сдвигает все границы. */
 export function centreToSettings(settings: IRotationSettings, value: number): IRotationSettings {
-  return { ...settings, trochanter_center_mm: clamp(round1(value), 0.1, ROTATION_MAX) }
+  const spread = (settings.trochanter_tol_percent + settings.trochanter_yellow_percent) / 100
+  const maxCentre = Math.floor(ROTATION_MAX / (1 + spread) * 10) / 10
+  return { ...settings, trochanter_center_mm: clamp(round1(value), ROTATION_STEP, maxCentre) }
 }
 
-/* Which of the three states a measured distance falls into. */
+/* Определяем состояние снимка по измеренному расстоянию. */
 export function rotationBand(settings: IRotationSettings, value: number): Band {
   const cuts = rotationCuts(settings)
   for (let index = 0; index < cuts.length; index += 1) {
@@ -121,16 +111,14 @@ export function rotationBand(settings: IRotationSettings, value: number): Band {
   return ROTATION_BANDS[ROTATION_BANDS.length - 1]
 }
 
-/* The norm as it is quoted to people, on this screen and on the station. */
+/* Текст диапазона нормы для интерфейса. */
 export function normText(settings: IRotationSettings): string {
   const cuts = rotationCuts(settings)
   return `от ${cuts[1].toFixed(1).replace('.', ',')} до ${cuts[2].toFixed(1).replace('.', ',')} мм`
 }
 
-/* ---------- which models the service is running ----------
-   Reported with every result in `metadata.models`: the name the contract uses
-   and whether it is connected. There is no endpoint that lists them on their
-   own, so the last result is the source — see context/back_annotations.md. */
+/* Состояние моделей берем из metadata.models последнего результата:
+   отдельного запроса для списка моделей пока нет. */
 
 export interface IModelState {
   id: string
@@ -151,10 +139,8 @@ export function modelsOf(jobs?: IJobInfo[]): IModelState[] {
   return []
 }
 
-/* ---------- the frames the choice is made on ----------
-   Real studies the service has already measured: the distance and the outline
-   of the measured area come straight out of the result, the picture from
-   GET /dicom/{id}/image. Nothing here is prepared for the screen. */
+/* Примеры из обработанных исследований: расстояние и контур из результата,
+   изображение — из GET /dicom/{id}/image. */
 
 export interface IRotationFrame {
   jobId: string
@@ -163,7 +149,7 @@ export interface IRotationFrame {
   cols: number
   rows: number
   value: number
-  /* the outline of the measured area, in frame pixels */
+  /* Контур измеренной области в пикселях снимка. */
   regions: Point[][]
 }
 

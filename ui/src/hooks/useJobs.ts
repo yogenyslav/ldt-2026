@@ -1,9 +1,9 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import ApiJob from '@/services/apiJob'
 import { groupByStudy } from '@/lib/verdict'
-import { POLL_INTERVAL, QUEUE_POLL_INTERVAL } from '@/config'
+import { useEnrichedJobs } from '@/hooks/useDicomInfo'
+import { POLL_INTERVAL, QUEUE_POLL_INTERVAL, SOURCE_VALUE } from '@/config'
 import type { IJobFilter } from '@/services/apiJob'
-import type { Intake } from '@/lib/cabinet'
 import type { Decision, UploadSource } from '@/types'
 
 /* refetchInterval is per observer, and react-query takes the shortest one of
@@ -24,7 +24,9 @@ export const useJobs = (
 /* Centre queue: a list of visits instead of a flat list of scans. */
 export const useStudies = (limit = 50, offset = 0) => {
   const query = useJobs(limit, offset)
-  return { ...query, studies: query.data ? groupByStudy(query.data) : [] }
+  const { jobs } = useEnrichedJobs(query.data)
+
+  return { ...query, studies: groupByStudy(jobs ?? []) }
 }
 
 /* Technologist station. In the device mode the screen refreshes itself while it
@@ -32,9 +34,9 @@ export const useStudies = (limit = 50, offset = 0) => {
    own", and it will be replaced by a subscription once the backend exposes a push
    channel. In the manual mode there is nothing to wait for, so the station asks
    once and then only while a scan of its own is being processed. */
-export const useLatestJobs = (poll = true, intake: Intake = 'device') => {
-  /* the mode decides which source is worth asking about, on the server side */
-  const uploadSource: UploadSource[] = [intake === 'device' ? 'orthanc' : 'manual']
+export const useLatestJobs = (poll = true) => {
+  /* Both device and UI uploads at the technologist station belong to the clinic. */
+  const uploadSource: UploadSource[] = [SOURCE_VALUE.clinic]
   return useQuery({
     queryKey: ['jobs', 'latest', uploadSource],
     queryFn: () => ApiJob.getJobs({ limit: 20, offset: 0, uploadSource }).then((r) => r.data.jobs),

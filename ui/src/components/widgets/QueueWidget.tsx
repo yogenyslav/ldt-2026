@@ -83,7 +83,7 @@ const QueueWidget = () => {
       }
       if (filters.query) {
         const needle = filters.query.toLowerCase()
-        const haystack = `${job.id} ${job.patient_ref ?? ''}`.toLowerCase()
+        const haystack = `${job.dicom_study_uid ?? ''} ${job.patient_ref ?? ''} ${job.id}`.toLowerCase()
         if (!haystack.includes(needle)) return false
       }
       return true
@@ -286,6 +286,11 @@ const QueueWidget = () => {
 
                 <div className="base-semibold">
                   {study.patient_ref ?? '—'}
+                  {study.dicom_study_uid ? (
+                    <span className="block break-all small-regular font-normal text-muted">
+                      {study.dicom_study_uid}
+                    </span>
+                  ) : null}
                   <span className="block small-regular font-normal text-muted">
                     {study.jobs.length} {plural(study.jobs.length, 'снимок', 'снимка', 'снимков')}
                   </span>
