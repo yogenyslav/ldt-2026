@@ -29,6 +29,7 @@ import {
   type IRotationSettings,
 } from '@/lib/settings'
 import { nm, plural } from '@/lib/utils'
+import { variedRotationFrames } from '@/lib/tune'
 import type { Band } from '@/types'
 
 /* ============================================================
@@ -57,7 +58,7 @@ const TuneWidget = () => {
   const [draft, setDraft] = useState<IRotationSettings | null>(null)
 
   const live = settingsOf(jobs)
-  const frames = useMemo(() => rotationFrames(jobs), [jobs])
+  const frames = useMemo(() => variedRotationFrames(rotationFrames(jobs)), [jobs])
 
   if (isLoading) return <Loader />
 

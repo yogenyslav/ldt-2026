@@ -41,7 +41,7 @@ import {
 } from '@/lib/annotation'
 import { isStrokeWorthKeeping, outlineOf, simplifyOutline } from '@/lib/annotation'
 import { annotTasks, caseOf, clampToBox, hasZones } from '@/lib/annotQueue'
-import { delta } from '@/lib/tune'
+import { delta, variedRotationFrames } from '@/lib/tune'
 import { newSubmissionId } from '@/lib/submission'
 import {
   ROTATION_DEFAULTS,
@@ -299,8 +299,29 @@ ok('внешний бегунок расширяет сомнение', cutToSet
 eq('границы остаются по возрастанию', rotationCuts(cutToSettings(live, 3, 6)).every((cut, i, a) => i === 0 || cut >= a[i - 1]), true)
 eq('внешняя граница не заходит внутрь допуска', cutToSettings(live, 0, 2).trochanter_yellow_percent, 0)
 eq('середина нормы тоже настройка', centreToSettings(live, 3.4).trochanter_center_mm, 3.4)
+for (const value of [-100, 0, 2.7, 8, 100]) {
+  for (let index = 0; index < 4; index += 1) {
+    const next = cutToSettings(live, index, value)
+    ok('обе границы остаются на шкале', rotationCuts(next).every((cut) => cut >= 0 && cut <= 8))
+    ok('проценты не превышают 100', next.trochanter_tol_percent + next.trochanter_yellow_percent <= 100)
+  }
+  ok('сдвиг центра удерживает границы на шкале', rotationCuts(centreToSettings(live, value)).every((cut) => cut >= 0 && cut <= 8))
+}
+eq('левая граница не перескакивает через центр', cutToSettings(live, 1, 8).trochanter_tol_percent, 0)
+eq('правая граница не перескакивает через центр', cutToSettings(live, 2, 0).trochanter_tol_percent, 0)
 
 const frames = rotationFrames(DEMO_JOBS)
+const unevenFrames = Array.from({ length: 30 }, (_, index) => ({
+  ...frames[0],
+  jobId: `varied-${index}`,
+  value: index < 28 ? 1 : index === 28 ? 5 : 17,
+}))
+const mixedFrames = variedRotationFrames(unevenFrames)
+eq('первые восемь показывают весь диапазон размеров', [...new Set(mixedFrames.slice(0, 8).map((frame) => frame.value))].sort((a, b) => a - b), [1, 5, 17])
+eq('перемешивание сохраняет все снимки без повторов', mixedFrames.map((frame) => frame.jobId).sort(), unevenFrames.map((frame) => frame.jobId).sort())
+eq('исходный порядок не меняется', unevenFrames.map((frame) => frame.jobId), Array.from({ length: 30 }, (_, index) => `varied-${index}`))
+eq('пустой список перемешивается', variedRotationFrames([]), [])
+eq('один снимок сохраняется', variedRotationFrames(frames.slice(0, 1)), frames.slice(0, 1))
 ok('снимки бедра нашлись', frames.length > 0)
 ok('у каждого измерено расстояние', frames.every((frame) => typeof frame.value === 'number'))
 ok('у каждого есть контур измеренной области', frames.every((frame) => frame.regions.length > 0))

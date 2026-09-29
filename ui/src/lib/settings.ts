@@ -95,21 +95,29 @@ export function cutToSettings(
   if (centre <= 0) return settings
 
   /* how far the handle now sits from the centre, as a share of it */
-  const share = Math.abs(value / centre - 1) * 100
+  const distance = index < 2 ? centre - value : value - centre
+  const share = Math.max(0, distance / centre * 100)
+  // Both mirrored boundaries must fit on the scale. Round down so the
+  // stored percentage cannot push the opposite boundary past an endpoint.
+  const maxShare = Math.floor(
+    Math.min(centre - ROTATION_MIN, ROTATION_MAX - centre) / centre * 1000,
+  ) / 10
 
   if (index === 1 || index === 2) {
-    const tolerance = clamp(round1(share), 0, 200)
+    const tolerance = clamp(round1(share), 0, Math.max(0, maxShare - settings.trochanter_yellow_percent))
     /* the doubt band never ends up inside the tolerance */
     return { ...settings, trochanter_tol_percent: tolerance }
   }
 
-  const doubt = clamp(round1(share - settings.trochanter_tol_percent), 0, 200)
+  const doubt = clamp(round1(share - settings.trochanter_tol_percent), 0, Math.max(0, maxShare - settings.trochanter_tol_percent))
   return { ...settings, trochanter_yellow_percent: doubt }
 }
 
 /* The centre of the norm is a setting too, and the one that moves everything. */
 export function centreToSettings(settings: IRotationSettings, value: number): IRotationSettings {
-  return { ...settings, trochanter_center_mm: clamp(round1(value), 0.1, ROTATION_MAX) }
+  const spread = (settings.trochanter_tol_percent + settings.trochanter_yellow_percent) / 100
+  const maxCentre = Math.floor(ROTATION_MAX / (1 + spread) * 10) / 10
+  return { ...settings, trochanter_center_mm: clamp(round1(value), ROTATION_STEP, maxCentre) }
 }
 
 /* Which of the three states a measured distance falls into. */

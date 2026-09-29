@@ -15,52 +15,6 @@
   },
   "panels": [
     {
-      "id": 9,
-      "title": "Analyzer: время обработки сообщения",
-      "type": "timeseries",
-      "description": "Среднее и p95 за окно $__rate_interval. От начала обработки полученного сообщения до завершения обработчика: скачивание DICOM из Orthanc, чтение файла, ML-пайплайн, публикация результата в NATS и ACK/NAK/TERM. Включает неуспешные попытки и повторные доставки. Не включает ожидание в очереди до вызова обработчика и последующую работу worker; это не чистое время ML и не полный цикл от загрузки. Без завершённых вызовов в окне значения отсутствуют. Последняя конечная граница гистограммы — 300 с: p95 выше неё неразличим.",
-      "datasource": {
-        "type": "prometheus",
-        "uid": "mimir"
-      },
-      "gridPos": {
-        "h": 8,
-        "w": 12,
-        "x": 0,
-        "y": 0
-      },
-      "fieldConfig": {
-        "defaults": {
-          "unit": "s",
-          "min": 0
-        },
-        "overrides": []
-      },
-      "options": {
-        "legend": {
-          "displayMode": "table",
-          "placement": "bottom"
-        },
-        "tooltip": {
-          "mode": "multi"
-        }
-      },
-      "targets": [
-        {
-          "refId": "A",
-          "expr": "sum by (service) (rate(dicom_analyzer_messaging_duration_seconds_sum{group=\"dicom\",service=~\"$service\",operation=\"consume\"}[$__rate_interval])) / sum by (service) (rate(dicom_analyzer_messaging_duration_seconds_count{group=\"dicom\",service=~\"$service\",operation=\"consume\"}[$__rate_interval]))",
-          "legendFormat": "{{service}} — среднее",
-          "range": true
-        },
-        {
-          "refId": "B",
-          "expr": "histogram_quantile(0.95, sum by (service, le) (rate(dicom_analyzer_messaging_duration_seconds_bucket{group=\"dicom\",service=~\"$service\",operation=\"consume\"}[$__rate_interval])))",
-          "legendFormat": "{{service}} — p95",
-          "range": true
-        }
-      ]
-    },
-    {
       "id": 10,
       "title": "Worker: время создания задач",
       "type": "timeseries",

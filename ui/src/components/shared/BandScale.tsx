@@ -49,7 +49,8 @@ const BandScale = ({
 }: BandScaleProps) => {
   const track = useRef<HTMLDivElement>(null)
   const edges = [min, ...cuts, max]
-  const at = (value: number) => ((value - min) / (max - min)) * 100
+  const bounded = (value: number) => Math.min(Math.max(value, min), max)
+  const at = (value: number) => ((bounded(value) - min) / (max - min)) * 100
 
   const valueAt = (clientX: number) => {
     const box = track.current?.getBoundingClientRect()
@@ -87,7 +88,7 @@ const BandScale = ({
         const direction = event.key === 'ArrowLeft' ? -1 : event.key === 'ArrowRight' ? 1 : 0
         if (!direction) return
         event.preventDefault()
-        move(value + direction * step)
+        move(bounded(value + direction * step))
       }}
     >
       <b
