@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import cv2
 import numpy as np
+from scipy.ndimage import gaussian_filter
 
 from .hub import HIP_POINTS, ModelHub
 from .settings import DEFAULTS
@@ -57,8 +58,25 @@ def margins_criterion(img: np.ndarray, side: str, found: dict) -> Criterion:
                      details={"top_cm": top, "bottom_cm": bottom, "side_cm": sidecm, "implant": bool(m.implant)}, note=m.note)
 
 
-def _exact_region(meas, shape):
-    """Копия lt.bump_region БЕЗ отступа на прорисовку (REGION_ADD_PX): ширина области на строке пика в точности равна value (в px = ex[peak]), контур и расстояние совпадают буквально."""
+def _half_max_edge(canon, y, x_start, search=25):
+    """От сырого края (x_start) ищем вправо точку полувысоты яркости - "видимую" (прижатую к кости) границу, для базовой линии."""
+    row_pix = gaussian_filter(canon[y].astype(float), 1.0)
+    x0 = max(int(round(x_start)) - 2, 0)
+    seg = row_pix[x0:x0 + search]
+    if len(seg) < 3:
+        return float(x_start)
+    bg, mx = seg[0], seg.max()
+    if mx - bg < 20:
+        return float(x_start)
+    half = bg + 0.5 * (mx - bg)
+    idx = int(np.argmax(seg >= half))
+    return float(x0 + idx)
+
+
+def _exact_region(meas, canon, shape):
+    """Область бугра: внутренняя сторона - реальный (выпуклый) край кости построчно; внешняя - прямая линия между
+    верхом и низом области "как будто бугра нет", прижатая к видимой кости (полувысота яркости), а не покадровый
+    сигнал яркости. Закрашивается всё превышение реального края над этой прямой."""
     R = np.zeros(shape, bool)
     res = meas.get("res")
     if res is None or meas.get("peak_y") is None:
@@ -75,10 +93,14 @@ def _exact_region(meas, shape):
     while u < len(ys) - 1 and ex[u + 1] >= lt.REGION_FRAC * pk:
         u += 1
     t, u = max(t, i - lt.REGION_MAX_HALF_ROWS), min(u, i + lt.REGION_MAX_HALF_ROWS)
-    for k in range(max(t - lt.REGION_PAD_ROWS, 0), min(u + lt.REGION_PAD_ROWS, len(ys) - 1) + 1):
-        x0 = max(int(round(edge[k])), 0)
-        x1 = max(int(round(edge[k] + ex[k] * lt.REGION_MULT)), 0)          # без + REGION_ADD_PX
-        R[ys[k], x0:x1 + 1] = True
+    tp, up = max(t - lt.REGION_PAD_ROWS, 0), min(u + lt.REGION_PAD_ROWS, len(ys) - 1)
+    line_top = _half_max_edge(canon, ys[tp], edge[tp])
+    line_bot = _half_max_edge(canon, ys[up], edge[up])
+    for idx, k in enumerate(range(tp, up + 1)):
+        frac = idx / max(up - tp, 1)
+        line_k = line_top + (line_bot - line_top) * frac
+        x_lo, x_hi = sorted((int(round(edge[k])), int(round(line_k))))
+        R[ys[k], max(x_lo, 0):x_hi + 1] = True
     return R
 
 
@@ -101,7 +123,7 @@ def trochanter_criterion(img: np.ndarray, side: str, kp: Criterion, found: dict,
         region_mask = impl_lt.region(impl_res, canon.shape)
         peak_y = impl_res["peak"]
     else:
-        region_mask = _exact_region(meas, canon.shape)                             # область БЕЗ отступа на прорисовку — ширина = ровно value, всегда
+        region_mask = _exact_region(meas, canon, canon.shape)                      # реальный край + прямая база (полувысота яркости), ширина = ровно value
         peak_y = meas.get("peak_y")
 
     pts = {}

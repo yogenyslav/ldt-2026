@@ -7,8 +7,8 @@
     python render.py <снимок.dcm|png> -o out.png                         # без --result: сначала прогоняет сервис (модели!)
 
 Что рисуется (координаты — пиксели исходного снимка, подписи латиницей, цвет выводится из ok/status/verdict: зелёный/жёлтый/красный/серый):
-  позвоночник: ось (линия между серединами верхней и нижней пар точек) + 4 точки, угол; два окна гребней в нижних углах (зелёное — гребень есть, красное — нет)
-               и точки гребней; контуры посторонних предметов (красный — дужка, жёлтый — застёжка);
+  позвоночник: ось (линия между серединами верхней и нижней пар точек) + 4 точки, угол, красная вертикаль от нижней точки (для наглядности угла);
+               два окна гребней в нижних углах (зелёное — гребень есть, красное — нет) и точки гребней; контуры посторонних предметов — синим;
   бедро:       три точки модели (V вертел, N шейка, I седалищная), точки отступов с перпендикулярами к краям кадра и значениями в см, область малого вертела и расстояние в мм.
 Сверху полоса: регион, уверенность, вердикт и список критериев (OK / FAIL / -)."""
 from __future__ import annotations
@@ -19,7 +19,7 @@ import json
 import cv2
 import numpy as np
 
-COLORS = {"зелёный": (70, 200, 70), "жёлтый": (0, 210, 240), "красный": (60, 60, 235), "серый": (170, 170, 170)}
+COLORS = {"зелёный": (70, 200, 70), "жёлтый": (0, 210, 240), "красный": (60, 60, 235), "серый": (170, 170, 170), "синий": (235, 120, 40)}
 POINT_LABELS = {"greater_trochanter_apex": "V", "femoral_neck": "N", "ischium": "I"}
 NAMES = {"spine_axis": "axis", "pelvis_crest": "crest", "foreign_objects": "foreign", "hip_margins": "margins", "hip_keypoints": "keypoints", "lesser_trochanter": "trochanter"}
 
@@ -53,11 +53,12 @@ def render(img_u8: np.ndarray, result: dict, scale: int = 2) -> np.ndarray:
         c = crit.get(name)
         if not c:
             continue
+        col = COLORS["синий"] if name == "foreign_objects" else _col(c)   # предметы всегда синим, независимо от вердикта
         for poly in c.get("regions", []):
             ov = v.copy()
-            cv2.fillPoly(ov, [np.array([S(p) for p in poly], np.int32)], _col(c))
+            cv2.fillPoly(ov, [np.array([S(p) for p in poly], np.int32)], col)
             v = cv2.addWeighted(ov, 0.35, v, 0.65, 0)
-            cv2.polylines(v, [np.array([S(p) for p in poly], np.int32)], True, _col(c), 1, cv2.LINE_AA)
+            cv2.polylines(v, [np.array([S(p) for p in poly], np.int32)], True, col, 1, cv2.LINE_AA)
     c = crit.get("lesser_trochanter")
     if c and c.get("regions") and c.get("value") is not None:
         p0 = c["regions"][0][0]
@@ -73,13 +74,13 @@ def render(img_u8: np.ndarray, result: dict, scale: int = 2) -> np.ndarray:
     if c and c.get("points"):
         P = c["points"]
         mid = lambda a, b: [(P[a][0] + P[b][0]) / 2, (P[a][1] + P[b][1]) / 2]
-        cv2.line(v, S(mid("top_left", "top_right")), S(mid("bottom_left", "bottom_right")), _col(c), 2, cv2.LINE_AA)
+        am, at = mid("bottom_left", "bottom_right"), mid("top_left", "top_right")
+        cv2.line(v, S(am), S([am[0], at[1]]), COLORS["красный"], 1, cv2.LINE_AA)    # перпендикуляр (вертикаль) от нижней точки — чтобы угол наклона оси был виден на глаз
+        cv2.line(v, S(at), S(am), _col(c), 2, cv2.LINE_AA)
         for n, p in P.items():
             cv2.circle(v, S(p), 5, _col(c), -1, cv2.LINE_AA)
         if c.get("value") is not None:
-            am = S(mid("bottom_left", "bottom_right"))
-            at = S(mid("top_left", "top_right"))
-            _text(v, "axis %.1f deg" % c["value"], ((at[0] + am[0]) // 2 + 12, (at[1] + am[1]) // 2), _col(c), 0.55, 1)
+            _text(v, "axis %.1f deg" % c["value"], ((S(at)[0] + S(am)[0]) // 2 + 12, (S(at)[1] + S(am)[1]) // 2), _col(c), 0.55, 1)
 
     # гребни: два окна в нижних углах + точки
     c = crit.get("pelvis_crest")
