@@ -21,13 +21,13 @@ func NewWorker(client dicom_worker.DicomWorkerServiceClient) *Worker {
 }
 
 // ProcessDicomFiles отправляет список идентификаторов DICOM-файлов на обработку.
-func (w *Worker) ProcessDicomFiles(ctx context.Context, dicomIDs []string) (map[string]uuid.UUID, error) {
+func (w *Worker) ProcessDicomFiles(ctx context.Context, dicomIDs []string, settings map[string]float64) (map[string]uuid.UUID, error) {
 	dicoms := make([]*dicom_worker.DicomData, 0, len(dicomIDs))
 	for _, id := range dicomIDs {
 		dicoms = append(dicoms, &dicom_worker.DicomData{Id: id})
 	}
 
-	req := &dicom_worker.ProcessDicomFilesIn{Dicoms: dicoms}
+	req := &dicom_worker.ProcessDicomFilesIn{Dicoms: dicoms, Settings: settings}
 	resp, err := w.client.ProcessDicomFiles(ctx, req)
 	if err != nil {
 		return nil, fmt.Errorf("rpc call to ProcessDicomFiles failed: %w", err)

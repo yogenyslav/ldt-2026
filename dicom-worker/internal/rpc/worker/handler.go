@@ -12,7 +12,7 @@ import (
 )
 
 type processUsecase interface {
-	ProcessDicomFiles(ctx context.Context, dicomIDs []string) (map[string]string, error)
+	ProcessDicomFiles(ctx context.Context, dicomIDs []string, settings map[string]float64) (map[string]string, error)
 }
 
 type getJobsUsecase interface {

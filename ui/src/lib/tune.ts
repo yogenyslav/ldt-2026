@@ -1,8 +1,8 @@
 import type { IModelMetric } from '@/types'
 import type { IRotationFrame } from '@/lib/settings'
 
-/* Sample each part of the measured range before showing more examples from
-   the same part. A plain shuffle could hide rare large distances below the fold. */
+/* Сначала показываем примеры из каждой части диапазона измерений.
+   Обычное перемешивание могло бы скрыть редкие большие расстояния ниже экрана. */
 export function variedRotationFrames(frames: IRotationFrame[]): IRotationFrame[] {
   if (frames.length < 2) return [...frames]
 
@@ -10,6 +10,7 @@ export function variedRotationFrames(frames: IRotationFrame[]): IRotationFrame[]
   const min = sorted[0].value
   const span = sorted[sorted.length - 1].value - min
   const buckets: IRotationFrame[][] = Array.from({ length: 8 }, () => [])
+
   for (const frame of sorted) {
     const index = span === 0 ? 0 : Math.min(7, Math.floor((frame.value - min) / span * 8))
     buckets[index].push(frame)
@@ -21,28 +22,27 @@ export function variedRotationFrames(frames: IRotationFrame[]): IRotationFrame[]
       ;[items[index], items[other]] = [items[other], items[index]]
     }
   }
+
   buckets.forEach(shuffle)
 
   const result: IRotationFrame[] = []
+
   while (result.length < frames.length) {
     const batch = buckets.flatMap((bucket) => {
       const frame = bucket.pop()
+
       return frame ? [frame] : []
     })
+
     shuffle(batch)
     result.push(...batch)
   }
+
   return result
 }
 
-/* Two versions of a model, side by side.
-
-   Interpretation is not written out in words: every number carries the
-   direction it should move, so this is arithmetic and a sign. There is no
-   language model in the product, nothing to hand out an opinion.
-
-   Where the boundaries of the analyser are concerned, see lib/settings.ts —
-   those are not trained, they are chosen. */
+/* Сравниваем две версии модели по числам и направлению улучшения метрики.
+   Границы анализатора задаются отдельно в lib/settings.ts. */
 
 export function delta(metric: IModelMetric): { text: string; tone: 'ok' | 'bad' | 'dead' } {
   const difference = metric.next - metric.now

@@ -188,9 +188,11 @@ export const mockAdapter: AxiosAdapter = async (config) => {
   }
 
   /* --- rotation thresholds --- */
+  if (method === 'get' && url === '/settings') return reply(config, store.settings())
+
   if (method === 'put' && url === '/settings') {
     store.setSettings(body(config) as unknown as IRotationSettings)
-    return reply(config, '', 204)
+    return reply(config, store.settings())
   }
 
   /* --- дообучение --- */

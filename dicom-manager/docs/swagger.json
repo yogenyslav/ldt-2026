@@ -1265,6 +1265,120 @@
                 }
             }
         },
+        "/settings": {
+            "get": {
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Параметры ротации организации (администратор)",
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.RotationSettings"
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            },
+            "put": {
+                "description": "Сумма процентов не больше 100; центр × (1 + сумма / 100) не больше 8 мм. Готовые результаты не пересчитываются.",
+                "consumes": [
+                    "application/json"
+                ],
+                "produces": [
+                    "application/json"
+                ],
+                "tags": [
+                    "settings"
+                ],
+                "summary": "Сохранить параметры ротации для новых задач (администратор)",
+                "parameters": [
+                    {
+                        "description": "Параметры ротации",
+                        "name": "settings",
+                        "in": "body",
+                        "required": true,
+                        "schema": {
+                            "$ref": "#/definitions/model.RotationSettings"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "OK",
+                        "schema": {
+                            "$ref": "#/definitions/model.RotationSettings"
+                        }
+                    },
+                    "400": {
+                        "description": "Bad Request",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Unauthorized",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "403": {
+                        "description": "Forbidden",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "500": {
+                        "description": "Internal Server Error",
+                        "schema": {
+                            "type": "object",
+                            "additionalProperties": {
+                                "type": "string"
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/user/login": {
             "post": {
                 "description": "Аутентификация пользователя по его логину и паролю.",
@@ -1982,6 +2096,29 @@
                 "id": {
                     "description": "ID отчета по результатам обработки DICOM-файлов.",
                     "type": "integer"
+                }
+            }
+        },
+        "model.RotationSettings": {
+            "type": "object",
+            "properties": {
+                "trochanter_center_mm": {
+                    "type": "number",
+                    "maximum": 8,
+                    "minimum": 0.1,
+                    "example": 2.7
+                },
+                "trochanter_tol_percent": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 63
+                },
+                "trochanter_yellow_percent": {
+                    "type": "number",
+                    "maximum": 100,
+                    "minimum": 0,
+                    "example": 30
                 }
             }
         },

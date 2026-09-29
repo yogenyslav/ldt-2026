@@ -124,6 +124,7 @@ func (x *DicomData) GetId() string {
 type ProcessDicomFilesIn struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Dicoms        []*DicomData           `protobuf:"bytes,1,rep,name=dicoms,proto3" json:"dicoms,omitempty"`
+	Settings      map[string]float64     `protobuf:"bytes,2,rep,name=settings,proto3" json:"settings,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"fixed64,2,opt,name=value"` // Снимок параметров ротации для этого пакета задач.
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -161,6 +162,13 @@ func (*ProcessDicomFilesIn) Descriptor() ([]byte, []int) {
 func (x *ProcessDicomFilesIn) GetDicoms() []*DicomData {
 	if x != nil {
 		return x.Dicoms
+	}
+	return nil
+}
+
+func (x *ProcessDicomFilesIn) GetSettings() map[string]float64 {
+	if x != nil {
+		return x.Settings
 	}
 	return nil
 }
@@ -371,9 +379,13 @@ const file_proto_api_dicom_worker_proto_rawDesc = "" +
 	"\n" +
 	"\x1cproto/api/dicom/worker.proto\x12\x10api.dicom.worker\x1a\x1fgoogle/protobuf/timestamp.proto\"\x1b\n" +
 	"\tDicomData\x12\x0e\n" +
-	"\x02id\x18\x01 \x01(\tR\x02id\"J\n" +
+	"\x02id\x18\x01 \x01(\tR\x02id\"\xd8\x01\n" +
 	"\x13ProcessDicomFilesIn\x123\n" +
-	"\x06dicoms\x18\x01 \x03(\v2\x1b.api.dicom.worker.DicomDataR\x06dicoms\"\x9e\x01\n" +
+	"\x06dicoms\x18\x01 \x03(\v2\x1b.api.dicom.worker.DicomDataR\x06dicoms\x12O\n" +
+	"\bsettings\x18\x02 \x03(\v23.api.dicom.worker.ProcessDicomFilesIn.SettingsEntryR\bsettings\x1a;\n" +
+	"\rSettingsEntry\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x14\n" +
+	"\x05value\x18\x02 \x01(\x01R\x05value:\x028\x01\"\x9e\x01\n" +
 	"\x14ProcessDicomFilesOut\x12K\n" +
 	"\ajob_ids\x18\x01 \x03(\v22.api.dicom.worker.ProcessDicomFilesOut.JobIdsEntryR\x06jobIds\x1a9\n" +
 	"\vJobIdsEntry\x12\x10\n" +
@@ -413,7 +425,7 @@ func file_proto_api_dicom_worker_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_api_dicom_worker_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_api_dicom_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 7)
+var file_proto_api_dicom_worker_proto_msgTypes = make([]protoimpl.MessageInfo, 8)
 var file_proto_api_dicom_worker_proto_goTypes = []any{
 	(JobStatus)(0),                // 0: api.dicom.worker.JobStatus
 	(*DicomData)(nil),             // 1: api.dicom.worker.DicomData
@@ -422,25 +434,27 @@ var file_proto_api_dicom_worker_proto_goTypes = []any{
 	(*JobInfo)(nil),               // 4: api.dicom.worker.JobInfo
 	(*GetJobInfoByIDsIn)(nil),     // 5: api.dicom.worker.GetJobInfoByIDsIn
 	(*GetJobInfoByIDsOut)(nil),    // 6: api.dicom.worker.GetJobInfoByIDsOut
-	nil,                           // 7: api.dicom.worker.ProcessDicomFilesOut.JobIdsEntry
-	(*timestamppb.Timestamp)(nil), // 8: google.protobuf.Timestamp
+	nil,                           // 7: api.dicom.worker.ProcessDicomFilesIn.SettingsEntry
+	nil,                           // 8: api.dicom.worker.ProcessDicomFilesOut.JobIdsEntry
+	(*timestamppb.Timestamp)(nil), // 9: google.protobuf.Timestamp
 }
 var file_proto_api_dicom_worker_proto_depIdxs = []int32{
 	1, // 0: api.dicom.worker.ProcessDicomFilesIn.dicoms:type_name -> api.dicom.worker.DicomData
-	7, // 1: api.dicom.worker.ProcessDicomFilesOut.job_ids:type_name -> api.dicom.worker.ProcessDicomFilesOut.JobIdsEntry
-	0, // 2: api.dicom.worker.JobInfo.status:type_name -> api.dicom.worker.JobStatus
-	8, // 3: api.dicom.worker.JobInfo.created_at:type_name -> google.protobuf.Timestamp
-	8, // 4: api.dicom.worker.JobInfo.updated_at:type_name -> google.protobuf.Timestamp
-	4, // 5: api.dicom.worker.GetJobInfoByIDsOut.job:type_name -> api.dicom.worker.JobInfo
-	2, // 6: api.dicom.worker.DicomWorkerService.ProcessDicomFiles:input_type -> api.dicom.worker.ProcessDicomFilesIn
-	5, // 7: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:input_type -> api.dicom.worker.GetJobInfoByIDsIn
-	3, // 8: api.dicom.worker.DicomWorkerService.ProcessDicomFiles:output_type -> api.dicom.worker.ProcessDicomFilesOut
-	6, // 9: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:output_type -> api.dicom.worker.GetJobInfoByIDsOut
-	8, // [8:10] is the sub-list for method output_type
-	6, // [6:8] is the sub-list for method input_type
-	6, // [6:6] is the sub-list for extension type_name
-	6, // [6:6] is the sub-list for extension extendee
-	0, // [0:6] is the sub-list for field type_name
+	7, // 1: api.dicom.worker.ProcessDicomFilesIn.settings:type_name -> api.dicom.worker.ProcessDicomFilesIn.SettingsEntry
+	8, // 2: api.dicom.worker.ProcessDicomFilesOut.job_ids:type_name -> api.dicom.worker.ProcessDicomFilesOut.JobIdsEntry
+	0, // 3: api.dicom.worker.JobInfo.status:type_name -> api.dicom.worker.JobStatus
+	9, // 4: api.dicom.worker.JobInfo.created_at:type_name -> google.protobuf.Timestamp
+	9, // 5: api.dicom.worker.JobInfo.updated_at:type_name -> google.protobuf.Timestamp
+	4, // 6: api.dicom.worker.GetJobInfoByIDsOut.job:type_name -> api.dicom.worker.JobInfo
+	2, // 7: api.dicom.worker.DicomWorkerService.ProcessDicomFiles:input_type -> api.dicom.worker.ProcessDicomFilesIn
+	5, // 8: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:input_type -> api.dicom.worker.GetJobInfoByIDsIn
+	3, // 9: api.dicom.worker.DicomWorkerService.ProcessDicomFiles:output_type -> api.dicom.worker.ProcessDicomFilesOut
+	6, // 10: api.dicom.worker.DicomWorkerService.GetJobInfoByIDs:output_type -> api.dicom.worker.GetJobInfoByIDsOut
+	9, // [9:11] is the sub-list for method output_type
+	7, // [7:9] is the sub-list for method input_type
+	7, // [7:7] is the sub-list for extension type_name
+	7, // [7:7] is the sub-list for extension extendee
+	0, // [0:7] is the sub-list for field type_name
 }
 
 func init() { file_proto_api_dicom_worker_proto_init() }
@@ -454,7 +468,7 @@ func file_proto_api_dicom_worker_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: unsafe.Slice(unsafe.StringData(file_proto_api_dicom_worker_proto_rawDesc), len(file_proto_api_dicom_worker_proto_rawDesc)),
 			NumEnums:      1,
-			NumMessages:   7,
+			NumMessages:   8,
 			NumExtensions: 0,
 			NumServices:   1,
 		},

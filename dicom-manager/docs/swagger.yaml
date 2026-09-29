@@ -411,6 +411,24 @@ definitions:
         description: ID отчета по результатам обработки DICOM-файлов.
         type: integer
     type: object
+  model.RotationSettings:
+    properties:
+      trochanter_center_mm:
+        example: 2.7
+        maximum: 8
+        minimum: 0.1
+        type: number
+      trochanter_tol_percent:
+        example: 63
+        maximum: 100
+        minimum: 0
+        type: number
+      trochanter_yellow_percent:
+        example: 30
+        maximum: 100
+        minimum: 0
+        type: number
+    type: object
   model.Submission:
     properties:
       annotations:
@@ -1393,6 +1411,82 @@ paths:
       summary: Сгенерировать отчет по результатам обработки DICOM-файлов.
       tags:
       - report
+  /settings:
+    get:
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.RotationSettings'
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Параметры ротации организации (администратор)
+      tags:
+      - settings
+    put:
+      consumes:
+      - application/json
+      description: Сумма процентов не больше 100; центр × (1 + сумма / 100) не больше
+        8 мм. Готовые результаты не пересчитываются.
+      parameters:
+      - description: Параметры ротации
+        in: body
+        name: settings
+        required: true
+        schema:
+          $ref: '#/definitions/model.RotationSettings'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            $ref: '#/definitions/model.RotationSettings'
+        "400":
+          description: Bad Request
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "401":
+          description: Unauthorized
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "403":
+          description: Forbidden
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+        "500":
+          description: Internal Server Error
+          schema:
+            additionalProperties:
+              type: string
+            type: object
+      summary: Сохранить параметры ротации для новых задач (администратор)
+      tags:
+      - settings
   /user/{user_id}:
     get:
       consumes:

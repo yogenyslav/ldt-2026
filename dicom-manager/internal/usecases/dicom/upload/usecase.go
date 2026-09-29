@@ -35,8 +35,12 @@ type dicomRepo interface {
 	SaveDicomFiles(ctx context.Context, dicoms []storage.Dicom) error
 }
 
+type settingsReader interface {
+	Get(context.Context, int64) (map[string]float64, error)
+}
+
 type worker interface {
-	ProcessDicomFiles(ctx context.Context, dicomIDs []string) (map[string]uuid.UUID, error)
+	ProcessDicomFiles(ctx context.Context, dicomIDs []string, settings map[string]float64) (map[string]uuid.UUID, error)
 }
 
 type jobCreator interface {
@@ -63,12 +67,13 @@ type Usecase struct {
 	worker     worker
 	jobCreator jobCreator
 	dicomer    dicomer
+	settings   settingsReader
 }
 
 // New создает новый экземпляр Usecase.
 func New(
 	l *zerolog.Logger, m observability.MetricsClient, uow database.UnitOfWork,
-	dr dicomRepo, jr wrappers.JobRepo, o orthancClient, workerClient dicom_worker.DicomWorkerServiceClient,
+	dr dicomRepo, jr wrappers.JobRepo, o orthancClient, workerClient dicom_worker.DicomWorkerServiceClient, settings settingsReader,
 ) *Usecase {
 	return &Usecase{
 		log:        l,
@@ -78,6 +83,7 @@ func New(
 		worker:     wrappers.NewWorker(workerClient),
 		jobCreator: wrappers.NewJobCreator(jr),
 		dicomer:    wrappers.NewOrthanc(o.Client()),
+		settings:   settings,
 	}
 }
 
@@ -155,7 +161,7 @@ func (uc *Usecase) UploadDicomFiles(
 			}
 
 			var err error
-			dicomJobs, err = uc.processDicoms(ctx, dicomIDs)
+			dicomJobs, err = uc.processDicoms(ctx, dicomIDs, in.OrganizationID)
 			return err
 		},
 	)
@@ -268,7 +274,7 @@ func (uc *Usecase) lockDicoms(ctx context.Context, dicomIDs []string, creatorID,
 }
 
 // processDicoms вызывается внутри транзакции после блокировки файлов.
-func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string) (map[string]uuid.UUID, error) {
+func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string, organizationID int64) (map[string]uuid.UUID, error) {
 	// Проверяем весь батч после блокировки всех файлов в текущей транзакции.
 	active, err := uc.jobCreator.GetActiveDicomIDs(ctx, dicomIDs)
 	if err != nil {
@@ -290,7 +296,15 @@ func (uc *Usecase) processDicoms(ctx context.Context, dicomIDs []string) (map[st
 		return nil, ErrActiveJob
 	}
 
-	dicomToJobs, errProcessDicoms := uc.worker.ProcessDicomFiles(ctx, readyIDs)
+	var settings map[string]float64
+	if uc.settings != nil {
+		settings, err = uc.settings.Get(ctx, organizationID)
+		if err != nil {
+			return nil, fmt.Errorf("read analysis settings: %w", err)
+		}
+	}
+
+	dicomToJobs, errProcessDicoms := uc.worker.ProcessDicomFiles(ctx, readyIDs, settings)
 	if errProcessDicoms != nil {
 		uc.metrics.Counter("usecases.dicom.upload.process.error").Inc()
 		return nil, fmt.Errorf("failed to process DICOM files: %w", errProcessDicoms)

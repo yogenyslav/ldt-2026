@@ -32,7 +32,7 @@ func (s repoStub) SaveDicomFiles(context.Context, []storage.Dicom) error { retur
 
 type workerStub struct{ err error }
 
-func (s workerStub) ProcessDicomFiles(context.Context, []string) (map[string]uuid.UUID, error) {
+func (s workerStub) ProcessDicomFiles(context.Context, []string, map[string]float64) (map[string]uuid.UUID, error) {
 	return map[string]uuid.UUID{}, s.err
 }
 

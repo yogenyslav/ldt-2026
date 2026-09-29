@@ -67,7 +67,7 @@ func TestRegisterOrthancOnlyPersists(t *testing.T) {
 
 type blockingWorker struct{ started, release chan struct{} }
 
-func (w blockingWorker) ProcessDicomFiles(ctx context.Context, ids []string) (map[string]uuid.UUID, error) {
+func (w blockingWorker) ProcessDicomFiles(ctx context.Context, ids []string, _ map[string]float64) (map[string]uuid.UUID, error) {
 	close(w.started)
 	select {
 	case <-w.release:

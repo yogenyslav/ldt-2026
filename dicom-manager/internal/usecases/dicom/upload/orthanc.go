@@ -41,7 +41,7 @@ func (uc *Usecase) StartOrthanc(ctx context.Context, id string, creatorID, organ
 			if err := uc.lockDicoms(ctx, []string{id}, creatorID, organizationID); err != nil {
 				return err
 			}
-			_, err := uc.processDicoms(ctx, []string{id})
+			_, err := uc.processDicoms(ctx, []string{id}, organizationID)
 			return err
 		})
 		if err != nil && !errors.Is(err, ErrActiveJob) {

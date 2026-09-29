@@ -23,7 +23,7 @@ import (
 
 type retryWorker struct{ calls atomic.Int32 }
 
-func (w *retryWorker) ProcessDicomFiles(_ context.Context, ids []string) (map[string]uuid.UUID, error) {
+func (w *retryWorker) ProcessDicomFiles(_ context.Context, ids []string, _ map[string]float64) (map[string]uuid.UUID, error) {
 	w.calls.Add(1)
 	result := make(map[string]uuid.UUID)
 	for _, id := range ids {

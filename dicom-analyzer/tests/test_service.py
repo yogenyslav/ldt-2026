@@ -24,6 +24,39 @@ def result():
 
 
 class ContractTests(unittest.TestCase):
+    def test_settings_reach_detection(self):
+        from qc.settings import resolve
+        from vendor.lesser_trochanter_math import distance_status
+
+        class QC:
+            def process(self, path, settings=None):
+                cfg = resolve(settings)
+                decision = distance_status(5.5, center=cfg["trochanter_center_mm"],
+                                           tol=cfg["trochanter_tol_percent"] / 100,
+                                           yellow=cfg["trochanter_yellow_percent"] / 100)
+                return result() | {"metadata": {"settings": cfg, "decision": decision}}
+
+        settings = {"trochanter_center_mm": 4, "trochanter_tol_percent": 50,
+                    "trochanter_yellow_percent": 20}
+        event = decode_request(json.dumps(request() | {"settings": settings}))
+        with patch("service.urlopen", side_effect=lambda *args, **kwargs: io.BytesIO(b"DICOM")):
+            analyzer = Analyzer(QC())
+            old = analyzer.process(request())
+            new = analyzer.process(event)
+        self.assertEqual(old["metadata"]["decision"]["status"], "плохой")
+        self.assertEqual(new["metadata"]["decision"]["status"], "норма")
+        self.assertEqual(result_event(event, new)["result"]["metadata"]["settings"], settings)
+
+    def test_settings_validation(self):
+        for settings in (None, [], {"unknown": 1}, {"trochanter_center_mm": float("inf")},
+                         {"trochanter_tol_percent": float("nan")}, {"trochanter_center_mm": True},
+                         {"trochanter_center_mm": "3"}, {"trochanter_tol_percent": 101},
+                         {"trochanter_yellow_percent": -1}, {"trochanter_center_mm": 8}):
+            with self.subTest(settings=settings), self.assertRaises(ValueError):
+                decode_request(json.dumps(request() | {"settings": settings}))
+        event = decode_request(json.dumps(request() | {"settings": {"trochanter_tol_percent": 0}}))
+        self.assertEqual(event["settings"]["trochanter_tol_percent"], 0)
+
     def test_invalid_requests(self):
         for update in ({"version": True}, {"job_id": str(uuid4()).replace("-", "x")},
                        {"event_id": "00000000-0000-0000-0000-000000000000"},
@@ -47,7 +80,7 @@ class ContractTests(unittest.TestCase):
     def test_download_auth_and_cleanup(self):
         paths = []
 
-        def process(path):
+        def process(path, settings=None):
             paths.append(path)
             self.assertEqual(Path(path).read_bytes(), b"DICOM")
             return result()
@@ -65,7 +98,7 @@ class ContractTests(unittest.TestCase):
     def test_cleanup_after_qc_exception_and_token_override(self):
         paths = []
 
-        def process(path):
+        def process(path, settings=None):
             paths.append(path)
             raise ValueError("invalid image")
 

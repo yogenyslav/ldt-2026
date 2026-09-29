@@ -364,6 +364,7 @@ eq('без изменений', delta({ name: '', unit: '%', goal: 'up', now: 5,
 /* ---------- 6. экраны: что видит врач ---------- */
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
+client.setQueryData(['settings'], ROTATION_DEFAULTS)
 client.setQueryData(['jobs', 50, 0, {}], DEMO_JOBS)
 for (const job of DEMO_JOBS) {
   client.setQueryData(['job', job.id], job)
