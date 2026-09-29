@@ -41,6 +41,8 @@ type jobsStub struct{ err error }
 func (s jobsStub) CreateJobs(context.Context, map[string]uuid.UUID) error { return s.err }
 
 type orthancStub struct {
+	sequential           bool
+	next                 int
 	props                []dto.OrthancDicomProperties
 	uploadErr, deleteErr error
 	deleted              []string
@@ -49,6 +51,11 @@ type orthancStub struct {
 }
 
 func (s *orthancStub) UploadInstances(context.Context, []byte) ([]dto.OrthancDicomProperties, error) {
+	if s.sequential {
+		prop := s.props[s.next]
+		s.next++
+		return []dto.OrthancDicomProperties{prop}, s.uploadErr
+	}
 	return s.props, s.uploadErr
 }
 func (s *orthancStub) GetDicomProperties(context.Context, string) (dto.OrthancDicomProperties, error) {
@@ -89,7 +96,6 @@ func TestUploadCompensation(t *testing.T) {
 			logger := zerolog.Nop()
 			o := &orthancStub{
 				props: []dto.OrthancDicomProperties{
-					{ID: "new", Created: !tc.existingOnly}, {ID: "existing"},
 					{ID: "new", Created: !tc.existingOnly},
 				},
 				uploadErr: tc.uploadErr, deleteErr: tc.cleanupErr,

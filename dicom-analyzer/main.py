@@ -34,6 +34,24 @@ VIOLATION_TEXT = {
     "lesser_trochanter": "Неправильная ротация бедра (малый вертел)",
 }
 
+VIOLATION_TYPE_MAP = {
+    "Ось позвоночника отклонена более чем на 5°": "Не выравнена ось позвоночника",
+    "Верхние края подвздошных костей не в кадре": "Некорректная укладка",
+    "Посторонние предметы или артефакты": "Присутствуют посторонние предметы",
+    "Область интереса: верх < 3 см": "Некорректная область интереса",
+    "Область интереса: низ < 3 см": "Некорректная область интереса",
+    "Область интереса: бок < 2 см": "Некорректная область интереса",
+    "Область интереса: низ: седалищная кость не найдена": "Некорректная область интереса",
+    "Не найдены ключевые точки бедра": "Некорректная укладка",
+    "Неправильная ротация бедра (малый вертел)": "Некорректная укладка",
+}
+
+ANATOMICAL_REGION_MAP = {
+    "spine": "Поясничный отдел позвоночника",
+    "hip_left": "Проксимальный отдел бедра",
+    "hip_right": "Проксимальный отдел бедра",
+}
+
 
 def violations_of(criteria: dict) -> list:
     out = []
@@ -73,10 +91,13 @@ class QCService:
             return {"status": "failed", "anatomical_region": None, "confidence": None, "violations": [], "error": f"{type(e).__name__}: {e}",
                     "duration_ms": int((time.time() - t0) * 1000), "metadata": {}}
         cls = res["classification"]
+        violations = violations_of(res["criteria"])
         meta = {"shape": res["shape"], "classification": {k: v for k, v in cls.items() if k not in ("label", "confidence", "side")},    # label/confidence/side уже в верхних полях
-                "criteria": res["criteria"], "verdict": res["verdict"], "models": res["models"], "settings": cfg}
+                "criteria": res["criteria"], "verdict": res["verdict"], "models": res["models"], "settings": cfg,
+                "anatomical_region": ANATOMICAL_REGION_MAP.get(cls["label"], cls["label"]),
+                "violation_type": [VIOLATION_TYPE_MAP.get(v, v) for v in violations]}
         return {"status": "completed", "anatomical_region": cls["label"], "confidence": cls["confidence"],
-                "violations": violations_of(res["criteria"]), "duration_ms": int((time.time() - t0) * 1000), "metadata": meta}
+                "violations": violations, "duration_ms": int((time.time() - t0) * 1000), "metadata": meta}
 
 
 def main():

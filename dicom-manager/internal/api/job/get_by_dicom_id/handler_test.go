@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"net/http/httptest"
+	"reflect"
 	"testing"
 
 	"github.com/gofiber/fiber/v3"
@@ -48,9 +49,12 @@ func TestGetByDicomID(t *testing.T) {
 				t.Fatal(err)
 			}
 			stub := &usecaseStub{err: tc.err}
+			region := "spine"
+			violations := []string{"Ось позвоночника отклонена более чем на 5°"}
 			if !tc.empty {
 				stub.jobs = []uc.Job{
-					{ID: "new", DicomFileID: "instance", Status: "running"},
+					{ID: "new", DicomFileID: "instance", Status: "running", AnatomicalRegion: &region, Violations: violations,
+						Metadata: []byte(`{"anatomical_region":"Поясничный отдел позвоночника","violation_type":["Не выравнена ось позвоночника"]}`)},
 					{ID: "old", DicomFileID: "instance", Status: "failed", Metadata: []byte(`{"error":"analysis failed"}`)},
 				}
 			}
@@ -87,6 +91,16 @@ func TestGetByDicomID(t *testing.T) {
 					}
 				} else if len(out.Jobs) != 2 || out.Jobs[0].Status != "processing" || out.Jobs[1].Error != "analysis failed" {
 					t.Fatalf("incorrect jobs: %+v", out.Jobs)
+				}
+				if !tc.empty {
+					job := out.Jobs[0]
+					if job.AnatomicalRegion == nil || *job.AnatomicalRegion != region || !reflect.DeepEqual(job.Violations, violations) {
+						t.Fatalf("API must preserve original labels: %+v", job)
+					}
+					if job.Metadata["anatomical_region"] != "Поясничный отдел позвоночника" ||
+						!reflect.DeepEqual(job.Metadata["violation_type"], []any{"Не выравнена ось позвоночника"}) {
+						t.Fatalf("API must preserve mapped metadata: %+v", job.Metadata)
+					}
 				}
 			}
 		})

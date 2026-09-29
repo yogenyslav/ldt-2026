@@ -2,6 +2,7 @@ package generate
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"strconv"
 
@@ -114,13 +115,27 @@ func (uc *Usecase) buildReport(ctx context.Context, jobIDs []string) ([]byte, er
 			qualityClass = 1
 		}
 
+		region, violations := result.AnatomicalRegion, result.Violations
+		var metadata struct {
+			AnatomicalRegion *string  `json:"anatomical_region"`
+			ViolationType    []string `json:"violation_type"`
+		}
+		if err := json.Unmarshal(result.Metadata, &metadata); err == nil {
+			if metadata.AnatomicalRegion != nil {
+				region = *metadata.AnatomicalRegion
+			}
+			if metadata.ViolationType != nil {
+				violations = metadata.ViolationType
+			}
+		}
+
 		dtoResults[i] = dto.JobResult{
 			FileName:         result.FileName,
 			DicomStudyUid:    result.DicomStudyUid,
 			DicomImageUid:    result.DicomImageUid,
-			AnatomicalRegion: result.AnatomicalRegion,
+			AnatomicalRegion: region,
 			QualityClass:     qualityClass,
-			Violations:       result.Violations,
+			Violations:       violations,
 			JobStatus:        result.JobStatus,
 			DurationSec:      float64(result.DurationMs) / 1000.0,
 		}

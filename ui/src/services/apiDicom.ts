@@ -13,7 +13,10 @@ const ApiDicom = {
 
   async upload(file: File) {
     return await api.post<IUploadedDicom>('/dicom/upload', file, {
-      headers: { 'Content-Type': 'application/dicom' },
+      headers: {
+        'Content-Type': 'application/dicom',
+        'Content-Disposition': `attachment; filename*=UTF-8''${encodeURIComponent(file.name)}`,
+      },
     })
   },
 

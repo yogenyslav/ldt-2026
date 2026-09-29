@@ -54,7 +54,7 @@ func TestIntegrationRetryUpload(t *testing.T) {
 	uow := database.NewUnitOfWork(db)
 	worker := &retryWorker{}
 	newUC := func(ids ...string) (*Usecase, *orthancStub) {
-		o := &orthancStub{}
+		o := &orthancStub{sequential: len(ids) > 1}
 		for _, id := range ids {
 			o.props = append(o.props, dto.OrthancDicomProperties{ID: id, FileName: "original.dcm"})
 		}
@@ -63,6 +63,14 @@ func TestIntegrationRetryUpload(t *testing.T) {
 	}
 	request := DicomUploadRequest{CreatorID: 901, OrganizationID: 901, SyncOrthanc: true,
 		RawDicoms: []RawDicomData{{FileName: "retry.dcm"}}}
+	batchRequest := func(count int) DicomUploadRequest {
+		batch := request
+		batch.RawDicoms = make([]RawDicomData, count)
+		for i := range batch.RawDicoms {
+			batch.RawDicoms[i].FileName = fmt.Sprintf("study/%d.dcm", i)
+		}
+		return batch
+	}
 	seed := func(id, status string) string {
 		t.Helper()
 		if err := dr.SaveDicomFiles(ctx, []dicomstorage.Dicom{{ID: id, FileName: "original.dcm", CreatorID: 901, OrganizationID: 901}}); err != nil {
@@ -165,7 +173,7 @@ func TestIntegrationRetryUpload(t *testing.T) {
 	t.Run("batch with new and failed deduplicates instances", func(t *testing.T) {
 		seed("batch-failed", "failed")
 		uc, _ := newUC("batch-new", "batch-failed", "batch-new")
-		jobs, err := uc.UploadDicomFiles(ctx, request)
+		jobs, err := uc.UploadDicomFiles(ctx, batchRequest(3))
 		if err != nil || len(jobs) != 2 {
 			t.Fatalf("jobs=%v err=%v", jobs, err)
 		}
@@ -178,7 +186,7 @@ func TestIntegrationRetryUpload(t *testing.T) {
 		seed("batch-retry", "failed")
 		uc, o := newUC("batch-new-active", "batch-active", "batch-pending", "batch-completed", "batch-retry", "batch-new-active")
 		calls := worker.calls.Load()
-		jobs, err := uc.UploadDicomFiles(ctx, request)
+		jobs, err := uc.UploadDicomFiles(ctx, batchRequest(6))
 		if err != nil || worker.calls.Load() != calls+1 || len(jobs) != 3 {
 			t.Fatalf("jobs=%v err=%v", jobs, err)
 		}
@@ -204,7 +212,7 @@ func TestIntegrationRetryUpload(t *testing.T) {
 	t.Run("fully active batch returns conflict without calling worker", func(t *testing.T) {
 		uc, _ := newUC("batch-active", "batch-pending")
 		calls := worker.calls.Load()
-		_, err := uc.UploadDicomFiles(ctx, request)
+		_, err := uc.UploadDicomFiles(ctx, batchRequest(2))
 		if !errors.Is(err, ErrActiveJob) || worker.calls.Load() != calls {
 			t.Fatalf("err=%v", err)
 		}

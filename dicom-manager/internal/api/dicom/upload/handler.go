@@ -3,7 +3,7 @@ package upload
 import (
 	"context"
 	"errors"
-	"fmt"
+	"mime"
 	"uuid"
 
 	"github.com/gofiber/fiber/v3"
@@ -44,6 +44,7 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 //	@Tags			dicom
 //	@Accept			application/dicom
 //	@Produce		json
+//	@Param			Content-Disposition	header	string	false	"Исходное имя файла: attachment; filename*=UTF-8''scan.dcm"
 //	@Param			file	body		string		true	"DICOM файл для загрузки."
 //	@Success		201		{object}	UploadOut	"Файл успешно загружен."
 //	@Failure		400		string		"Некорректный запрос."
@@ -54,7 +55,6 @@ func New(log *zerolog.Logger, metrics observability.MetricsClient, uc usecase) *
 func (h *Handler) Upload(c fiber.Ctx) error {
 	var (
 		data        []byte
-		syncOrthanc bool
 		fileName    string
 	)
 
@@ -64,8 +64,17 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 		if c.Get("X-Instance-ID") != "" {
 			return fiber.NewError(fiber.StatusBadRequest, "use /dicom/upload/orthanc for Orthanc callbacks")
 		}
-		syncOrthanc = true
-		fileName = uuid.New().String()
+
+		fileName = uuid.New().String() + ".dcm"
+		if disposition := c.Get("Content-Disposition"); disposition != "" {
+			_, params, err := mime.ParseMediaType(disposition)
+			if err != nil {
+				return fiber.NewError(fiber.StatusBadRequest, "invalid Content-Disposition")
+			}
+			if params["filename"] != "" {
+				fileName = params["filename"]
+			}
+		}
 
 		data = c.Body()
 		if len(data) == 0 {
@@ -77,7 +86,7 @@ func (h *Handler) Upload(c fiber.Ctx) error {
 		return fiber.NewError(fiber.StatusBadRequest, "invalid content type")
 	}
 
-	req, err := h.getDicomUploadRequest(c, data, fileName, syncOrthanc)
+	req, err := h.getDicomUploadRequest(c, data, fileName, true)
 	if err != nil {
 		h.metrics.Counter("handler.dicom.upload.get_upload_request.error").Inc()
 		h.log.Error().Err(err).Msg("failed to get dicom upload request")
@@ -129,8 +138,7 @@ func (h *Handler) getDicomUploadRequest(
 	req.RawDicoms = append(
 		req.RawDicoms, upload.RawDicomData{
 			Payload:    data,
-			FileName:   fmt.Sprintf("%s.dcm", fileName),
-			InstanceID: fileName,
+			FileName:   fileName,
 		},
 	)
 	return req, nil

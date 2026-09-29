@@ -172,22 +172,29 @@ func (uc *Usecase) UploadDicomFiles(
 func (uc *Usecase) getDicomProperties(ctx context.Context, dicoms []RawDicomData, syncOrthanc bool) (
 	[]dto.OrthancDicomProperties, error,
 ) {
-	var (
-		dicomProperties  []dto.OrthancDicomProperties
-		errGetProperties error
-	)
+	var dicomProperties []dto.OrthancDicomProperties
 
 	if syncOrthanc {
-		dicomsZip, errZipDicoms := dicomsToZip(dicoms)
-		if errZipDicoms != nil {
-			uc.metrics.Counter("usecases.dicom.upload.zip.error").Inc()
-			return nil, fmt.Errorf("failed to create zip from dicoms: %w", errZipDicoms)
-		}
+		for _, dicom := range dicoms {
+			dicomsZip, errZipDicoms := dicomsToZip([]RawDicomData{dicom})
+			if errZipDicoms != nil {
+				uc.metrics.Counter("usecases.dicom.upload.zip.error").Inc()
+				return dicomProperties, fmt.Errorf("failed to create zip from dicom: %w", errZipDicoms)
+			}
 
-		dicomProperties, errGetProperties = uc.dicomer.UploadInstances(ctx, dicomsZip)
-		if errGetProperties != nil {
-			uc.metrics.Counter("usecases.dicom.upload.orthanc.error").Inc()
-			return dicomProperties, fmt.Errorf("failed to upload dicoms to orthanc: %w", errGetProperties)
+			uploaded, err := uc.dicomer.UploadInstances(ctx, dicomsZip)
+			for i := range uploaded {
+				uploaded[i].FileName = dicom.FileName
+			}
+			
+			dicomProperties = append(dicomProperties, uploaded...)
+			if err != nil {
+				uc.metrics.Counter("usecases.dicom.upload.orthanc.error").Inc()
+				return dicomProperties, fmt.Errorf("failed to upload dicom to orthanc: %w", err)
+			}
+			if len(uploaded) != 1 {
+				return dicomProperties, fmt.Errorf("expected one Orthanc instance for %q, got %d", dicom.FileName, len(uploaded))
+			}
 		}
 	} else {
 		singleDicomProp, err := uc.dicomer.GetDicomProperties(ctx, dicoms[0].InstanceID)
