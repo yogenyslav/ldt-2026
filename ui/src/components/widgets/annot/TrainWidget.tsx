@@ -112,7 +112,11 @@ const TrainWidget = () => {
           <table className="w-full border-collapse text-[14px]">
             <tbody>
               {targets.map((target) => {
-                const percent = Math.min(100, Math.round((target.have / target.need) * 100))
+                const hasRequirement = target.need > 0
+                const percent = hasRequirement
+                  ? Math.min(100, Math.round((target.have / target.need) * 100))
+                  : null
+                const remaining = Math.max(0, target.need - target.have)
                 const pickable = target.ready && !target.busy
 
                 return (
@@ -131,22 +135,28 @@ const TrainWidget = () => {
                       {pickable ? <Check bare on={!!trainPick[target.id]} tabIndex={-1} /> : null}
                     </td>
                     <td>
-                      <b>{target.name}</b>
+                      <b>{target.name ?? MODEL_NAME[target.id] ?? target.id}</b>
                       <div className="text-[13.5px] text-muted">{target.hard}</div>
                     </td>
                     <td className="tabular">
-                      {target.have} из {target.need}
+                      {hasRequirement ? `${target.have} из ${target.need}` : `Собрано: ${target.have}`}
                     </td>
                     <td className="w-50">
-                      <Bar percent={percent} />
+                      {percent !== null ? (
+                        <Bar percent={percent} />
+                      ) : (
+                        <span className="text-[13.5px] text-muted">Требования к выборке не заданы</span>
+                      )}
                     </td>
                     <td>
                       {target.busy ? (
                         <Tag tone="warn">обучается</Tag>
                       ) : target.ready ? (
                         <Tag tone="ok">можно дообучать</Tag>
+                      ) : hasRequirement && remaining > 0 ? (
+                        <Tag tone="dead">нужно ещё {remaining}</Tag>
                       ) : (
-                        <Tag tone="dead">нужно ещё {target.need - target.have}</Tag>
+                        <Tag tone="dead">дообучение пока недоступно</Tag>
                       )}
                     </td>
                   </tr>
@@ -172,9 +182,9 @@ const TrainWidget = () => {
           <span className="flex-1" />
           {busy.map((target) => (
             <span key={target.id} className="text-[13.5px] text-muted">
-              «{target.name}» сейчас обучаются
-              {target.done !== undefined ? `: пройдено ${Math.round(target.done * 100)}%` : ''}
-              {target.left_minutes !== undefined
+              «{target.name ?? MODEL_NAME[target.id] ?? target.id}» сейчас обучаются
+              {target.done != null ? `: пройдено ${Math.round(target.done * 100)}%` : ''}
+              {target.left_minutes != null
                 ? `, осталось около ${target.left_minutes} минут`
                 : ''}
             </span>
@@ -220,7 +230,7 @@ const TrainWidget = () => {
                         <Check bare on={!!versionPick[version.id]} tabIndex={-1} />
                       </td>
                       <td>
-                        <b>{version.name}</b>
+                        <b>{version.name ?? MODEL_NAME[version.id] ?? version.id}</b>
                       </td>
                       <td colSpan={3} className="text-[13.5px] text-muted">
                         обучена {version.trained} · проверена на {version.checked} контрольных

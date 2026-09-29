@@ -42,6 +42,7 @@ import {
 import { isStrokeWorthKeeping, outlineOf, simplifyOutline } from '@/lib/annotation'
 import { annotTasks, caseOf, clampToBox, hasZones } from '@/lib/annotQueue'
 import { delta } from '@/lib/tune'
+import { newSubmissionId } from '@/lib/submission'
 import {
   ROTATION_DEFAULTS,
   centreToSettings,
@@ -53,7 +54,7 @@ import {
   rotationFrames,
   settingsOf,
 } from '@/lib/settings'
-import type { IAnnotCase, IJobInfo, Point } from '@/types'
+import type { IAnnotCase, IJobInfo, ITrainTarget, Point } from '@/types'
 
 let passed = 0
 const failures: string[] = []
@@ -342,7 +343,7 @@ eq('без изменений', delta({ name: '', unit: '%', goal: 'up', now: 5,
 /* ---------- 6. экраны: что видит врач ---------- */
 
 const client = new QueryClient({ defaultOptions: { queries: { retry: false } } })
-client.setQueryData(['jobs', 50, 0], DEMO_JOBS)
+client.setQueryData(['jobs', 50, 0, {}], DEMO_JOBS)
 for (const job of DEMO_JOBS) {
   client.setQueryData(['job', job.id], job)
   client.setQueryData(['dicom', job.dicom_id], { image_data: '/scan.png' })
@@ -428,8 +429,43 @@ for (const word of ['Модели в работе', 'Ключевые точки
   ok(`дообучение: «${word}» из разбора`, train.includes(word))
 }
 
+/* Идентификаторы отправок должны приниматься валидатором менеджера. */
+const beforeIds = Date.now()
+const submissionIds = Array.from({ length: 1000 }, () => newSubmissionId())
+const afterIds = Date.now()
+ok('отправка: ULID соответствует формату сервера', submissionIds.every((id) => /^[0-7][0-9A-HJKMNP-TV-Z]{25}$/.test(id)))
+eq('отправка: идентификаторы не повторяются', new Set(submissionIds).size, submissionIds.length)
+const alphabet = '0123456789ABCDEFGHJKMNPQRSTVWXYZ'
+const timestamp = [...submissionIds[0].slice(0, 10)].reduce((value, char) => value * 32 + alphabet.indexOf(char), 0)
+ok('отправка: ULID содержит время создания', timestamp >= beforeIds && timestamp <= afterIds)
+
+/* Нулевая цель означает отсутствие настроенных требований к выборке. */
+const trainingTarget: ITrainTarget = {
+  id: 'hip_keypoints', have: 0, need: 0, hard: '', ready: false, busy: false,
+  done: null, left_minutes: null,
+}
+const drawTraining = (target: ITrainTarget) => {
+  client.setQueryData(['annot', 'training'], { targets: [target], versions: [] })
+  return draw(<TrainWidget />)
+}
+for (const have of [0, 12]) {
+  const html = drawTraining({ ...trainingTarget, have })
+  const body = text(html)
+  ok(`дообучение без цели: собрано ${have}`, body.includes(`Собрано: ${have}`))
+  ok('дообучение без цели: нет фиктивного прогресса', !body.includes(' из 0') && !body.includes('нужно ещё') && !/NaN|Infinity/.test(html))
+  ok('дообучение без цели: причина недоступности', body.includes('Требования к выборке не заданы') && body.includes('дообучение пока недоступно'))
+  ok('дообучение без имени: название берётся по коду', body.includes('Ключевые точки бедра'))
+}
+const collecting = text(drawTraining({ ...trainingTarget, have: 96, need: 250 }))
+ok('дообучение с целью: сохраняется прогресс', collecting.includes('96 из 250') && collecting.includes('нужно ещё 154'))
+const unavailable = text(drawTraining({ ...trainingTarget, have: 260, need: 250 }))
+ok('дообучение с избытком: нет отрицательного остатка', unavailable.includes('дообучение пока недоступно') && !unavailable.includes('нужно ещё'))
+const running = text(drawTraining({ ...trainingTarget, busy: true }))
+ok('дообучение: null не превращается в нулевой прогноз', !running.includes('пройдено 0%') && !running.includes('осталось около null'))
+
 /* ---------- итог ---------- */
 
+client.clear()
 console.log(`\nпроверок пройдено: ${passed}`)
 if (failures.length) {
   console.log(`не прошло: ${failures.length}`)

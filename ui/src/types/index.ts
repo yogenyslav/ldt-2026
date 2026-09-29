@@ -255,7 +255,7 @@ export interface IQueueItem {
 /* How much has been collected for one of the four models. */
 export interface ITrainTarget {
   id: string
-  name: string
+  name?: string
   have: number
   need: number
   /* the cases that are scarce and therefore decide when training is worth it */
@@ -263,8 +263,8 @@ export interface ITrainTarget {
   ready: boolean
   busy: boolean
   /* while it is training: how far along, and how much longer */
-  done?: number
-  left_minutes?: number
+  done?: number | null
+  left_minutes?: number | null
 }
 
 /* A number a radiologist can argue with. `goal` is the direction it should
@@ -279,7 +279,7 @@ export interface IModelMetric {
 
 export interface IModelVersion {
   id: string
-  name: string
+  name?: string
   trained: string
   checked: number
   metrics: IModelMetric[]
