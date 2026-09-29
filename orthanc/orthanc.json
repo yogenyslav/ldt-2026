@@ -1,6 +1,6 @@
 {
   "AwsS3Storage": {
-    "BucketName": "test",
+    "BucketName": "data",
     "Region": "eu-west-1",
     "Endpoint": "http://raw-dicom:9000/",
     "AccessKey": "${S3_USER}",
